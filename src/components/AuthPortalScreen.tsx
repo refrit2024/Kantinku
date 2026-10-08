@@ -34,7 +34,133 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   // Seller Login State
   const [sellerEmail, setSellerEmail] = useState('');
   const [sellerPassword, setSellerPassword] = useState('');
-  const [pendingAccountAlert, setPendingAccountAlert] = useState<SellerAccount | null>(null);
+  const [trackedAccountId, setTrackedAccountId] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('kantinku_ibikkg_tracked_seller_id_v1');
+    } catch {
+      return null;
+    }
+  });
+  const [lastKnownStatus, setLastKnownStatus] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('kantinku_ibikkg_tracked_seller_status_v1');
+    } catch {
+      return null;
+    }
+  });
+  const [unreadDecisionModal, setUnreadDecisionModal] = useState<SellerAccount | null>(null);
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission>(() =>
+    typeof window !== 'undefined' && 'Notification' in window
+      ? Notification.permission
+      : 'default'
+  );
+
+  // Register Service Worker for background/OS notifications
+  React.useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./sw.js').catch(() => {
+        // ignore sw registration errors in restricted iframes
+      });
+    }
+  }, []);
+
+  const requestBrowserNotificationPermission = async () => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    try {
+      const perm = await Notification.requestPermission();
+      setNotifPerm(perm);
+      if (perm === 'granted') {
+        onShowToast('Notifikasi Browser/Perangkat berhasil diaktifkan!', false);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const fireSystemNotification = (title: string, body: string) => {
+    if (typeof window === 'undefined' || !('Notification' in window)) return;
+    if (Notification.permission !== 'granted') return;
+    try {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready
+          .then((reg) => {
+            reg.showNotification(title, {
+              body,
+              tag: 'kantinku-verification-status',
+              renotify: true,
+            } as NotificationOptions);
+          })
+          .catch(() => {
+            new Notification(title, { body });
+          });
+      } else {
+        new Notification(title, { body });
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  // Derive live account object directly from synced sellerAccounts array
+  const pendingAccountAlert =
+    sellerAccounts.find((a) => a.id === trackedAccountId) ||
+    sellerAccounts.find(
+      (a) => sellerEmail.trim() && a.email.toLowerCase() === sellerEmail.trim().toLowerCase()
+    ) ||
+    null;
+
+  // Watch for status transitions (both live AND when returning after closing the website for 2 hours!)
+  React.useEffect(() => {
+    if (!pendingAccountAlert) return;
+
+    // Auto-fill email & password for the tracked account so the seller doesn't have to re-type
+    if (!sellerEmail && pendingAccountAlert.email) {
+      setSellerEmail(pendingAccountAlert.email);
+      setSellerPassword(pendingAccountAlert.password);
+    }
+
+    if (lastKnownStatus && lastKnownStatus !== pendingAccountAlert.status) {
+      if (pendingAccountAlert.status === 'approved') {
+        const msg = `Pendaftaran "${pendingAccountAlert.stallName}" telah DISETUJUI oleh Admin Kampus IBI KKG!`;
+        onShowToast(`🎉 Selamat! ${msg}`, false);
+        fireSystemNotification('KantinKu IBI KKG — Akun Disetujui!', msg);
+        setUnreadDecisionModal(pendingAccountAlert);
+      } else if (pendingAccountAlert.status === 'rejected') {
+        const msg = `Pengajuan "${pendingAccountAlert.stallName}" ditolak/perlu revisi: "${pendingAccountAlert.rejectedNote}"`;
+        onShowToast(`⚠️ ${msg}`, true);
+        fireSystemNotification('KantinKu IBI KKG — Perlu Revisi', msg);
+        setUnreadDecisionModal(pendingAccountAlert);
+      }
+    }
+
+    setLastKnownStatus(pendingAccountAlert.status);
+    try {
+      localStorage.setItem(
+        'kantinku_ibikkg_tracked_seller_status_v1',
+        pendingAccountAlert.status
+      );
+    } catch {
+      // ignore
+    }
+  }, [pendingAccountAlert?.status, pendingAccountAlert?.rejectedNote]);
+
+  const trackSellerAccount = (acc: SellerAccount | null) => {
+    const id = acc ? acc.id : null;
+    const status = acc ? acc.status : null;
+    setTrackedAccountId(id);
+    setLastKnownStatus(status);
+    try {
+      if (id && status) {
+        localStorage.setItem('kantinku_ibikkg_tracked_seller_id_v1', id);
+        localStorage.setItem('kantinku_ibikkg_tracked_seller_status_v1', status);
+      } else {
+        localStorage.removeItem('kantinku_ibikkg_tracked_seller_id_v1');
+        localStorage.removeItem('kantinku_ibikkg_tracked_seller_status_v1');
+      }
+    } catch {
+      // ignore
+    }
+  };
 
   // Seller Registration State
   const [regOwnerName, setRegOwnerName] = useState('');
@@ -53,7 +179,6 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
 
   const handleSellerLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    setPendingAccountAlert(null);
 
     const found = sellerAccounts.find(
       (acc) => acc.email.toLowerCase() === sellerEmail.trim().toLowerCase()
@@ -64,8 +189,9 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
       return;
     }
 
+    trackSellerAccount(found);
+
     if (found.status === 'pending') {
-      setPendingAccountAlert(found);
       onShowToast(
         `Akun "${found.stallName}" masih menunggu verifikasi Admin Sarpras IBI KKG.`,
         true
@@ -74,7 +200,6 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
     }
 
     if (found.status === 'rejected') {
-      setPendingAccountAlert(found);
       onShowToast(
         `Pengajuan "${found.stallName}" memerlukan revisi dari Admin.`,
         true
@@ -113,7 +238,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
 
     setSellerEmail(created.email);
     setSellerPassword(created.password);
-    setPendingAccountAlert(created);
+    trackSellerAccount(created);
     setSellerAuthMode('login');
   };
 
@@ -371,35 +496,77 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     </p>
                   </div>
 
-                  {/* Pending / Rejected Alert Box */}
+                  {/* Live Real-Time Status Notification Box (Pending / Approved / Rejected) */}
                   {pendingAccountAlert && (
                     <div
-                      className={`p-4 rounded-xl border flex flex-col gap-2 ${
-                        pendingAccountAlert.status === 'pending'
+                      className={`p-4 rounded-xl border flex flex-col gap-2.5 transition-all ${
+                        pendingAccountAlert.status === 'approved'
+                          ? 'bg-secondary-container/60 border-secondary text-on-secondary-container'
+                          : pendingAccountAlert.status === 'pending'
                           ? 'bg-tertiary-fixed/50 border-tertiary text-on-tertiary-fixed'
                           : 'bg-error-container border-error text-on-error-container'
                       }`}
                     >
-                      <div className="flex items-center gap-1.5 font-label-md font-bold">
-                        <span className="material-symbols-outlined text-[20px]">
-                          {pendingAccountAlert.status === 'pending'
-                            ? 'hourglass_top'
-                            : 'cancel'}
-                        </span>
-                        <span>
-                          {pendingAccountAlert.status === 'pending'
-                            ? `Status Akun: Menunggu Verifikasi Admin`
-                            : `Pendaftaran Ditolak / Perlu Revisi oleh Admin`}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 font-label-md font-bold">
+                          <span className="material-symbols-outlined text-[20px]">
+                            {pendingAccountAlert.status === 'approved'
+                              ? 'check_circle'
+                              : pendingAccountAlert.status === 'pending'
+                              ? 'hourglass_top'
+                              : 'cancel'}
+                          </span>
+                          <span>
+                            {pendingAccountAlert.status === 'approved'
+                              ? 'Notifikasi: Akun Telah Disetujui Admin!'
+                              : pendingAccountAlert.status === 'pending'
+                              ? 'Status Live: Menunggu Verifikasi Admin...'
+                              : 'Notifikasi: Pendaftaran Ditolak / Perlu Revisi'}
+                          </span>
+                        </div>
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container-lowest/80 text-on-surface font-semibold">
+                          Live Sync
                         </span>
                       </div>
-                      {pendingAccountAlert.status === 'pending' ? (
-                        <p className="font-body-sm text-[12px] leading-relaxed">
-                          Pendaftaran <strong>{pendingAccountAlert.stallName}</strong> ({pendingAccountAlert.ownerName}) sedang berada di antrean Admin Sarpras. Silakan buka tab <strong>Admin Kampus</strong> untuk menyetujui atau menolak akun ini.
-                        </p>
+
+                      {pendingAccountAlert.status === 'approved' ? (
+                        <div className="flex flex-col gap-2">
+                          <p className="font-body-sm text-[12px] text-on-surface leading-relaxed">
+                            Selamat! Pendaftaran <strong>{pendingAccountAlert.stallName}</strong> ({pendingAccountAlert.ownerName}) telah <strong>DISETUJUI</strong> oleh Admin Kampus IBI KKG. Anda sekarang memiliki akses penuh ke Dashboard Penjual.
+                          </p>
+                          <button
+                            type="button"
+                            onClick={() => onLoginSellerSuccess(pendingAccountAlert)}
+                            className="w-full min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                          >
+                            <span>Masuk ke Dashboard {pendingAccountAlert.stallName} Sekarang</span>
+                            <span className="material-symbols-outlined text-[18px]">
+                              arrow_forward
+                            </span>
+                          </button>
+                        </div>
+                      ) : pendingAccountAlert.status === 'pending' ? (
+                        <div className="flex flex-col gap-2">
+                          <p className="font-body-sm text-[12px] leading-relaxed">
+                            Pendaftaran <strong>{pendingAccountAlert.stallName}</strong> ({pendingAccountAlert.ownerName}) sedang menunggu persetujuan Admin Sarpras. Walaupun Anda menutup website ini selama beberapa jam, begitu Anda kembali membuka web (atau di latar belakang), hasil verifikasi akan langsung muncul otomatis!
+                          </p>
+                          {notifPerm !== 'granted' && (
+                            <button
+                              type="button"
+                              onClick={requestBrowserNotificationPermission}
+                              className="min-h-[38px] px-3 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm font-semibold flex items-center justify-center gap-1.5 border border-outline-variant/40 cursor-pointer w-fit"
+                            >
+                              <span className="material-symbols-outlined text-[16px] text-primary">
+                                notifications_active
+                              </span>
+                              <span>Aktifkan Notifikasi Layar / Browser</span>
+                            </button>
+                          )}
+                        </div>
                       ) : (
                         <div className="flex flex-col gap-1.5">
                           <p className="font-body-sm text-[12px]">
-                            Maaf, pengajuan akun <strong>{pendingAccountAlert.stallName}</strong> belum dapat disetujui oleh Admin Sarpras IBI KKG.
+                            Maaf, pengajuan akun <strong>{pendingAccountAlert.stallName}</strong> ditolak oleh Admin Sarpras IBI KKG.
                           </p>
                           <div className="p-2.5 rounded-lg bg-surface-container-lowest/90 text-on-surface border border-error/30 flex flex-col gap-0.5">
                             <span className="font-label-sm text-[11px] text-error font-bold uppercase tracking-wider">
@@ -465,11 +632,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                           onClick={() => {
                             setSellerEmail(acc.email);
                             setSellerPassword(acc.password);
-                            if (acc.status === 'rejected' || acc.status === 'pending') {
-                              setPendingAccountAlert(acc);
-                            } else {
-                              setPendingAccountAlert(null);
-                            }
+                            trackSellerAccount(acc);
                           }}
                           className="p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high text-left border border-outline-variant/25 flex flex-col gap-0.5 cursor-pointer transition-colors"
                         >
@@ -728,6 +891,91 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
           )}
         </div>
       </div>
+
+      {/* POP-UP MODAL NOTIFIKASI HASIL VERIFIKASI (Muncul otomatis walau penjual baru buka web lagi setelah beberapa jam) */}
+      {unreadDecisionModal && (
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-outline-variant/30">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                    unreadDecisionModal.status === 'approved'
+                      ? 'bg-secondary-container text-on-secondary-container'
+                      : 'bg-error-container text-on-error-container'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[24px]">
+                    {unreadDecisionModal.status === 'approved'
+                      ? 'verified'
+                      : 'notification_important'}
+                  </span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                    Pemberitahuan Sistem Verifikasi
+                  </span>
+                  <h3 className="fluid-headline-md text-on-surface">
+                    {unreadDecisionModal.status === 'approved'
+                      ? 'Akun Kantin Anda Disetujui!'
+                      : 'Pengajuan Kantin Ditolak / Revisi'}
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setUnreadDecisionModal(null)}
+                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            {unreadDecisionModal.status === 'approved' ? (
+              <div className="flex flex-col gap-3">
+                <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                  Admin Sarpras IBI KKG telah menyetujui pendaftaran stan{' '}
+                  <strong className="text-on-surface">{unreadDecisionModal.stallName}</strong> ({unreadDecisionModal.ownerName}). Anda kini dapat langsung masuk ke Dashboard Penjual untuk mulai menginput menu dan harga.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const acc = unreadDecisionModal;
+                    setUnreadDecisionModal(null);
+                    onLoginSellerSuccess(acc);
+                  }}
+                  className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                >
+                  <span>Masuk ke Dashboard Penjual Sekarang</span>
+                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                </button>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-3">
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  Pengajuan stan{' '}
+                  <strong className="text-on-surface">{unreadDecisionModal.stallName}</strong> belum dapat disetujui oleh Admin Sarpras IBI KKG dengan alasan berikut:
+                </p>
+                <div className="p-3.5 rounded-xl bg-error-container/60 border border-error text-on-error-container flex flex-col gap-1">
+                  <span className="font-label-sm text-[11px] font-bold uppercase tracking-wider">
+                    Alasan Penolakan / Revisi dari Admin:
+                  </span>
+                  <span className="font-body-md text-body-md font-semibold">
+                    &ldquo;{unreadDecisionModal.rejectedNote}&rdquo;
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setUnreadDecisionModal(null)}
+                  className="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold cursor-pointer"
+                >
+                  Saya Mengerti
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
