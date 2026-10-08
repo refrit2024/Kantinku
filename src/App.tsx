@@ -634,7 +634,7 @@ export default function App() {
   };
 
   return (
-    <div className="bg-surface font-body-md text-on-surface flex flex-col min-h-screen w-full overflow-x-hidden antialiased relative">
+    <div className="bg-surface font-body-md text-on-surface flex flex-col min-h-screen w-full antialiased relative">
       {/* SINGLE COMPACT STICKY HEADER */}
       <header className="sticky top-0 left-0 right-0 w-full z-40 bg-surface/95 backdrop-blur-xl border-b border-outline-variant/30 pt-safe">
         <div className="max-w-7xl mx-auto h-14 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">

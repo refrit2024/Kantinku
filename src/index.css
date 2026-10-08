@@ -124,15 +124,19 @@
 }
 
 @layer base {
-  html, body {
+  html {
     width: 100%;
-    max-width: 100vw;
-    overflow-x: hidden;
     margin: 0;
     padding: 0;
+    overflow-y: auto;
+    overflow-x: clip;
   }
   body {
-    overscroll-behavior-y: none;
+    width: 100%;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    overflow-x: clip;
     font-variant-numeric: tabular-nums;
     -webkit-tap-highlight-color: transparent;
   }
