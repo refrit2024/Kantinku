@@ -1,0 +1,733 @@
+import React, { useState } from 'react';
+import { SellerAccount } from '../data/kantinData';
+
+interface AuthPortalScreenProps {
+  sellerAccounts: SellerAccount[];
+  loggedInSeller: SellerAccount | null;
+  isAdminLoggedIn: boolean;
+  onContinueAsStudent: () => void;
+  onLoginSellerSuccess: (account: SellerAccount) => void;
+  onRegisterSeller: (newAccount: Omit<SellerAccount, 'id' | 'stallId' | 'status'>) => SellerAccount;
+  onLoginAdminSuccess: () => void;
+  onOpenSellerDashboard: () => void;
+  onOpenAdminDashboard: () => void;
+  onLogout: () => void;
+  onShowToast: (message: string, isError?: boolean) => void;
+}
+
+export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
+  sellerAccounts,
+  loggedInSeller,
+  isAdminLoggedIn,
+  onContinueAsStudent,
+  onLoginSellerSuccess,
+  onRegisterSeller,
+  onLoginAdminSuccess,
+  onOpenSellerDashboard,
+  onOpenAdminDashboard,
+  onLogout,
+  onShowToast,
+}) => {
+  const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'penjual' | 'admin'>('penjual');
+  const [sellerAuthMode, setSellerAuthMode] = useState<'login' | 'register'>('login');
+
+  // Seller Login State
+  const [sellerEmail, setSellerEmail] = useState('');
+  const [sellerPassword, setSellerPassword] = useState('');
+  const [pendingAccountAlert, setPendingAccountAlert] = useState<SellerAccount | null>(null);
+
+  // Seller Registration State
+  const [regOwnerName, setRegOwnerName] = useState('');
+  const [regStallName, setRegStallName] = useState('');
+  const [regBuilding, setRegBuilding] = useState<'Gedung A' | 'Gedung B'>('Gedung A');
+  const [regLocationDetail, setRegLocationDetail] = useState('');
+  const [regCategory, setRegCategory] = useState('Makanan Berat & Minuman');
+  const [regHours, setRegHours] = useState('07.00–17.00');
+  const [regWhatsapp, setRegWhatsapp] = useState('');
+  const [regEmail, setRegEmail] = useState('');
+  const [regPassword, setRegPassword] = useState('');
+
+  // Admin Login State
+  const [adminEmail, setAdminEmail] = useState('');
+  const [adminPassword, setAdminPassword] = useState('');
+
+  const handleSellerLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setPendingAccountAlert(null);
+
+    const found = sellerAccounts.find(
+      (acc) => acc.email.toLowerCase() === sellerEmail.trim().toLowerCase()
+    );
+
+    if (!found || found.password !== sellerPassword) {
+      onShowToast('Email atau kata sandi penjual tidak sesuai.', true);
+      return;
+    }
+
+    if (found.status === 'pending') {
+      setPendingAccountAlert(found);
+      onShowToast(
+        `Akun "${found.stallName}" masih menunggu verifikasi Admin Sarpras IBI KKG.`,
+        true
+      );
+      return;
+    }
+
+    if (found.status === 'rejected') {
+      setPendingAccountAlert(found);
+      onShowToast(
+        `Pengajuan "${found.stallName}" memerlukan revisi dari Admin.`,
+        true
+      );
+      return;
+    }
+
+    onLoginSellerSuccess(found);
+  };
+
+  const handleSellerRegisterSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regOwnerName.trim() || !regStallName.trim() || !regEmail.trim() || !regPassword.trim()) {
+      return;
+    }
+
+    const exists = sellerAccounts.some(
+      (acc) => acc.email.toLowerCase() === regEmail.trim().toLowerCase()
+    );
+    if (exists) {
+      onShowToast('Email tersebut sudah terdaftar pada sistem.', true);
+      return;
+    }
+
+    const created = onRegisterSeller({
+      ownerName: regOwnerName.trim(),
+      stallName: regStallName.trim(),
+      building: regBuilding,
+      locationDetail: regLocationDetail.trim() || `${regBuilding} Lantai 1`,
+      categorySummary: regCategory.trim(),
+      hours: regHours.trim(),
+      whatsapp: regWhatsapp.trim() || '6281200000000',
+      email: regEmail.trim(),
+      password: regPassword,
+    });
+
+    setSellerEmail(created.email);
+    setSellerPassword(created.password);
+    setPendingAccountAlert(created);
+    setSellerAuthMode('login');
+  };
+
+  const handleAdminLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (
+      adminEmail.trim().toLowerCase() === 'sarpras@ibikkg.ac.id' &&
+      adminPassword === 'admin123'
+    ) {
+      onLoginAdminSuccess();
+    } else {
+      onShowToast('Kredensial Admin tidak valid. Gunakan akun demo Admin.', true);
+    }
+  };
+
+  return (
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+        {/* LEFT COLUMN (5 cols on Desktop): Penjelasan Alur Sistem dari Nol (Tahap 1) */}
+        <div className="lg:col-span-5 flex flex-col gap-4">
+          <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3.5">
+            <div className="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md w-fit font-label-sm text-label-sm">
+              <span className="material-symbols-outlined text-[15px]">verified_user</span>
+              <span>Gerbang Akses Sistem • Pilot Tahap 1</span>
+            </div>
+
+            <h1 className="fluid-headline-xl text-on-surface">
+              Alur Akses &amp; Autentikasi KantinKu IBI KKG
+            </h1>
+            <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Untuk menjaga keakuratan harga dan mencegah orang sembarangan mengubah menu, sistem membagi hak akses menjadi <strong>3 peran pengguna</strong>:
+            </p>
+
+            {/* Step-by-step Visual Flow */}
+            <div className="flex flex-col gap-2.5 pt-1">
+              <div className="p-3 rounded-lg bg-surface-container-low border-l-4 border-secondary flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-label-md text-label-md text-on-surface font-bold">
+                    1. Mahasiswa IBI KKG
+                  </span>
+                  <span className="font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded">
+                    Tanpa Login
+                  </span>
+                </div>
+                <p className="font-body-sm text-[12px] text-on-surface-variant">
+                  Langsung membuka peta kantin, mencari makanan, memfilter harga (≤Rp15.000), dan melihat kapan harga terakhir diperbarui.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-surface-container-low border-l-4 border-primary flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-label-md text-label-md text-on-surface font-bold">
+                    2. Penjual Kantin (Mitra)
+                  </span>
+                  <span className="font-label-sm text-[11px] bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded">
+                    Wajib Registrasi &amp; Login
+                  </span>
+                </div>
+                <p className="font-body-sm text-[12px] text-on-surface-variant">
+                  <strong>Alur dari Nol:</strong> Daftar Akun Stan → Menunggu Verifikasi Admin → Login Dashboard → Input Menu, Harga &amp; Jam Buka.
+                </p>
+              </div>
+
+              <div className="p-3 rounded-lg bg-surface-container-low border-l-4 border-tertiary flex flex-col gap-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-label-md text-label-md text-on-surface font-bold">
+                    3. Admin Sarpras / BAAK
+                  </span>
+                  <span className="font-label-sm text-[11px] bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded">
+                    Otorisasi Kampus
+                  </span>
+                </div>
+                <p className="font-body-sm text-[12px] text-on-surface-variant">
+                  Memverifikasi pendaftaran penjual baru agar hanya kantin resmi IBI KKG yang bisa tampil, serta menindak laporan selisih harga.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Panduan Simulasi Uji Coba End-to-End */}
+          <div className="bg-surface-container-high rounded-xl p-4 flex flex-col gap-2">
+            <div className="flex items-center gap-1.5 text-primary">
+              <span className="material-symbols-outlined text-[18px]">science</span>
+              <span className="font-label-md text-label-md font-bold">
+                Cara Menguji Alur dari Nol Sekarang:
+              </span>
+            </div>
+            <ol className="list-decimal pl-4 font-body-sm text-[12px] text-on-surface-variant space-y-1">
+              <li>
+                Pilih tab <strong>Penjual Kantin</strong> → klik <strong>Daftar Stan Baru</strong> lalu isi data kantin baru.
+              </li>
+              <li>
+                Coba login dengan akun baru tersebut — sistem akan menahan akses karena statusnya <strong>Menunggu Verifikasi Admin</strong>.
+              </li>
+              <li>
+                Pindah ke tab <strong>Admin Kampus</strong> → Login → Klik <strong>Setujui &amp; Terbitkan</strong> pada kantin yang baru Anda daftarkan.
+              </li>
+              <li>
+                Kembali ke login <strong>Penjual Kantin</strong> — sekarang Anda bisa masuk ke Dashboard dan mulai menginput menu dari nol!
+              </li>
+            </ol>
+          </div>
+        </div>
+
+        {/* RIGHT COLUMN (7 cols on Desktop): Interactive Role & Login/Register Card */}
+        <div className="lg:col-span-7 bg-surface-container-lowest rounded-xl p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-5">
+          {/* Role Selector Tabs */}
+          <div className="flex flex-col gap-2">
+            <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
+              Pilih Peran untuk Masuk ke Sistem:
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => setSelectedRole('mahasiswa')}
+                className={`min-h-[48px] px-3 py-2.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                  selectedRole === 'mahasiswa'
+                    ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
+                    : 'bg-surface-container-low text-on-surface border-transparent hover:bg-surface-container'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px]">school</span>
+                <span>Mahasiswa</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedRole('penjual')}
+                className={`min-h-[48px] px-3 py-2.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                  selectedRole === 'penjual'
+                    ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
+                    : 'bg-surface-container-low text-on-surface border-transparent hover:bg-surface-container'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px]">storefront</span>
+                <span>Penjual Kantin</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedRole('admin')}
+                className={`min-h-[48px] px-3 py-2.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                  selectedRole === 'admin'
+                    ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
+                    : 'bg-surface-container-low text-on-surface border-transparent hover:bg-surface-container'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[20px]">
+                  admin_panel_settings
+                </span>
+                <span>Admin Kampus</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ROLE 1: MAHASISWA (Direct Access without Login barrier) */}
+          {selectedRole === 'mahasiswa' && (
+            <div className="flex flex-col gap-4 pt-2 border-t border-outline-variant/25">
+              <div className="p-4 rounded-xl bg-surface-container-low flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-secondary">
+                  <span className="material-symbols-outlined text-[22px]">check_circle</span>
+                  <h2 className="fluid-headline-md text-on-surface">
+                    Akses Langsung Mahasiswa IBI KKG
+                  </h2>
+                </div>
+                <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  Sesuai konsep Tahap 1, mahasiswa tidak perlu membuat akun atau login yang rumit hanya untuk melihat harga makanan dan lokasi kantin saat jam istirahat kuliah yang singkat.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={onContinueAsStudent}
+                className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-[0.99]"
+              >
+                <span>Buka Katalog &amp; Peta Kantin IBI KKG</span>
+                <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+              </button>
+            </div>
+          )}
+
+          {/* ROLE 2: PENJUAL KANTIN (Login or Register New Stall) */}
+          {selectedRole === 'penjual' && (
+            <div className="flex flex-col gap-4 pt-2 border-t border-outline-variant/25">
+              {/* If Seller is already logged in (Persistent Session), let them go straight in without re-logging in */}
+              {loggedInSeller && (
+                <div className="p-4 rounded-xl bg-secondary-container/45 border border-secondary/40 flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 text-secondary">
+                      <span className="material-symbols-outlined text-[22px]">verified</span>
+                      <div>
+                        <h3 className="font-label-lg text-label-lg text-on-surface font-bold">
+                          Sesi Login Aktif: {loggedInSeller.stallName}
+                        </h3>
+                        <span className="font-body-sm text-[12px] text-on-surface-variant">
+                          {loggedInSeller.ownerName} ({loggedInSeller.email}) • Tidak perlu login ulang
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                    <button
+                      type="button"
+                      onClick={onOpenSellerDashboard}
+                      className="flex-1 min-h-[44px] px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <span>Lanjut ke Dashboard Penjual</span>
+                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={onLogout}
+                      className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container-lowest text-error border border-error/30 font-label-sm text-label-sm font-semibold cursor-pointer"
+                    >
+                      Keluar Akun
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Sub-toggle: Login Penjual vs Daftar Stan Baru */}
+              <div className="flex bg-surface-container p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setSellerAuthMode('login')}
+                  className={`flex-1 min-h-[42px] rounded-lg font-label-md text-label-md transition-colors cursor-pointer ${
+                    sellerAuthMode === 'login'
+                      ? 'bg-surface-container-lowest text-on-surface font-semibold shadow-xs'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  Login Penjual Terdaftar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSellerAuthMode('register')}
+                  className={`flex-1 min-h-[42px] rounded-lg font-label-md text-label-md transition-colors cursor-pointer ${
+                    sellerAuthMode === 'register'
+                      ? 'bg-surface-container-lowest text-primary font-semibold shadow-xs'
+                      : 'text-on-surface-variant hover:text-on-surface'
+                  }`}
+                >
+                  + Daftar Akun Penjual Baru
+                </button>
+              </div>
+
+              {sellerAuthMode === 'login' ? (
+                <form onSubmit={handleSellerLogin} className="flex flex-col gap-3.5">
+                  <div>
+                    <h2 className="fluid-headline-md text-on-surface">
+                      Masuk ke Dashboard Penjual
+                    </h2>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                      Hanya penjual kantin IBI KKG yang telah diverifikasi Admin yang dapat mengelola menu dan harga.
+                    </p>
+                  </div>
+
+                  {/* Pending / Rejected Alert Box */}
+                  {pendingAccountAlert && (
+                    <div
+                      className={`p-4 rounded-xl border flex flex-col gap-2 ${
+                        pendingAccountAlert.status === 'pending'
+                          ? 'bg-tertiary-fixed/50 border-tertiary text-on-tertiary-fixed'
+                          : 'bg-error-container border-error text-on-error-container'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1.5 font-label-md font-bold">
+                        <span className="material-symbols-outlined text-[20px]">
+                          {pendingAccountAlert.status === 'pending'
+                            ? 'hourglass_top'
+                            : 'cancel'}
+                        </span>
+                        <span>
+                          {pendingAccountAlert.status === 'pending'
+                            ? `Status Akun: Menunggu Verifikasi Admin`
+                            : `Pendaftaran Ditolak / Perlu Revisi oleh Admin`}
+                        </span>
+                      </div>
+                      {pendingAccountAlert.status === 'pending' ? (
+                        <p className="font-body-sm text-[12px] leading-relaxed">
+                          Pendaftaran <strong>{pendingAccountAlert.stallName}</strong> ({pendingAccountAlert.ownerName}) sedang berada di antrean Admin Sarpras. Silakan buka tab <strong>Admin Kampus</strong> untuk menyetujui atau menolak akun ini.
+                        </p>
+                      ) : (
+                        <div className="flex flex-col gap-1.5">
+                          <p className="font-body-sm text-[12px]">
+                            Maaf, pengajuan akun <strong>{pendingAccountAlert.stallName}</strong> belum dapat disetujui oleh Admin Sarpras IBI KKG.
+                          </p>
+                          <div className="p-2.5 rounded-lg bg-surface-container-lowest/90 text-on-surface border border-error/30 flex flex-col gap-0.5">
+                            <span className="font-label-sm text-[11px] text-error font-bold uppercase tracking-wider">
+                              Keterangan / Alasan Penolakan Admin:
+                            </span>
+                            <span className="font-body-sm text-body-sm font-medium text-on-surface">
+                              &ldquo;{pendingAccountAlert.rejectedNote}&rdquo;
+                            </span>
+                          </div>
+                          <span className="text-[11px] opacity-90">
+                            Silakan daftar ulang atau perbaiki data sesuai catatan Admin di atas.
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-sm text-label-sm text-on-surface-variant">
+                      Email Akun Penjual
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      placeholder="Contoh: busari@ibikkg.ac.id"
+                      value={sellerEmail}
+                      onChange={(e) => setSellerEmail(e.target.value)}
+                      className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1">
+                    <label className="font-label-sm text-label-sm text-on-surface-variant">
+                      Kata Sandi
+                    </label>
+                    <input
+                      type="password"
+                      required
+                      placeholder="Masukkan kata sandi"
+                      value={sellerPassword}
+                      onChange={(e) => setSellerPassword(e.target.value)}
+                      className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full min-h-[48px] py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-sm cursor-pointer active:scale-[0.99]"
+                  >
+                    Login ke Dashboard Penjual
+                  </button>
+
+                  {/* Quick Fill Demo Accounts for Testing */}
+                  <div className="p-3.5 rounded-xl bg-surface-container-low flex flex-col gap-2">
+                    <span className="font-label-sm text-label-sm text-on-surface-variant">
+                      Akun Simulasi Cepat (Klik untuk isi otomatis):
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {sellerAccounts.map((acc) => (
+                        <button
+                          key={acc.id}
+                          type="button"
+                          onClick={() => {
+                            setSellerEmail(acc.email);
+                            setSellerPassword(acc.password);
+                            if (acc.status === 'rejected' || acc.status === 'pending') {
+                              setPendingAccountAlert(acc);
+                            } else {
+                              setPendingAccountAlert(null);
+                            }
+                          }}
+                          className="p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high text-left border border-outline-variant/25 flex flex-col gap-0.5 cursor-pointer transition-colors"
+                        >
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="font-label-sm text-on-surface font-bold truncate">
+                              {acc.stallName}
+                            </span>
+                            <span
+                              className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
+                                acc.status === 'approved'
+                                  ? 'bg-secondary-container text-on-secondary-container'
+                                  : acc.status === 'rejected'
+                                  ? 'bg-error-container text-on-error-container'
+                                  : 'bg-tertiary-fixed text-on-tertiary-fixed'
+                              }`}
+                            >
+                              {acc.status === 'approved'
+                                ? 'Terverifikasi'
+                                : acc.status === 'rejected'
+                                ? 'Ditolak'
+                                : 'Pending'}
+                            </span>
+                          </div>
+                          <span className="text-[11px] text-on-surface-variant truncate">
+                            {acc.email}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                /* FORM REGISTRASI PENJUAL BARU DARI NOL */
+                <form onSubmit={handleSellerRegisterSubmit} className="flex flex-col gap-3">
+                  <div>
+                    <h2 className="fluid-headline-md text-on-surface">
+                      Registrasi Mitra Penjual Kantin Baru
+                    </h2>
+                    <p className="font-body-sm text-body-sm text-on-surface-variant">
+                      Daftarkan stan kantin Anda di lingkungan IBI KKG. Setelah disetujui Admin, Anda dapat menginput menu dan harga dari nol.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Nama Pemilik / Penanggung Jawab
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Contoh: Pak Hendra"
+                        value={regOwnerName}
+                        onChange={(e) => setRegOwnerName(e.target.value)}
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Nama Stan Kantin
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Contoh: Kantin Ayam Bakar Pak Hendra"
+                        value={regStallName}
+                        onChange={(e) => setRegStallName(e.target.value)}
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Gedung Kantin IBI KKG
+                      </label>
+                      <select
+                        value={regBuilding}
+                        onChange={(e) =>
+                          setRegBuilding(e.target.value as 'Gedung A' | 'Gedung B')
+                        }
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      >
+                        <option value="Gedung A">Gedung A (Pujasera Utama)</option>
+                        <option value="Gedung B">Gedung B (Lantai Dasar)</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Detail Nomor Stan / Patokan
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Contoh: Stan A-05 samping dispenser"
+                        value={regLocationDetail}
+                        onChange={(e) => setRegLocationDetail(e.target.value)}
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Kategori Hidangan
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={regCategory}
+                        onChange={(e) => setRegCategory(e.target.value)}
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Jam Operasional
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={regHours}
+                        onChange={(e) => setRegHours(e.target.value)}
+                        placeholder="07.00–17.00"
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Nomor WhatsApp
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="62812xxxxxxx"
+                        value={regWhatsapp}
+                        onChange={(e) => setRegWhatsapp(e.target.value)}
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-outline-variant/25">
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Email Login Penjual
+                      </label>
+                      <input
+                        type="email"
+                        required
+                        placeholder="email@kantin.com"
+                        value={regEmail}
+                        onChange={(e) => setRegEmail(e.target.value)}
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Buat Kata Sandi
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="Minimal 6 karakter"
+                        value={regPassword}
+                        onChange={(e) => setRegPassword(e.target.value)}
+                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                      />
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full min-h-[48px] py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-sm cursor-pointer active:scale-[0.99] mt-1"
+                  >
+                    Ajukan Pendaftaran Akun Penjual
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* ROLE 3: ADMIN KAMPUS */}
+          {selectedRole === 'admin' && (
+            <form
+              onSubmit={handleAdminLogin}
+              className="flex flex-col gap-4 pt-2 border-t border-outline-variant/25"
+            >
+              <div>
+                <h2 className="fluid-headline-md text-on-surface">
+                  Login Portal Admin Sarpras &amp; BAAK
+                </h2>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  Khusus staf berwenang IBI Kwik Kian Gie untuk memverifikasi pendaftaran akun penjual kantin dan memoderasi laporan harga.
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-label-sm text-label-sm text-on-surface-variant">
+                  Email Resmi Admin Kampus
+                </label>
+                <input
+                  type="email"
+                  required
+                  placeholder="sarpras@ibikkg.ac.id"
+                  value={adminEmail}
+                  onChange={(e) => setAdminEmail(e.target.value)}
+                  className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div className="flex flex-col gap-1">
+                <label className="font-label-sm text-label-sm text-on-surface-variant">
+                  Kata Sandi Otorisasi
+                </label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Masukkan kata sandi admin"
+                  value={adminPassword}
+                  onChange={(e) => setAdminPassword(e.target.value)}
+                  className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full min-h-[48px] py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-sm cursor-pointer active:scale-[0.99]"
+              >
+                Masuk ke Portal Admin
+              </button>
+
+              <div className="p-3.5 rounded-xl bg-surface-container-low flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="font-label-sm text-on-surface font-bold">
+                    Akun Simulasi Admin IBI KKG:
+                  </span>
+                  <span className="text-[12px] text-on-surface-variant">
+                    Email: <strong>sarpras@ibikkg.ac.id</strong> | Sandi: <strong>admin123</strong>
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAdminEmail('sarpras@ibikkg.ac.id');
+                    setAdminPassword('admin123');
+                  }}
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold shadow-xs cursor-pointer shrink-0"
+                >
+                  Isi Otomatis
+                </button>
+              </div>
+            </form>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

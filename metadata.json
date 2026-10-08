@@ -1,0 +1,6 @@
+{
+  "name": "KantinKu IBI KKG",
+  "description": "Sistem Informasi Layanan Kuliner Terintegrasi dan Transparansi Tarif Kantin Kampus Institut Bisnis dan Informatika Kwik Kian Gie (IBI KKG) Sunter.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
