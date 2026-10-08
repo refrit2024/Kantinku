@@ -26,6 +26,8 @@ service cloud.firestore {
         'stallsJson',
         'verificationsJson',
         'sellerAccountsJson',
+        'adminCredentialsJson',
+        'ordersJson',
         'updatedAtIso'
       ]) &&
       data.stallsJson is string &&
@@ -37,6 +39,16 @@ service cloud.firestore {
       data.sellerAccountsJson is string &&
       data.sellerAccountsJson.size() >= 2 &&
       data.sellerAccountsJson.size() <= 200000 &&
+      (!('adminCredentialsJson' in data) || (
+        data.adminCredentialsJson is string &&
+        data.adminCredentialsJson.size() >= 2 &&
+        data.adminCredentialsJson.size() <= 5000
+      )) &&
+      (!('ordersJson' in data) || (
+        data.ordersJson is string &&
+        data.ordersJson.size() >= 2 &&
+        data.ordersJson.size() <= 250000
+      )) &&
       data.updatedAtIso is string &&
       data.updatedAtIso.size() >= 10 &&
       data.updatedAtIso.size() <= 64;

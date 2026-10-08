@@ -2,10 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db, handleFirestoreError, OperationType } from './firebase';
 import {
+  AdminCredentials,
+  INITIAL_ADMIN_CREDENTIALS,
   INITIAL_SELLER_ACCOUNTS,
   INITIAL_STALLS,
   INITIAL_VERIFICATIONS,
   MenuItem,
+  OrderStatusType,
+  OrderTransaction,
   ReviewItem,
   SellerAccount,
   Stall,
@@ -27,9 +31,11 @@ export type ScreenType =
 const STORAGE_KEYS = {
   SELLER_SESSION: 'kantinku_ibikkg_seller_session_v1',
   ADMIN_SESSION: 'kantinku_ibikkg_admin_session_v1',
+  ADMIN_CREDENTIALS: 'kantinku_ibikkg_admin_credentials_v1',
   SELLER_ACCOUNTS: 'kantinku_ibikkg_seller_accounts_v1',
   STALLS: 'kantinku_ibikkg_stalls_v1',
   VERIFICATIONS: 'kantinku_ibikkg_verifications_v1',
+  ORDERS: 'kantinku_ibikkg_orders_v1',
 };
 
 const FIRESTORE_STATE_PATH = 'kantinku_state/pilot_v1';
@@ -42,6 +48,15 @@ export default function App() {
       return saved ? JSON.parse(saved) : INITIAL_SELLER_ACCOUNTS;
     } catch {
       return INITIAL_SELLER_ACCOUNTS;
+    }
+  });
+
+  const [adminCredentials, setAdminCredentials] = useState<AdminCredentials>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.ADMIN_CREDENTIALS);
+      return saved ? JSON.parse(saved) : INITIAL_ADMIN_CREDENTIALS;
+    } catch {
+      return INITIAL_ADMIN_CREDENTIALS;
     }
   });
 
@@ -80,6 +95,32 @@ export default function App() {
   const [historyStack, setHistoryStack] = useState<ScreenType[]>([]);
   const [selectedStallId, setSelectedStallId] = useState<string>('stan-bu-sari');
   const [favoriteStallIds, setFavoriteStallIds] = useState<string[]>(['stan-bu-sari']);
+  const [footerSecretTap, setFooterSecretTap] = useState(0);
+
+  // Global secret Admin entry from ANY screen via URL (?admin / #admin) or Keyboard Shortcut (Ctrl+Shift+A)
+  useEffect(() => {
+    const checkUrlAdmin = () => {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+      if (params.has('admin') || params.get('portal') === 'admin' || hash.includes('admin')) {
+        setCurrentScreen('auth-portal');
+      }
+    };
+    const handleGlobalAdminKey = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey || e.altKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        window.location.hash = 'admin';
+        setCurrentScreen('auth-portal');
+      }
+    };
+    checkUrlAdmin();
+    window.addEventListener('hashchange', checkUrlAdmin);
+    window.addEventListener('keydown', handleGlobalAdminKey);
+    return () => {
+      window.removeEventListener('hashchange', checkUrlAdmin);
+      window.removeEventListener('keydown', handleGlobalAdminKey);
+    };
+  }, []);
 
   const [stalls, setStalls] = useState<Stall[]>(() => {
     try {
@@ -99,6 +140,15 @@ export default function App() {
     }
   });
 
+  const [orders, setOrders] = useState<OrderTransaction[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.ORDERS);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
   // Refs to always access latest state inside synchronous handlers
   const stallsRef = useRef(stalls);
   stallsRef.current = stalls;
@@ -106,16 +156,24 @@ export default function App() {
   verificationsRef.current = verifications;
   const sellerAccountsRef = useRef(sellerAccounts);
   sellerAccountsRef.current = sellerAccounts;
+  const adminCredentialsRef = useRef(adminCredentials);
+  adminCredentialsRef.current = adminCredentials;
+  const ordersRef = useRef(orders);
+  ordersRef.current = orders;
 
   // Helper to push shared state to Firebase Firestore Cloud Database
   const syncStateToCloud = async (
     nextStalls: Stall[],
     nextVerifications: VerificationRequest[],
-    nextSellerAccounts: SellerAccount[]
+    nextSellerAccounts: SellerAccount[],
+    nextAdminCreds: AdminCredentials = adminCredentialsRef.current,
+    nextOrders: OrderTransaction[] = ordersRef.current
   ) => {
     const stallsJson = JSON.stringify(nextStalls).slice(0, 449000);
     const verificationsJson = JSON.stringify(nextVerifications).slice(0, 199000);
     const sellerAccountsJson = JSON.stringify(nextSellerAccounts).slice(0, 199000);
+    const adminCredentialsJson = JSON.stringify(nextAdminCreds).slice(0, 4900);
+    const ordersJson = JSON.stringify(nextOrders).slice(0, 249000);
     const updatedAtIso = new Date().toISOString();
 
     try {
@@ -123,6 +181,8 @@ export default function App() {
         stallsJson,
         verificationsJson,
         sellerAccountsJson,
+        adminCredentialsJson,
+        ordersJson,
         updatedAtIso,
       });
     } catch (error) {
@@ -163,6 +223,18 @@ export default function App() {
                 });
               }
             }
+            if (typeof data.adminCredentialsJson === 'string') {
+              const parsedAdmin: AdminCredentials = JSON.parse(data.adminCredentialsJson);
+              if (parsedAdmin && parsedAdmin.email && parsedAdmin.password) {
+                setAdminCredentials(parsedAdmin);
+              }
+            }
+            if (typeof data.ordersJson === 'string') {
+              const parsedOrders: OrderTransaction[] = JSON.parse(data.ordersJson);
+              if (Array.isArray(parsedOrders)) {
+                setOrders(parsedOrders);
+              }
+            }
           } catch (e) {
             console.error('Failed to parse synced Firestore state:', e);
           }
@@ -171,7 +243,9 @@ export default function App() {
           syncStateToCloud(
             stallsRef.current,
             verificationsRef.current,
-            sellerAccountsRef.current
+            sellerAccountsRef.current,
+            adminCredentialsRef.current,
+            ordersRef.current
           );
         }
       },
@@ -231,6 +305,102 @@ export default function App() {
       // ignore
     }
   }, [verifications]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ADMIN_CREDENTIALS, JSON.stringify(adminCredentials));
+    } catch {
+      // ignore
+    }
+  }, [adminCredentials]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.ORDERS, JSON.stringify(orders));
+    } catch {
+      // ignore
+    }
+  }, [orders]);
+
+  const handlePlaceOrder = (
+    orderData: Omit<OrderTransaction, 'id' | 'status' | 'createdAt'>
+  ): OrderTransaction => {
+    const nowTime = new Date().toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const newOrder: OrderTransaction = {
+      ...orderData,
+      id: `ORD-${Date.now().toString().slice(-6)}`,
+      status: 'waiting_payment_verification',
+      createdAt: `Hari ini, ${nowTime} WIB`,
+    };
+    const nextOrders = [newOrder, ...ordersRef.current];
+    setOrders(nextOrders);
+    ordersRef.current = nextOrders;
+    syncStateToCloud(
+      stallsRef.current,
+      verificationsRef.current,
+      sellerAccountsRef.current,
+      adminCredentialsRef.current,
+      nextOrders
+    );
+    showToast(
+      `Pesanan ${newOrder.id} (Rp ${newOrder.totalAmount.toLocaleString('id-ID')}) berhasil dikirim ke ${newOrder.stallName}!`
+    );
+    return newOrder;
+  };
+
+  const handleUpdateOrderStatus = (orderId: string, nextStatus: OrderStatusType) => {
+    const nextOrders = ordersRef.current.map((ord) =>
+      ord.id === orderId ? { ...ord, status: nextStatus } : ord
+    );
+    setOrders(nextOrders);
+    ordersRef.current = nextOrders;
+    syncStateToCloud(
+      stallsRef.current,
+      verificationsRef.current,
+      sellerAccountsRef.current,
+      adminCredentialsRef.current,
+      nextOrders
+    );
+
+    const target = nextOrders.find((o) => o.id === orderId);
+    if (target) {
+      if (nextStatus === 'cooking') {
+        showToast(
+          `Pembayaran ${target.studentName} diterima! Status pesanan diubah menjadi Sedang Dimasak.`
+        );
+      } else if (nextStatus === 'ready_pickup') {
+        showToast(
+          `Notifikasi dikirim ke ${target.studentName}: Makanan sudah SIAP DIAMBIL di stan!`
+        );
+      } else if (nextStatus === 'completed') {
+        showToast(`Transaksi pesanan ${target.studentName} selesai!`);
+      } else if (nextStatus === 'rejected') {
+        showToast(`Pesanan ${target.studentName} ditolak karena pembayaran belum masuk.`, true);
+      }
+    }
+  };
+
+  const handleUpdateAdminCredentials = (newEmail: string, newPassword: string) => {
+    const updated: AdminCredentials = {
+      email: newEmail.trim(),
+      password: newPassword,
+      updatedAt: new Date().toISOString(),
+    };
+    setAdminCredentials(updated);
+    adminCredentialsRef.current = updated;
+    syncStateToCloud(
+      stallsRef.current,
+      verificationsRef.current,
+      sellerAccountsRef.current,
+      updated
+    );
+    showToast(
+      `Email & Kata Sandi Admin berhasil diperbarui (${updated.email}) dan disinkronkan ke Cloud!`
+    );
+  };
 
   // Toast State
   const [toast, setToast] = useState<{
@@ -877,6 +1047,7 @@ export default function App() {
         {currentScreen === 'auth-portal' && (
           <AuthPortalScreen
             sellerAccounts={sellerAccounts}
+            adminCredentials={adminCredentials}
             loggedInSeller={loggedInSeller}
             isAdminLoggedIn={isAdminLoggedIn}
             onContinueAsStudent={handleContinueAsStudent}
@@ -908,20 +1079,24 @@ export default function App() {
         {currentScreen === 'detail-stan' && (
           <DetailStanScreen
             stall={activeStall}
+            orders={orders}
             isFavorite={favoriteStallIds.includes(activeStall.id)}
             onToggleFavorite={() => toggleFavoriteStall(activeStall.id)}
+            onPlaceOrder={handlePlaceOrder}
             onAddReview={handleAddStudentReview}
             onBackToKatalog={() => navigateTo('katalog')}
             onOpenReportModal={() => {
               setReportStallName(`${activeStall.name} (${activeStall.code})`);
               setReportModalOpen(true);
             }}
+            onShowToast={showToast}
           />
         )}
 
         {currentScreen === 'kelola-menu' && (
           <KelolaMenuScreen
             stall={currentMerchantStall}
+            orders={orders}
             sellerEmail={loggedInSeller?.email}
             onLogoutSeller={handleLogoutSession}
             onToggleStoreOpen={handleToggleStoreOpen}
@@ -931,6 +1106,7 @@ export default function App() {
             onEditMenuItem={handleEditMenuItem}
             onDeleteMenuItem={handleDeleteMenuItem}
             onUpdateStallProfile={handleUpdateStallProfile}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
             onReplyReview={handleReplyReview}
             onShowToast={(msg) => showToast(msg, false)}
           />
@@ -939,6 +1115,8 @@ export default function App() {
         {currentScreen === 'admin-portal' && (
           <AdminPortalScreen
             verifications={verifications}
+            adminCredentials={adminCredentials}
+            onUpdateAdminCredentials={handleUpdateAdminCredentials}
             onApproveVerification={handleApproveVerification}
             onRejectVerification={handleRejectVerification}
             onShowToast={showToast}
@@ -957,9 +1135,23 @@ export default function App() {
               <span className="font-label-md text-label-md text-on-surface font-bold">
                 KantinKu IBI KKG • Pilot Project Tahap 1
               </span>
-              <span className="font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-md">
+              <button
+                type="button"
+                onClick={() => {
+                  const next = footerSecretTap + 1;
+                  if (next >= 5) {
+                    setFooterSecretTap(0);
+                    window.location.hash = 'admin';
+                    setCurrentScreen('auth-portal');
+                    showToast('Gerbang Internal Admin Kampus dibuka.');
+                  } else {
+                    setFooterSecretTap(next);
+                  }
+                }}
+                className="font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-md select-none cursor-default"
+              >
                 Aktif
-              </span>
+              </button>
             </div>
             <p className="font-body-sm text-body-sm text-on-surface-variant">
               Platform digital khusus kantin Institut Bisnis dan Informatika Kwik Kian Gie (Sunter) untuk transparansi harga, lokasi, dan pengelolaan menu langsung oleh penjual kantin.
@@ -1204,7 +1396,7 @@ export default function App() {
                           : 'text-on-surface-variant'
                       }`}
                     >
-                      Akses khusus Penjual Kantin &amp; Admin Kampus
+                      Akses khusus Mitra Penjual Kantin IBI KKG
                     </div>
                   </div>
                 </div>

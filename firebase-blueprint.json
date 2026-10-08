@@ -23,6 +23,18 @@
           "minLength": 2,
           "maxLength": 200000
         },
+        "adminCredentialsJson": {
+          "type": "string",
+          "description": "Serialized JSON of Admin email and password credentials.",
+          "minLength": 2,
+          "maxLength": 5000
+        },
+        "ordersJson": {
+          "type": "string",
+          "description": "Serialized JSON of real-time student food orders and direct-to-merchant payment transactions.",
+          "minLength": 2,
+          "maxLength": 250000
+        },
         "updatedAtIso": {
           "type": "string",
           "description": "ISO timestamp of last state update.",

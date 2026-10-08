@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
-import { RECEIPT_PROOF_IMAGE, VerificationRequest } from '../data/kantinData';
+import {
+  AdminCredentials,
+  RECEIPT_PROOF_IMAGE,
+  VerificationRequest,
+} from '../data/kantinData';
 
 interface AdminPortalScreenProps {
   verifications: VerificationRequest[];
+  adminCredentials: AdminCredentials;
+  onUpdateAdminCredentials: (newEmail: string, newPassword: string) => void;
   onApproveVerification: (id: string, name: string) => void;
   onRejectVerification: (id: string, name: string, note: string) => void;
   onShowToast: (message: string, isError?: boolean) => void;
@@ -11,14 +17,58 @@ interface AdminPortalScreenProps {
 
 export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
   verifications,
+  adminCredentials,
+  onUpdateAdminCredentials,
   onApproveVerification,
   onRejectVerification,
   onShowToast,
   onOpenNavDrawer,
 }) => {
-  const [activeTab, setActiveTab] = useState<'verifikasi' | 'laporan' | 'kapasitas'>('verifikasi');
+  const [activeTab, setActiveTab] = useState<
+    'verifikasi' | 'laporan' | 'kapasitas' | 'keamanan'
+  >('verifikasi');
   const [spSending, setSpSending] = useState(false);
   const [spSent, setSpSent] = useState(false);
+
+  // Admin Credential Change State
+  const [currentPasswordInput, setCurrentPasswordInput] = useState('');
+  const [newAdminEmail, setNewAdminEmail] = useState(adminCredentials.email);
+  const [newAdminPassword, setNewAdminPassword] = useState('');
+  const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
+  const [showAdminPasswords, setShowAdminPasswords] = useState(false);
+
+  React.useEffect(() => {
+    setNewAdminEmail(adminCredentials.email);
+  }, [adminCredentials.email]);
+
+  const handleSaveAdminCredentials = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (currentPasswordInput !== adminCredentials.password) {
+      onShowToast('Kata sandi Admin saat ini tidak sesuai.', true);
+      return;
+    }
+    if (!newAdminEmail.trim()) {
+      onShowToast('Email Admin baru tidak boleh kosong.', true);
+      return;
+    }
+    const finalPassword = newAdminPassword.trim()
+      ? newAdminPassword
+      : adminCredentials.password;
+
+    if (newAdminPassword.trim() && newAdminPassword.length < 6) {
+      onShowToast('Kata sandi baru minimal 6 karakter.', true);
+      return;
+    }
+    if (newAdminPassword.trim() && newAdminPassword !== confirmAdminPassword) {
+      onShowToast('Konfirmasi kata sandi baru tidak cocok.', true);
+      return;
+    }
+
+    onUpdateAdminCredentials(newAdminEmail.trim(), finalPassword);
+    setCurrentPasswordInput('');
+    setNewAdminPassword('');
+    setConfirmAdminPassword('');
+  };
 
   // Modals inside Admin screen
   const [detailModalTitle, setDetailModalTitle] = useState<string | null>(null);
@@ -238,6 +288,19 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
           >
             <span className="material-symbols-outlined text-[18px]">domain</span>
             <span>Kapasitas Gedung</span>
+          </button>
+
+          <button
+            className={
+              activeTab === 'keamanan'
+                ? 'min-h-[44px] px-4 py-2 rounded-lg font-label-md text-label-md bg-primary text-on-primary shadow-sm flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer shrink-0'
+                : 'min-h-[44px] px-4 py-2 rounded-lg font-label-md text-label-md bg-surface-container text-on-surface hover:bg-surface-container-high shadow-xs flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer shrink-0'
+            }
+            onClick={() => setActiveTab('keamanan')}
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
+            <span>Pengaturan Akun Admin</span>
           </button>
         </div>
 
@@ -554,6 +617,123 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                   Kapasitas Penuh (100% Okupansi Terisi).
                 </span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* CONTENT SECTION 4: Pengaturan Email & Kata Sandi Admin */}
+        {activeTab === 'keamanan' && (
+          <div className="flex flex-col gap-4 max-w-3xl" id="section-keamanan">
+            <div className="rounded-xl bg-surface-container-lowest p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-5">
+              <div className="flex items-start justify-between gap-3 border-b border-outline-variant/25 pb-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 text-primary">
+                    <span className="material-symbols-outlined text-[22px]">shield_person</span>
+                    <h3 className="fluid-headline-md text-on-surface">
+                      Ubah Email &amp; Kata Sandi Otorisasi Admin
+                    </h3>
+                  </div>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    Kredensial baru yang Anda simpan akan langsung tersinkronisasi ke <strong>Cloud Database (Firebase)</strong> sehingga berlaku di semua laptop dan perangkat.
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Kredensial Saat Ini */}
+              <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-wrap items-center justify-between gap-2">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                    Email Admin Aktif Saat Ini
+                  </span>
+                  <span className="font-label-md text-label-md text-on-surface font-bold">
+                    {adminCredentials.email}
+                  </span>
+                </div>
+                <span className="font-label-sm text-[11px] px-2.5 py-1 rounded-md bg-secondary-container text-on-secondary-container font-semibold">
+                  Tersinkronisasi Cloud
+                </span>
+              </div>
+
+              <form onSubmit={handleSaveAdminCredentials} className="flex flex-col gap-4">
+                <div className="flex flex-col gap-1.5">
+                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                    1. Verifikasi Kata Sandi Admin Saat Ini <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type={showAdminPasswords ? 'text' : 'password'}
+                    required
+                    placeholder="Masukkan kata sandi Admin yang sedang aktif"
+                    value={currentPasswordInput}
+                    onChange={(e) => setCurrentPasswordInput(e.target.value)}
+                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-outline-variant/25">
+                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                    2. Email Login Admin Baru <span className="text-error">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Contoh: admin.kantin@ibikkg.ac.id"
+                    value={newAdminEmail}
+                    onChange={(e) => setNewAdminEmail(e.target.value)}
+                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <span className="font-body-sm text-[11px] text-on-surface-variant">
+                    Anda juga dapat mengetikkan email Admin ini langsung di form Login Penjual untuk masuk ke Portal Admin secara tersembunyi.
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                      3. Kata Sandi Admin Baru
+                    </label>
+                    <input
+                      type={showAdminPasswords ? 'text' : 'password'}
+                      placeholder="Kosongkan jika hanya ganti email"
+                      value={newAdminPassword}
+                      onChange={(e) => setNewAdminPassword(e.target.value)}
+                      className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                      4. Ulangi Kata Sandi Baru
+                    </label>
+                    <input
+                      type={showAdminPasswords ? 'text' : 'password'}
+                      placeholder="Ketik ulang kata sandi baru"
+                      value={confirmAdminPassword}
+                      onChange={(e) => setConfirmAdminPassword(e.target.value)}
+                      className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <label className="inline-flex items-center gap-2 text-body-sm text-on-surface-variant cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={showAdminPasswords}
+                      onChange={(e) => setShowAdminPasswords(e.target.checked)}
+                      className="rounded accent-primary w-4 h-4"
+                    />
+                    <span>Tampilkan karakter kata sandi</span>
+                  </label>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full sm:w-fit min-h-[48px] px-6 py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-[0.99]"
+                >
+                  <span className="material-symbols-outlined text-[20px]">save</span>
+                  <span>Simpan Email &amp; Kata Sandi Admin Baru</span>
+                </button>
+              </form>
             </div>
           </div>
         )}

@@ -24,6 +24,57 @@ export interface ReviewItem {
   reply?: string;
 }
 
+export interface PaymentDetails {
+  qrisEnabled: boolean;
+  qrisMerchantName: string;
+  qrisNmid: string;
+  qrisImage?: string;
+  ewalletEnabled: boolean;
+  ewalletProviders: string; // e.g., 'DANA / GoPay / OVO / ShopeePay'
+  ewalletNumber: string;
+  ewalletAccountName: string;
+  bankEnabled: boolean;
+  bankName: string; // e.g., 'BCA / Mandiri / BRI'
+  bankAccountNumber: string;
+  bankAccountName: string;
+  cashEnabled: boolean;
+}
+
+export interface OrderItem {
+  menuItemId: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export type PaymentMethodType = 'qris' | 'ewallet' | 'bank' | 'tunai';
+
+export type OrderStatusType =
+  | 'waiting_payment_verification'
+  | 'cooking'
+  | 'ready_pickup'
+  | 'completed'
+  | 'rejected';
+
+export interface OrderTransaction {
+  id: string;
+  stallId: string;
+  stallName: string;
+  stallLocation: string;
+  studentName: string;
+  studentNim: string;
+  pickupTime: string;
+  notes?: string;
+  items: OrderItem[];
+  totalAmount: number;
+  paymentMethod: PaymentMethodType;
+  paymentProviderLabel: string;
+  paymentReference?: string;
+  status: OrderStatusType;
+  rejectionReason?: string;
+  createdAt: string;
+}
+
 export interface Stall {
   id: string;
   name: string;
@@ -50,6 +101,7 @@ export interface Stall {
   bannerAlt: string;
   whatsapp: string;
   paymentMethods: string[];
+  paymentDetails?: PaymentDetails;
   menuItems: MenuItem[];
   reviews: ReviewItem[];
 }
@@ -92,6 +144,36 @@ export interface SellerAccount {
   hours: string;
   status: 'approved' | 'pending' | 'rejected';
   rejectedNote?: string;
+}
+
+export interface AdminCredentials {
+  email: string;
+  password: string;
+  updatedAt?: string;
+}
+
+export const INITIAL_ADMIN_CREDENTIALS: AdminCredentials = {
+  email: 'sarpras@ibikkg.ac.id',
+  password: 'admin123',
+};
+
+export function getStallPaymentDetails(stall: Stall): PaymentDetails {
+  if (stall.paymentDetails) return stall.paymentDetails;
+  const cleanPhone = (stall.whatsapp || '081290001980').replace(/^62/, '0');
+  return {
+    qrisEnabled: true,
+    qrisMerchantName: `${stall.name.toUpperCase()} - IBI KKG`,
+    qrisNmid: `ID202600${stall.code.replace(/[^0-9]/g, '') || '101'}8829`,
+    ewalletEnabled: true,
+    ewalletProviders: 'DANA / GoPay / OVO / ShopeePay',
+    ewalletNumber: cleanPhone,
+    ewalletAccountName: stall.name,
+    bankEnabled: true,
+    bankName: 'BCA / Mandiri / Bank DKI',
+    bankAccountNumber: '6840928114',
+    bankAccountName: `Mitra ${stall.name}`,
+    cashEnabled: true,
+  };
 }
 
 export const INITIAL_SELLER_ACCOUNTS: SellerAccount[] = [

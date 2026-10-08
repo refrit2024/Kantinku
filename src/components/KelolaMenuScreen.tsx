@@ -1,10 +1,25 @@
 import React, { useState } from 'react';
-import { MenuItem, Stall } from '../data/kantinData';
+import {
+  getStallPaymentDetails,
+  MenuItem,
+  OrderStatusType,
+  OrderTransaction,
+  PaymentDetails,
+  Stall,
+} from '../data/kantinData';
 
-export type SellerSubTab = 'dashboard' | 'menu' | 'profil' | 'ulasan' | 'pengaturan';
+export type SellerSubTab =
+  | 'dashboard'
+  | 'pesanan'
+  | 'menu'
+  | 'pembayaran'
+  | 'profil'
+  | 'ulasan'
+  | 'pengaturan';
 
 interface KelolaMenuScreenProps {
   stall: Stall;
+  orders: OrderTransaction[];
   sellerEmail?: string;
   onLogoutSeller?: () => void;
   onToggleStoreOpen: () => void;
@@ -14,6 +29,7 @@ interface KelolaMenuScreenProps {
   onEditMenuItem: (item: MenuItem) => void;
   onDeleteMenuItem: (itemId: string) => void;
   onUpdateStallProfile: (updated: Partial<Stall>) => void;
+  onUpdateOrderStatus: (orderId: string, nextStatus: OrderStatusType) => void;
   onReplyReview: (reviewId: string, replyText: string) => void;
   onShowToast: (message: string) => void;
 }
@@ -43,6 +59,7 @@ const PRESET_FOOD_PHOTOS = [
 
 export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   stall,
+  orders,
   sellerEmail,
   onLogoutSeller,
   onToggleStoreOpen,
@@ -52,6 +69,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   onEditMenuItem,
   onDeleteMenuItem,
   onUpdateStallProfile,
+  onUpdateOrderStatus,
   onReplyReview,
   onShowToast,
 }) => {
@@ -61,6 +79,86 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   >('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+
+  // Direct-to-Merchant Payment Settings State (QRIS, DANA/GoPay/OVO, Bank, Tunai)
+  const initialPay = getStallPaymentDetails(stall);
+  const [payQrisEnabled, setPayQrisEnabled] = useState(initialPay.qrisEnabled);
+  const [payQrisMerchantName, setPayQrisMerchantName] = useState(initialPay.qrisMerchantName);
+  const [payQrisNmid, setPayQrisNmid] = useState(initialPay.qrisNmid);
+  const [payQrisImage, setPayQrisImage] = useState(initialPay.qrisImage || '');
+
+  const [payEwalletEnabled, setPayEwalletEnabled] = useState(initialPay.ewalletEnabled);
+  const [payEwalletProviders, setPayEwalletProviders] = useState(initialPay.ewalletProviders);
+  const [payEwalletNumber, setPayEwalletNumber] = useState(initialPay.ewalletNumber);
+  const [payEwalletAccountName, setPayEwalletAccountName] = useState(
+    initialPay.ewalletAccountName
+  );
+
+  const [payBankEnabled, setPayBankEnabled] = useState(initialPay.bankEnabled);
+  const [payBankName, setPayBankName] = useState(initialPay.bankName);
+  const [payBankAccountNumber, setPayBankAccountNumber] = useState(
+    initialPay.bankAccountNumber
+  );
+  const [payBankAccountName, setPayBankAccountName] = useState(initialPay.bankAccountName);
+  const [payCashEnabled, setPayCashEnabled] = useState(initialPay.cashEnabled);
+
+  const stallOrders = orders.filter((o) => o.stallId === stall.id);
+  const activeOrdersCount = stallOrders.filter(
+    (o) => o.status !== 'completed' && o.status !== 'rejected'
+  ).length;
+  const totalRevenueToday = stallOrders
+    .filter((o) => o.status !== 'rejected')
+    .reduce((sum, o) => sum + o.totalAmount, 0);
+
+  const handleQrisImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === 'string') {
+        setPayQrisImage(reader.result);
+        onShowToast('Gambar Barcode QRIS berhasil dipilih!');
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSavePaymentSettings = (e: React.FormEvent) => {
+    e.preventDefault();
+    const updatedDetails: PaymentDetails = {
+      qrisEnabled: payQrisEnabled,
+      qrisMerchantName: payQrisMerchantName.trim() || `${stall.name.toUpperCase()} - IBI KKG`,
+      qrisNmid: payQrisNmid.trim() || 'ID2026001018829',
+      qrisImage: payQrisImage || undefined,
+      ewalletEnabled: payEwalletEnabled,
+      ewalletProviders: payEwalletProviders.trim() || 'DANA / GoPay / OVO / ShopeePay',
+      ewalletNumber: payEwalletNumber.trim() || '081290001980',
+      ewalletAccountName: payEwalletAccountName.trim() || stall.name,
+      bankEnabled: payBankEnabled,
+      bankName: payBankName.trim() || 'BCA / Mandiri',
+      bankAccountNumber: payBankAccountNumber.trim() || '6840928114',
+      bankAccountName: payBankAccountName.trim() || stall.name,
+      cashEnabled: payCashEnabled,
+    };
+
+    const summaryLabels: string[] = [];
+    if (updatedDetails.qrisEnabled) summaryLabels.push('QRIS (Semua Bank & E-Wallet)');
+    if (updatedDetails.ewalletEnabled)
+      summaryLabels.push(`${updatedDetails.ewalletProviders} (${updatedDetails.ewalletNumber})`);
+    if (updatedDetails.bankEnabled)
+      summaryLabels.push(`Transfer ${updatedDetails.bankName}`);
+    if (updatedDetails.cashEnabled) summaryLabels.push('Tunai di Kasir');
+
+    onUpdateStallProfile({
+      paymentDetails: updatedDetails,
+      paymentMethods: summaryLabels.length > 0 ? summaryLabels : ['Tunai di Kasir'],
+      lastUpdatedDate: '8 Oktober 2026',
+      lastUpdatedTime: 'Baru saja',
+    });
+    onShowToast(
+      'Pengaturan Rekening, DANA/E-Wallet & QRIS berhasil disimpan ke halaman mahasiswa!'
+    );
+  };
 
   // Add/Edit Menu Form State
   const [formName, setFormName] = useState('');
@@ -214,7 +312,17 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
         <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
             { id: 'dashboard', label: 'Dashboard & Stok', icon: 'space_dashboard' },
+            {
+              id: 'pesanan',
+              label: `Pesanan Masuk (${activeOrdersCount})`,
+              icon: 'receipt_long',
+            },
             { id: 'menu', label: 'Menu & Harga', icon: 'restaurant_menu' },
+            {
+              id: 'pembayaran',
+              label: 'Rekening, DANA & QRIS',
+              icon: 'account_balance_wallet',
+            },
             { id: 'profil', label: 'Profil Kantin', icon: 'store' },
             { id: 'ulasan', label: `Ulasan (${stall.reviews.length})`, icon: 'reviews' },
             { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' },
@@ -585,6 +693,445 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               )}
             </div>
           </div>
+        )}
+
+        {/* TAB PESANAN MASUK & TRANSAKSI MAHASISWA (REAL-TIME) */}
+        {sellerSubTab === 'pesanan' && (
+          <section className="max-w-4xl mx-auto w-full flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-1">
+                <span className="font-label-sm text-on-surface-variant">
+                  Pesanan Aktif Perlu Diproses
+                </span>
+                <span className="font-headline-lg-mobile text-primary font-bold">
+                  {activeOrdersCount} Pesanan
+                </span>
+              </div>
+              <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-1">
+                <span className="font-label-sm text-on-surface-variant">
+                  Total Transaksi Masuk
+                </span>
+                <span className="font-headline-lg-mobile text-on-surface font-bold">
+                  {stallOrders.length} Transaksi
+                </span>
+              </div>
+              <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-1">
+                <span className="font-label-sm text-on-surface-variant">
+                  Pemasukan Langsung (Rp 0 Potongan)
+                </span>
+                <span className="font-headline-lg-mobile text-secondary font-bold">
+                  Rp {totalRevenueToday.toLocaleString('id-ID')}
+                </span>
+              </div>
+            </div>
+
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h3 className="fluid-headline-md text-on-surface">
+                    Antrean Pesanan &amp; Pembayaran Mahasiswa
+                  </h3>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    Cek saldo masuk di aplikasi DANA / M-Banking / QRIS Anda, lalu ubah status pesanan di bawah agar mahasiswa mendapat pemberitahuan otomatis.
+                  </p>
+                </div>
+                <span className="font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md font-semibold">
+                  Real-Time Firebase
+                </span>
+              </div>
+
+              {stallOrders.length === 0 ? (
+                <div className="p-8 rounded-xl bg-surface-container-low border border-dashed border-outline-variant/40 flex flex-col items-center text-center gap-2">
+                  <span className="material-symbols-outlined text-[36px] text-on-surface-variant">
+                    receipt_long
+                  </span>
+                  <h4 className="font-label-lg text-on-surface font-bold">
+                    Belum Ada Pesanan Masuk
+                  </h4>
+                  <p className="font-body-sm text-on-surface-variant max-w-md">
+                    Saat mahasiswa memesan makanan dan membayar melalui QRIS, DANA/GoPay/OVO, Transfer Bank, atau Tunai di halaman <strong>{stall.name}</strong>, daftar pesanannya akan langsung muncul di sini secara real-time.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {stallOrders.map((ord) => (
+                    <div
+                      key={ord.id}
+                      className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-3"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-headline-md text-[16px] text-on-surface font-bold">
+                              {ord.studentName}
+                            </span>
+                            <span className="text-[11px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface font-semibold">
+                              NIM: {ord.studentNim}
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              • {ord.createdAt}
+                            </span>
+                          </div>
+                          <div className="text-[12px] text-primary font-semibold mt-0.5">
+                            Jadwal Ambil: {ord.pickupTime}
+                          </div>
+                        </div>
+
+                        <span
+                          className={`text-label-sm px-2.5 py-1 rounded-lg font-bold ${
+                            ord.status === 'waiting_payment_verification'
+                              ? 'bg-tertiary-fixed text-on-tertiary-fixed'
+                              : ord.status === 'cooking'
+                              ? 'bg-primary-fixed text-on-primary-fixed'
+                              : ord.status === 'ready_pickup'
+                              ? 'bg-secondary text-on-secondary'
+                              : ord.status === 'completed'
+                              ? 'bg-secondary-container text-on-secondary-container'
+                              : 'bg-error-container text-on-error-container'
+                          }`}
+                        >
+                          {ord.status === 'waiting_payment_verification'
+                            ? '⏳ Menunggu Konfirmasi Bayar'
+                            : ord.status === 'cooking'
+                            ? '🍳 Sedang Dimasak'
+                            : ord.status === 'ready_pickup'
+                            ? '✅ Siap Diambil Mahasiswa'
+                            : ord.status === 'completed'
+                            ? '🎉 Selesai'
+                            : '❌ Ditolak'}
+                        </span>
+                      </div>
+
+                      {/* Item List */}
+                      <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/25 flex flex-col gap-1.5">
+                        {ord.items.map((item, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between text-body-sm text-on-surface"
+                          >
+                            <span>
+                              <strong>{item.quantity}x</strong> {item.name}
+                            </span>
+                            <span className="font-semibold">
+                              Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        ))}
+                        {ord.notes && (
+                          <div className="text-[11px] text-tertiary pt-1 border-t border-outline-variant/20">
+                            <strong>Catatan Mahasiswa:</strong> &ldquo;{ord.notes}&rdquo;
+                          </div>
+                        )}
+                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/25">
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-on-surface-variant">
+                              Metode Pembayaran Mahasiswa:
+                            </span>
+                            <span className="font-label-sm text-on-surface font-bold">
+                              {ord.paymentProviderLabel}
+                            </span>
+                            {ord.paymentReference && (
+                              <span className="text-[11px] text-secondary">
+                                Info Bayar: {ord.paymentReference}
+                              </span>
+                            )}
+                          </div>
+                          <span className="font-headline-md text-[18px] text-primary font-bold">
+                            Rp {ord.totalAmount.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons for Seller */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {ord.status === 'waiting_payment_verification' && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateOrderStatus(ord.id, 'cooking')}
+                              className="min-h-[42px] px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                check_circle
+                              </span>
+                              <span>Terima Pembayaran &amp; Masak Pesanan</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateOrderStatus(ord.id, 'rejected')}
+                              className="min-h-[42px] px-3.5 py-2 rounded-lg bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold cursor-pointer"
+                            >
+                              Tolak (Dana Belum Masuk)
+                            </button>
+                          </>
+                        )}
+
+                        {ord.status === 'cooking' && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateOrderStatus(ord.id, 'ready_pickup')}
+                            className="min-h-[42px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              notifications_active
+                            </span>
+                            <span>Tandai Siap Diambil di Stan!</span>
+                          </button>
+                        )}
+
+                        {ord.status === 'ready_pickup' && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
+                            className="min-h-[42px] px-4 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              task_alt
+                            </span>
+                            <span>Selesaikan Transaksi (Sudah Diambil)</span>
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
+        {/* TAB PENGATURAN REKENING BANK, DANA/E-WALLET & QRIS PENJUAL */}
+        {sellerSubTab === 'pembayaran' && (
+          <section className="max-w-3xl mx-auto w-full">
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
+              <div className="flex items-start justify-between gap-2 border-b border-outline-variant/25 pb-3">
+                <div>
+                  <span className="font-label-sm text-[11px] text-secondary font-bold uppercase tracking-wider">
+                    Direct-to-Merchant • Tanpa Potongan Payment Gateway
+                  </span>
+                  <h3 className="fluid-headline-md text-on-surface">
+                    Pengaturan Rekening Bank, DANA/E-Wallet &amp; QRIS {stall.name}
+                  </h3>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
+                    Uang pembayaran dari mahasiswa langsung masuk 100% ke QRIS, DANA/GoPay/OVO, atau Rekening Bank Anda tanpa biaya potongan admin.
+                  </p>
+                </div>
+              </div>
+
+              <form onSubmit={handleSavePaymentSettings} className="flex flex-col gap-4">
+                {/* 1. QRIS KANTIN */}
+                <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-primary">qr_code_2</span>
+                      <span className="font-label-lg text-on-surface font-bold">
+                        1. Pembayaran QRIS Kantin (DANA, GoPay, OVO, M-Banking)
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={payQrisEnabled}
+                      onChange={(e) => setPayQrisEnabled(e.target.checked)}
+                      className="w-5 h-5 accent-primary"
+                    />
+                  </div>
+
+                  {payQrisEnabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-sm text-on-surface-variant">
+                          Nama Merchant pada QRIS
+                        </label>
+                        <input
+                          type="text"
+                          value={payQrisMerchantName}
+                          onChange={(e) => setPayQrisMerchantName(e.target.value)}
+                          placeholder="Contoh: KANTIN BU SARI - IBI KKG"
+                          className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-sm text-on-surface-variant">
+                          Nomor NMID QRIS (Opsional)
+                        </label>
+                        <input
+                          type="text"
+                          value={payQrisNmid}
+                          onChange={(e) => setPayQrisNmid(e.target.value)}
+                          placeholder="ID2026001018829"
+                          className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm focus:outline-none"
+                        />
+                      </div>
+                      <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
+                        {payQrisImage && (
+                          <img
+                            src={payQrisImage}
+                            alt="QRIS"
+                            className="w-16 h-16 object-contain rounded bg-surface-container-lowest p-1 border"
+                          />
+                        )}
+                        <label className="min-h-[40px] px-3.5 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-semibold inline-flex items-center gap-2 cursor-pointer">
+                          <span className="material-symbols-outlined text-[18px]">upload</span>
+                          <span>Upload Foto Barcode QRIS Kantin Anda (Opsional)</span>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleQrisImageUpload}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. E-WALLET LANGSUNG (DANA / GOPAY / OVO / SHOPEEPAY) */}
+                <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-primary">
+                        account_balance_wallet
+                      </span>
+                      <span className="font-label-lg text-on-surface font-bold">
+                        2. Nomor DANA / GoPay / OVO / ShopeePay Penjual
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={payEwalletEnabled}
+                      onChange={(e) => setPayEwalletEnabled(e.target.checked)}
+                      className="w-5 h-5 accent-primary"
+                    />
+                  </div>
+
+                  {payEwalletEnabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-sm text-on-surface-variant">
+                          Aplikasi E-Wallet yang Diterima
+                        </label>
+                        <input
+                          type="text"
+                          value={payEwalletProviders}
+                          onChange={(e) => setPayEwalletProviders(e.target.value)}
+                          placeholder="DANA / GoPay / OVO"
+                          className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-sm text-on-surface-variant">
+                          Nomor HP DANA / E-Wallet
+                        </label>
+                        <input
+                          type="text"
+                          value={payEwalletNumber}
+                          onChange={(e) => setPayEwalletNumber(e.target.value)}
+                          placeholder="081290001980"
+                          className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm font-bold focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-sm text-on-surface-variant">
+                          Atas Nama Akun DANA/E-Wallet
+                        </label>
+                        <input
+                          type="text"
+                          value={payEwalletAccountName}
+                          onChange={(e) => setPayEwalletAccountName(e.target.value)}
+                          placeholder="Ibu Sari Rahmawati"
+                          className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 3. TRANSFER REKENING BANK PENJUAL */}
+                <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-primary">
+                        account_balance
+                      </span>
+                      <span className="font-label-lg text-on-surface font-bold">
+                        3. Rekening Bank Penjual (BCA / Mandiri / BRI / Bank DKI)
+                      </span>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={payBankEnabled}
+                      onChange={(e) => setPayBankEnabled(e.target.checked)}
+                      className="w-5 h-5 accent-primary"
+                    />
+                  </div>
+
+                  {payBankEnabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-sm text-on-surface-variant">
+                          Nama Bank
+                        </label>
+                        <input
+                          type="text"
+                          value={payBankName}
+                          onChange={(e) => setPayBankName(e.target.value)}
+                          placeholder="Contoh: BCA / Mandiri"
+                          className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-sm text-on-surface-variant">
+                          Nomor Rekening
+                        </label>
+                        <input
+                          type="text"
+                          value={payBankAccountNumber}
+                          onChange={(e) => setPayBankAccountNumber(e.target.value)}
+                          placeholder="6840928114"
+                          className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm font-bold focus:outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="font-label-sm text-on-surface-variant">
+                          Atas Nama Rekening
+                        </label>
+                        <input
+                          type="text"
+                          value={payBankAccountName}
+                          onChange={(e) => setPayBankAccountName(e.target.value)}
+                          placeholder="Ibu Sari Rahmawati"
+                          className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm focus:outline-none"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 4. TUNAI DI KASIR */}
+                <label className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between gap-2 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary">payments</span>
+                    <span className="font-label-md text-on-surface font-bold">
+                      4. Terima Pembayaran Tunai Saat Ambil di Stan (Cash)
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={payCashEnabled}
+                    onChange={(e) => setPayCashEnabled(e.target.checked)}
+                    className="w-5 h-5 accent-primary"
+                  />
+                </label>
+
+                <button
+                  type="submit"
+                  className="w-full min-h-[48px] py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-sm cursor-pointer"
+                >
+                  Simpan Pengaturan Pembayaran (QRIS, DANA &amp; Bank)
+                </button>
+              </form>
+            </div>
+          </section>
         )}
 
         {/* TAB 3: PROFIL KANTIN */}

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { SellerAccount } from '../data/kantinData';
+import { AdminCredentials, SellerAccount } from '../data/kantinData';
 
 interface AuthPortalScreenProps {
   sellerAccounts: SellerAccount[];
+  adminCredentials: AdminCredentials;
   loggedInSeller: SellerAccount | null;
   isAdminLoggedIn: boolean;
   onContinueAsStudent: () => void;
@@ -17,6 +18,7 @@ interface AuthPortalScreenProps {
 
 export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   sellerAccounts,
+  adminCredentials,
   loggedInSeller,
   isAdminLoggedIn,
   onContinueAsStudent,
@@ -28,8 +30,65 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   onLogout,
   onShowToast,
 }) => {
-  const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'penjual' | 'admin'>('penjual');
+  const [selectedRole, setSelectedRole] = useState<'mahasiswa' | 'penjual' | 'admin'>(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+      if (params.has('admin') || params.get('portal') === 'admin' || hash.includes('admin')) {
+        return 'admin';
+      }
+    }
+    return 'penjual';
+  });
+  const [adminPortalUnlocked, setAdminPortalUnlocked] = useState<boolean>(() => {
+    if (isAdminLoggedIn) return true;
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const hash = window.location.hash.toLowerCase();
+      if (params.has('admin') || params.get('portal') === 'admin' || hash.includes('admin')) {
+        return true;
+      }
+    }
+    return false;
+  });
+  const [secretTapCount, setSecretTapCount] = useState(0);
   const [sellerAuthMode, setSellerAuthMode] = useState<'login' | 'register'>('login');
+
+  // Listen for URL hash changes (#admin) or Secret Keyboard Shortcut (Ctrl+Shift+A / Alt+Shift+A)
+  React.useEffect(() => {
+    const checkHash = () => {
+      if (window.location.hash.toLowerCase().includes('admin')) {
+        setAdminPortalUnlocked(true);
+        setSelectedRole('admin');
+      }
+    };
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey || e.altKey) && e.shiftKey && e.key.toLowerCase() === 'a') {
+        e.preventDefault();
+        setAdminPortalUnlocked(true);
+        setSelectedRole('admin');
+        onShowToast('Mode Otorisasi Admin Kampus dibuka.', false);
+      }
+    };
+    window.addEventListener('hashchange', checkHash);
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('hashchange', checkHash);
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
+  const handleSecretAdminTap = () => {
+    const next = secretTapCount + 1;
+    if (next >= 5) {
+      setAdminPortalUnlocked(true);
+      setSelectedRole('admin');
+      setSecretTapCount(0);
+      onShowToast('Gerbang Rahasia Admin Sarpras diaktifkan.', false);
+    } else {
+      setSecretTapCount(next);
+    }
+  };
 
   // Seller Login State
   const [sellerEmail, setSellerEmail] = useState('');
@@ -180,6 +239,16 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   const handleSellerLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
+    // Hidden Admin Direct Login: If Admin types their current Admin email & password in the regular login form, route straight to Admin Portal!
+    if (
+      sellerEmail.trim().toLowerCase() === adminCredentials.email.trim().toLowerCase() &&
+      sellerPassword === adminCredentials.password
+    ) {
+      setAdminPortalUnlocked(true);
+      onLoginAdminSuccess();
+      return;
+    }
+
     const found = sellerAccounts.find(
       (acc) => acc.email.toLowerCase() === sellerEmail.trim().toLowerCase()
     );
@@ -245,12 +314,12 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (
-      adminEmail.trim().toLowerCase() === 'sarpras@ibikkg.ac.id' &&
-      adminPassword === 'admin123'
+      adminEmail.trim().toLowerCase() === adminCredentials.email.trim().toLowerCase() &&
+      adminPassword === adminCredentials.password
     ) {
       onLoginAdminSuccess();
     } else {
-      onShowToast('Kredensial Admin tidak valid. Gunakan akun demo Admin.', true);
+      onShowToast('Email atau kata sandi Admin tidak sesuai.', true);
     }
   };
 
@@ -260,16 +329,21 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
         {/* LEFT COLUMN (5 cols on Desktop): Penjelasan Alur Sistem dari Nol (Tahap 1) */}
         <div className="lg:col-span-5 flex flex-col gap-4">
           <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3.5">
-            <div className="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md w-fit font-label-sm text-label-sm">
+            <button
+              type="button"
+              onClick={handleSecretAdminTap}
+              title="Ketuk 5x untuk membuka akses internal Admin Kampus"
+              className="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md w-fit font-label-sm text-label-sm select-none cursor-default"
+            >
               <span className="material-symbols-outlined text-[15px]">verified_user</span>
               <span>Gerbang Akses Sistem • Pilot Tahap 1</span>
-            </div>
+            </button>
 
             <h1 className="fluid-headline-xl text-on-surface">
               Alur Akses &amp; Autentikasi KantinKu IBI KKG
             </h1>
             <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-              Untuk menjaga keakuratan harga dan mencegah orang sembarangan mengubah menu, sistem membagi hak akses menjadi <strong>3 peran pengguna</strong>:
+              Untuk menjaga keakuratan harga dan mencegah orang sembarangan mengubah menu, sistem membagi akses publik menjadi <strong>Mahasiswa</strong> dan <strong>Mitra Penjual Kantin</strong> (terverifikasi):
             </p>
 
             {/* Step-by-step Visual Flow */}
@@ -298,59 +372,38 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   </span>
                 </div>
                 <p className="font-body-sm text-[12px] text-on-surface-variant">
-                  <strong>Alur dari Nol:</strong> Daftar Akun Stan → Menunggu Verifikasi Admin → Login Dashboard → Input Menu, Harga &amp; Jam Buka.
-                </p>
-              </div>
-
-              <div className="p-3 rounded-lg bg-surface-container-low border-l-4 border-tertiary flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-label-md text-label-md text-on-surface font-bold">
-                    3. Admin Sarpras / BAAK
-                  </span>
-                  <span className="font-label-sm text-[11px] bg-tertiary-fixed text-on-tertiary-fixed px-2 py-0.5 rounded">
-                    Otorisasi Kampus
-                  </span>
-                </div>
-                <p className="font-body-sm text-[12px] text-on-surface-variant">
-                  Memverifikasi pendaftaran penjual baru agar hanya kantin resmi IBI KKG yang bisa tampil, serta menindak laporan selisih harga.
+                  <strong>Alur dari Nol:</strong> Daftar Akun Stan → Menunggu Verifikasi Kampus → Login Dashboard → Input Menu, Harga &amp; Jam Buka.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Panduan Simulasi Uji Coba End-to-End */}
-          <div className="bg-surface-container-high rounded-xl p-4 flex flex-col gap-2">
+          {/* Komitmen Transparansi Harga & Keaslian Kantin */}
+          <div className="bg-surface-container-high rounded-xl p-4 flex flex-col gap-1.5">
             <div className="flex items-center gap-1.5 text-primary">
-              <span className="material-symbols-outlined text-[18px]">science</span>
+              <span className="material-symbols-outlined text-[18px]">shield_lock</span>
               <span className="font-label-md text-label-md font-bold">
-                Cara Menguji Alur dari Nol Sekarang:
+                Proteksi Keaslian Data Kantin IBI KKG
               </span>
             </div>
-            <ol className="list-decimal pl-4 font-body-sm text-[12px] text-on-surface-variant space-y-1">
-              <li>
-                Pilih tab <strong>Penjual Kantin</strong> → klik <strong>Daftar Stan Baru</strong> lalu isi data kantin baru.
-              </li>
-              <li>
-                Coba login dengan akun baru tersebut — sistem akan menahan akses karena statusnya <strong>Menunggu Verifikasi Admin</strong>.
-              </li>
-              <li>
-                Pindah ke tab <strong>Admin Kampus</strong> → Login → Klik <strong>Setujui &amp; Terbitkan</strong> pada kantin yang baru Anda daftarkan.
-              </li>
-              <li>
-                Kembali ke login <strong>Penjual Kantin</strong> — sekarang Anda bisa masuk ke Dashboard dan mulai menginput menu dari nol!
-              </li>
-            </ol>
+            <p className="font-body-sm text-[12px] text-on-surface-variant leading-relaxed">
+              Setiap pendaftaran akun penjual baru akan divalidasi oleh pihak kampus terlebih dahulu agar hanya pemilik stan resmi di Gedung A dan Gedung B IBI KKG yang dapat memperbarui daftar menu serta harga.
+            </p>
           </div>
         </div>
 
         {/* RIGHT COLUMN (7 cols on Desktop): Interactive Role & Login/Register Card */}
         <div className="lg:col-span-7 bg-surface-container-lowest rounded-xl p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-5">
-          {/* Role Selector Tabs */}
+          {/* Role Selector Tabs (Only Mahasiswa & Penjual shown to public; Admin only appears when unlocked) */}
           <div className="flex flex-col gap-2">
             <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-              Pilih Peran untuk Masuk ke Sistem:
+              Pilih Peran Pengguna:
             </span>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div
+              className={`grid grid-cols-1 ${
+                adminPortalUnlocked || isAdminLoggedIn ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
+              } gap-2`}
+            >
               <button
                 type="button"
                 onClick={() => setSelectedRole('mahasiswa')}
@@ -377,20 +430,22 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 <span>Penjual Kantin</span>
               </button>
 
-              <button
-                type="button"
-                onClick={() => setSelectedRole('admin')}
-                className={`min-h-[48px] px-3 py-2.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer border ${
-                  selectedRole === 'admin'
-                    ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
-                    : 'bg-surface-container-low text-on-surface border-transparent hover:bg-surface-container'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px]">
-                  admin_panel_settings
-                </span>
-                <span>Admin Kampus</span>
-              </button>
+              {(adminPortalUnlocked || isAdminLoggedIn) && (
+                <button
+                  type="button"
+                  onClick={() => setSelectedRole('admin')}
+                  className={`min-h-[48px] px-3 py-2.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                    selectedRole === 'admin'
+                      ? 'bg-tertiary text-on-tertiary border-tertiary font-semibold shadow-xs'
+                      : 'bg-tertiary-fixed/40 text-on-tertiary-fixed border-tertiary/30 hover:bg-tertiary-fixed'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[20px]">
+                    admin_panel_settings
+                  </span>
+                  <span>Admin Kampus (Internal)</span>
+                </button>
+              )}
             </div>
           </div>
 
@@ -867,26 +922,39 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 Masuk ke Portal Admin
               </button>
 
-              <div className="p-3.5 rounded-xl bg-surface-container-low flex items-center justify-between gap-2">
-                <div className="flex flex-col">
-                  <span className="font-label-sm text-on-surface font-bold">
-                    Akun Simulasi Admin IBI KKG:
+              {adminCredentials.email === 'sarpras@ibikkg.ac.id' &&
+              adminCredentials.password === 'admin123' ? (
+                <div className="p-3.5 rounded-xl bg-surface-container-low flex items-center justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="font-label-sm text-on-surface font-bold">
+                      Akun Bawaan Admin IBI KKG:
+                    </span>
+                    <span className="text-[12px] text-on-surface-variant">
+                      Email: <strong>{adminCredentials.email}</strong> | Sandi:{' '}
+                      <strong>{adminCredentials.password}</strong>
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAdminEmail(adminCredentials.email);
+                      setAdminPassword(adminCredentials.password);
+                    }}
+                    className="min-h-[38px] px-3 py-1.5 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold shadow-xs cursor-pointer shrink-0"
+                  >
+                    Isi Otomatis
+                  </button>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-secondary-container/40 border border-secondary/30 text-on-surface flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-secondary">
+                    lock
                   </span>
-                  <span className="text-[12px] text-on-surface-variant">
-                    Email: <strong>sarpras@ibikkg.ac.id</strong> | Sandi: <strong>admin123</strong>
+                  <span className="font-body-sm text-[12px] text-on-surface-variant">
+                    Kredensial Admin telah diperbarui secara kustom &amp; tersinkronisasi di Cloud Database.
                   </span>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAdminEmail('sarpras@ibikkg.ac.id');
-                    setAdminPassword('admin123');
-                  }}
-                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold shadow-xs cursor-pointer shrink-0"
-                >
-                  Isi Otomatis
-                </button>
-              </div>
+              )}
             </form>
           )}
         </div>
