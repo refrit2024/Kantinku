@@ -91,7 +91,7 @@ export default function App() {
     return 'auth-portal';
   });
 
-  const [studentSubTab, setStudentSubTab] = useState<StudentSubTab>('beranda');
+  const [studentSubTab, setStudentSubTab] = useState<StudentSubTab>('kantin');
   const [historyStack, setHistoryStack] = useState<ScreenType[]>([]);
   const [selectedStallId, setSelectedStallId] = useState<string>('stan-bu-sari');
   const [favoriteStallIds, setFavoriteStallIds] = useState<string[]>(['stan-bu-sari']);
@@ -1064,6 +1064,7 @@ export default function App() {
         {currentScreen === 'katalog' && (
           <KatalogScreen
             stalls={stalls}
+            orders={orders}
             activeSubTab={studentSubTab}
             onChangeSubTab={setStudentSubTab}
             favoriteStallIds={favoriteStallIds}
@@ -1114,6 +1115,9 @@ export default function App() {
 
         {currentScreen === 'admin-portal' && (
           <AdminPortalScreen
+            stalls={stalls}
+            sellerAccounts={sellerAccounts}
+            orders={orders}
             verifications={verifications}
             adminCredentials={adminCredentials}
             onUpdateAdminCredentials={handleUpdateAdminCredentials}

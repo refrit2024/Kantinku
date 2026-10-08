@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import {
   AdminCredentials,
+  OrderTransaction,
   RECEIPT_PROOF_IMAGE,
+  SellerAccount,
+  Stall,
   VerificationRequest,
 } from '../data/kantinData';
 
 interface AdminPortalScreenProps {
+  stalls: Stall[];
+  sellerAccounts: SellerAccount[];
+  orders: OrderTransaction[];
   verifications: VerificationRequest[];
   adminCredentials: AdminCredentials;
   onUpdateAdminCredentials: (newEmail: string, newPassword: string) => void;
@@ -16,6 +22,9 @@ interface AdminPortalScreenProps {
 }
 
 export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
+  stalls,
+  sellerAccounts,
+  orders,
   verifications,
   adminCredentials,
   onUpdateAdminCredentials,
@@ -25,8 +34,11 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
   onOpenNavDrawer,
 }) => {
   const [activeTab, setActiveTab] = useState<
-    'verifikasi' | 'laporan' | 'kapasitas' | 'keamanan'
+    'verifikasi' | 'laporan' | 'kapasitas' | 'keamanan' | 'database'
   >('verifikasi');
+  const [dbSubView, setDbSubView] = useState<
+    'orders' | 'sellers' | 'stalls' | 'verifications' | 'raw_json'
+  >('orders');
   const [spSending, setSpSending] = useState(false);
   const [spSent, setSpSent] = useState(false);
 
@@ -301,6 +313,22 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
           >
             <span className="material-symbols-outlined text-[18px]">manage_accounts</span>
             <span>Pengaturan Akun Admin</span>
+          </button>
+
+          <button
+            className={
+              activeTab === 'database'
+                ? 'min-h-[44px] px-4 py-2 rounded-lg font-label-md text-label-md bg-primary text-on-primary shadow-sm flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer shrink-0'
+                : 'min-h-[44px] px-4 py-2 rounded-lg font-label-md text-label-md bg-surface-container text-on-surface hover:bg-surface-container-high shadow-xs flex items-center gap-2 whitespace-nowrap transition-all cursor-pointer shrink-0'
+            }
+            onClick={() => setActiveTab('database')}
+            type="button"
+          >
+            <span className="material-symbols-outlined text-[18px]">database</span>
+            <span>Database Firebase (Live)</span>
+            <span className="w-5 h-5 rounded-full bg-secondary-container text-on-secondary-container text-center leading-5 text-label-sm font-bold">
+              {orders.length}
+            </span>
           </button>
         </div>
 
@@ -735,6 +763,390 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                 </button>
               </form>
             </div>
+          </div>
+        )}
+
+        {/* CONTENT SECTION 5: Database Firebase (Live Inspector & Console Guide) */}
+        {activeTab === 'database' && (
+          <div className="flex flex-col gap-5" id="section-database">
+            {/* Card 1: Informasi Koneksi Cloud Firestore & Cara Buka di Google Console */}
+            <div className="rounded-xl bg-surface-container-lowest p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/25 pb-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2 text-primary">
+                    <span className="material-symbols-outlined text-[22px]">cloud_done</span>
+                    <h3 className="fluid-headline-md text-on-surface">
+                      Inspektur Cloud Database (Firebase Firestore)
+                    </h3>
+                  </div>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    Pantau seluruh rekaman data transaksi pesanan, akun penjual, menu stan, dan kredensial yang tersimpan secara <em>real-time</em> di Cloud Firestore.
+                  </p>
+                </div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold shrink-0">
+                  <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                  Firestore Connected
+                </span>
+              </div>
+
+              {/* Detail Teknis Database untuk Presentasi / Cek Console */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-1">
+                  <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                    Lokasi Koleksi &amp; Dokumen Firestore
+                  </span>
+                  <code className="font-mono text-xs text-primary font-bold break-all">
+                    /kantinku_sync/pilot_ibikkg_v1
+                  </code>
+                  <span className="font-body-sm text-[11px] text-on-surface-variant">
+                    Path dokumen utama sinkronisasi real-time
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-1">
+                  <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                    ID Database Firestore
+                  </span>
+                  <code className="font-mono text-xs text-on-surface font-bold break-all">
+                    ai-studio-kantinkuibikkg-73e35728-5d35-4b53-806d-684467fc5e92
+                  </code>
+                  <span className="font-body-sm text-[11px] text-on-surface-variant">
+                    Project ID: serene-feather-vlkcn
+                  </span>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col justify-between gap-2">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
+                      Ekspor / Salin Cadangan Data
+                    </span>
+                    <span className="font-body-sm text-xs text-on-surface">
+                      Salin seluruh isi database dalam format JSON untuk laporan/presentasi.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fullSnapshot = {
+                        collection: 'kantinku_sync',
+                        document: 'pilot_ibikkg_v1',
+                        exportedAt: new Date().toISOString(),
+                        summary: {
+                          totalStalls: stalls.length,
+                          totalSellerAccounts: sellerAccounts.length,
+                          totalOrders: orders.length,
+                          totalVerifications: verifications.length,
+                        },
+                        data: {
+                          orders,
+                          sellerAccounts,
+                          verifications,
+                          stalls,
+                        },
+                      };
+                      navigator.clipboard?.writeText(JSON.stringify(fullSnapshot, null, 2));
+                      onShowToast('Seluruh JSON Database Firebase berhasil disalin ke Clipboard!');
+                    }}
+                    className="min-h-[36px] px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">content_copy</span>
+                    <span>Salin JSON Database</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Sub-tab Pilih Tabel Koleksi Data */}
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+              <button
+                type="button"
+                onClick={() => setDbSubView('orders')}
+                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                  dbSubView === 'orders'
+                    ? 'bg-secondary text-on-secondary shadow-xs'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                <span>Tabel Transaksi Pesanan ({orders.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDbSubView('sellers')}
+                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                  dbSubView === 'sellers'
+                    ? 'bg-secondary text-on-secondary shadow-xs'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">badge</span>
+                <span>Tabel Akun Penjual ({sellerAccounts.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDbSubView('stalls')}
+                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                  dbSubView === 'stalls'
+                    ? 'bg-secondary text-on-secondary shadow-xs'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">storefront</span>
+                <span>Tabel Stan &amp; Menu ({stalls.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDbSubView('verifications')}
+                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                  dbSubView === 'verifications'
+                    ? 'bg-secondary text-on-secondary shadow-xs'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">fact_check</span>
+                <span>Tabel Verifikasi ({verifications.length})</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setDbSubView('raw_json')}
+                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                  dbSubView === 'raw_json'
+                    ? 'bg-secondary text-on-secondary shadow-xs'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">data_object</span>
+                <span>Raw JSON Document</span>
+              </button>
+            </div>
+
+            {/* ISI TABEL 1: ordersJson (Transaksi Pesanan) */}
+            {dbSubView === 'orders' && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="fluid-headline-md text-on-surface">
+                    Field: <code className="text-primary font-mono text-sm">ordersJson</code> ({orders.length} Transaksi)
+                  </h4>
+                </div>
+                {orders.length === 0 ? (
+                  <p className="font-body-sm text-body-sm text-on-surface-variant py-6 text-center">
+                    Belum ada data transaksi pesanan mahasiswa di dalam database. Coba buat pesanan dari halaman Detail Stan!
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-outline-variant/30 text-[11px] font-label-sm text-on-surface-variant uppercase">
+                          <th className="py-2.5 px-3">ID Order</th>
+                          <th className="py-2.5 px-3">Stan Kantin</th>
+                          <th className="py-2.5 px-3">Mahasiswa (NIM)</th>
+                          <th className="py-2.5 px-3">Item Pesanan</th>
+                          <th className="py-2.5 px-3">Metode &amp; Total</th>
+                          <th className="py-2.5 px-3">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-outline-variant/20 text-xs">
+                        {orders.map((ord) => (
+                          <tr key={ord.id} className="hover:bg-surface-container-low/60">
+                            <td className="py-2.5 px-3 font-mono font-bold text-primary whitespace-nowrap">
+                              {ord.id}
+                              <div className="text-[10px] font-normal text-on-surface-variant">
+                                {ord.createdAt}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 font-semibold text-on-surface">
+                              {ord.stallName}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="font-semibold text-on-surface">{ord.studentName}</div>
+                              <div className="text-[11px] text-on-surface-variant">
+                                NIM: {ord.studentNim} • Ambil: {ord.pickupTime}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              {(ord.items ?? []).map((it) => `${it.quantity}x ${it.name}`).join(', ')}
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              <div className="font-bold text-on-surface">
+                                Rp {(ord.totalAmount ?? 0).toLocaleString('id-ID')}
+                              </div>
+                              <div className="text-[11px] text-on-surface-variant uppercase">
+                                {ord.paymentMethod} {ord.paymentReference ? `• ${ord.paymentReference}` : ''}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3 whitespace-nowrap">
+                              <span className="px-2 py-0.5 rounded-md bg-secondary-container text-on-secondary-container font-semibold text-[11px]">
+                                {ord.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ISI TABEL 2: sellerAccountsJson (Akun Penjual) */}
+            {dbSubView === 'sellers' && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
+                <h4 className="fluid-headline-md text-on-surface">
+                  Field: <code className="text-primary font-mono text-sm">sellerAccountsJson</code> ({sellerAccounts.length} Akun)
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-outline-variant/30 text-[11px] font-label-sm text-on-surface-variant uppercase">
+                        <th className="py-2.5 px-3">ID Akun</th>
+                        <th className="py-2.5 px-3">Nama Pemilik</th>
+                        <th className="py-2.5 px-3">Email Login</th>
+                        <th className="py-2.5 px-3">Nama Stan</th>
+                        <th className="py-2.5 px-3">Gedung</th>
+                        <th className="py-2.5 px-3">Status Verifikasi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/20 text-xs">
+                      {sellerAccounts.map((acc) => (
+                        <tr key={acc.id} className="hover:bg-surface-container-low/60">
+                          <td className="py-2.5 px-3 font-mono text-on-surface-variant">{acc.id}</td>
+                          <td className="py-2.5 px-3 font-semibold text-on-surface">{acc.ownerName}</td>
+                          <td className="py-2.5 px-3 font-mono text-primary">{acc.email}</td>
+                          <td className="py-2.5 px-3 font-semibold">{acc.stallName}</td>
+                          <td className="py-2.5 px-3">{acc.building}</td>
+                          <td className="py-2.5 px-3">
+                            <span
+                              className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${
+                                acc.status === 'verified'
+                                  ? 'bg-secondary-container text-on-secondary-container'
+                                  : acc.status === 'pending'
+                                  ? 'bg-tertiary-fixed text-tertiary'
+                                  : 'bg-error-container text-on-error-container'
+                              }`}
+                            >
+                              {acc.status.toUpperCase()}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ISI TABEL 3: stallsJson (Data Stan, Menu & Rekening) */}
+            {dbSubView === 'stalls' && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
+                <h4 className="fluid-headline-md text-on-surface">
+                  Field: <code className="text-primary font-mono text-sm">stallsJson</code> ({stalls.length} Stan Aktif)
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-outline-variant/30 text-[11px] font-label-sm text-on-surface-variant uppercase">
+                        <th className="py-2.5 px-3">ID Stan</th>
+                        <th className="py-2.5 px-3">Nama Stan &amp; Kode</th>
+                        <th className="py-2.5 px-3">Lokasi</th>
+                        <th className="py-2.5 px-3">Status Buka</th>
+                        <th className="py-2.5 px-3">Jumlah Menu</th>
+                        <th className="py-2.5 px-3">Ulasan</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/20 text-xs">
+                      {stalls.map((st) => (
+                        <tr key={st.id} className="hover:bg-surface-container-low/60">
+                          <td className="py-2.5 px-3 font-mono text-on-surface-variant">{st.id}</td>
+                          <td className="py-2.5 px-3 font-semibold text-on-surface">
+                            {st.name} <span className="text-on-surface-variant">({st.code})</span>
+                          </td>
+                          <td className="py-2.5 px-3">{st.building} • {st.locationDetail}</td>
+                          <td className="py-2.5 px-3">
+                            {st.isOpen ? '🟢 Buka' : '🔴 Tutup'}
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold">{st.menuItems?.length ?? 0} Menu</td>
+                          <td className="py-2.5 px-3">{st.reviews?.length ?? 0} Ulasan (⭐ {st.rating})</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ISI TABEL 4: verificationsJson */}
+            {dbSubView === 'verifications' && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
+                <h4 className="fluid-headline-md text-on-surface">
+                  Field: <code className="text-primary font-mono text-sm">verificationsJson</code> ({verifications.length} Data)
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-outline-variant/30 text-[11px] font-label-sm text-on-surface-variant uppercase">
+                        <th className="py-2.5 px-3">ID Verifikasi</th>
+                        <th className="py-2.5 px-3">Nama Stan</th>
+                        <th className="py-2.5 px-3">Kategori</th>
+                        <th className="py-2.5 px-3">Lokasi</th>
+                        <th className="py-2.5 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/20 text-xs">
+                      {verifications.map((vf) => (
+                        <tr key={vf.id} className="hover:bg-surface-container-low/60">
+                          <td className="py-2.5 px-3 font-mono text-on-surface-variant">{vf.id}</td>
+                          <td className="py-2.5 px-3 font-semibold text-on-surface">{vf.name}</td>
+                          <td className="py-2.5 px-3">{vf.badgeText}</td>
+                          <td className="py-2.5 px-3">{vf.location}</td>
+                          <td className="py-2.5 px-3">
+                            {vf.approved
+                              ? '✅ Disetujui'
+                              : vf.rejectedReason
+                              ? `❌ Ditolak (${vf.rejectedReason})`
+                              : '⏳ Menunggu'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* ISI TABEL 5: Raw JSON Document */}
+            {dbSubView === 'raw_json' && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <h4 className="fluid-headline-md text-on-surface">
+                    Raw Firestore Document (<code className="text-primary font-mono text-sm">/kantinku_sync/pilot_ibikkg_v1</code>)
+                  </h4>
+                </div>
+                <pre className="p-4 rounded-xl bg-inverse-surface text-inverse-on-surface font-mono text-xs overflow-x-auto max-h-[480px] leading-relaxed">
+                  {JSON.stringify(
+                    {
+                      adminCredentials,
+                      ordersCount: orders.length,
+                      orders,
+                      sellerAccounts,
+                      verifications,
+                      stallsSummary: stalls.map((s) => ({
+                        id: s.id,
+                        name: s.name,
+                        isOpen: s.isOpen,
+                        menuCount: s.menuItems?.length ?? 0,
+                        paymentDetails: s.paymentDetails,
+                      })),
+                    },
+                    null,
+                    2
+                  )}
+                </pre>
+              </div>
+            )}
           </div>
         )}
       </div>

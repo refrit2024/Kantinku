@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Stall } from '../data/kantinData';
+import { OrderTransaction, Stall } from '../data/kantinData';
 
-export type StudentSubTab = 'beranda' | 'kantin' | 'kategori' | 'favorit' | 'profil';
+export type StudentSubTab = 'kantin' | 'kategori' | 'favorit' | 'pesanan';
 
 interface KatalogScreenProps {
   stalls: Stall[];
+  orders: OrderTransaction[];
   activeSubTab: StudentSubTab;
   onChangeSubTab: (tab: StudentSubTab) => void;
   favoriteStallIds: string[];
@@ -18,13 +19,12 @@ interface KatalogScreenProps {
 
 export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   stalls,
+  orders,
   activeSubTab,
   onChangeSubTab,
   favoriteStallIds,
   onToggleFavoriteStall,
   onSelectStall,
-  onNavigateMerchant,
-  onNavigateAdmin,
   onOpenReportModal,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -35,12 +35,25 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   const [mapBuildingTab, setMapBuildingTab] = useState<'A' | 'B'>('A');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [mobileMapOpen, setMobileMapOpen] = useState(false);
+  const [orderLookupQuery, setOrderLookupQuery] = useState('');
 
-  // Student evaluation survey state (Indikator Keberhasilan Tahap 1)
-  const [surveyFastBudget, setSurveyFastBudget] = useState(true);
-  const [surveyClearPrice, setSurveyClearPrice] = useState(true);
-  const [surveyNearLocation, setSurveyNearLocation] = useState(true);
-  const [surveySubmitted, setSurveySubmitted] = useState(false);
+  const filteredStudentOrders = orders.filter((ord) => {
+    const q = orderLookupQuery.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      ord.studentNim.toLowerCase().includes(q) ||
+      ord.studentName.toLowerCase().includes(q) ||
+      ord.id.toLowerCase().includes(q) ||
+      ord.stallName.toLowerCase().includes(q)
+    );
+  });
+
+  const activeOrdersCount = orders.filter(
+    (o) =>
+      o.status === 'waiting_payment_verification' ||
+      o.status === 'cooking' ||
+      o.status === 'ready_pickup'
+  ).length;
 
   // Filter logic for Stalls & Menu Items
   const filteredStalls = stalls.filter((stall) => {
@@ -129,11 +142,17 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
       <div className="w-full bg-surface-container-low border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-2">
         <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar">
           {[
-            { id: 'beranda', label: 'Beranda & Peta', icon: 'map' },
             { id: 'kantin', label: 'Semua Kantin', icon: 'storefront' },
             { id: 'kategori', label: 'Kategori Menu', icon: 'restaurant_menu' },
             { id: 'favorit', label: `Favorit (${favoriteStallIds.length})`, icon: 'favorite' },
-            { id: 'profil', label: 'Profil & Evaluasi', icon: 'person' },
+            {
+              id: 'pesanan',
+              label:
+                activeOrdersCount > 0
+                  ? `Pesanan Saya (${activeOrdersCount} Aktif)`
+                  : `Pesanan Saya (${orders.length})`,
+              icon: 'receipt_long',
+            },
           ].map((tab) => {
             const isActive = activeSubTab === tab.id;
             return (
@@ -157,121 +176,214 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
 
       {/* Main Content Container with 3-State Responsive Width */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-5">
-        {/* SUB-TAB PROFIL MAHASISWA & EVALUASI PILOT TAHAP 1 */}
-        {activeSubTab === 'profil' ? (
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            <div className="lg:col-span-5 flex flex-col gap-4">
-              <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md font-bold shrink-0">
-                    AP
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-label-sm text-label-sm text-secondary font-semibold">
-                      Mahasiswa Aktif IBI KKG
-                    </span>
-                    <h2 className="fluid-headline-md text-on-surface truncate">
-                      Aldo Phiong (NIM 32230104)
-                    </h2>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant">
-                      Program Studi Informatika • Kampus Sunter
-                    </span>
-                  </div>
+        {/* SUB-TAB PESANAN SAYA (LACAK STATUS PESANAN TANPA LOGIN) */}
+        {activeSubTab === 'pesanan' ? (
+          <div className="flex flex-col gap-4">
+            {/* Header & Pencarian NIM / Kode Order */}
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-primary">
+                  <span className="material-symbols-outlined text-[22px]">receipt_long</span>
+                  <h2 className="fluid-headline-md text-on-surface">
+                    Lacak Status Pesanan Saya (Real-Time)
+                  </h2>
                 </div>
-                <div className="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-1.5 text-body-sm text-on-surface-variant">
-                  <span className="font-label-md text-on-surface font-semibold">
-                    Alur Penggunaan Mahasiswa (Tahap 1):
-                  </span>
-                  <span className="leading-relaxed">
-                    Buka Website → Masuk ke IBI KKG → Lihat Peta Kantin → Cari / Filter Budget &amp; Jarak → Pilih Kantin → Lihat Menu, Harga &amp; Waktu Update → Datang ke Kantin.
-                  </span>
-                </div>
-              </div>
-
-              <div className="bg-surface-container-high rounded-xl p-4 sm:p-5 flex flex-col gap-3">
-                <h3 className="fluid-headline-md text-on-surface">
-                  Simulasi Peran Pengguna Lain (Tahap 1)
-                </h3>
                 <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  Uji alur Penjual Kantin (menginput menu, mengubah harga Rp12.000 → Rp15.000 secara langsung, mengubah status Tersedia/Habis) atau Admin:
+                  Pantau status masakan Anda langsung dari kantin IBI KKG tanpa perlu login. Ketik <strong>NIM</strong>, <strong>Nama</strong>, atau <strong>Kode Order</strong> Anda untuk menyaring pesanan.
                 </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <button
-                    type="button"
-                    onClick={onNavigateMerchant}
-                    className="min-h-[44px] px-4 py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer active:scale-[0.98]"
-                  >
-                    Dashboard Penjual
-                  </button>
-                  <button
-                    type="button"
-                    onClick={onNavigateAdmin}
-                    className="min-h-[44px] px-4 py-2.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-md text-label-md font-semibold cursor-pointer active:scale-[0.98]"
-                  >
-                    Portal Admin
-                  </button>
-                </div>
+              </div>
+
+              <div className="relative w-full md:w-80 shrink-0">
+                <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">
+                  search
+                </span>
+                <input
+                  type="search"
+                  value={orderLookupQuery}
+                  onChange={(e) => setOrderLookupQuery(e.target.value)}
+                  placeholder="Cari NIM, Nama, atau Kode Order..."
+                  className="w-full h-11 pl-10 pr-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                />
               </div>
             </div>
 
-            {/* Indikator Keberhasilan Tahap 1 */}
-            <div className="lg:col-span-7 bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-2">
-                <h3 className="fluid-headline-md text-on-surface">
-                  Evaluasi Pilot Project Tahap 1
-                </h3>
-                <span className="font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-lg shrink-0">
-                  Riset Kampus
-                </span>
+            {filteredStudentOrders.length === 0 ? (
+              <div className="bg-surface-container-lowest rounded-xl p-8 text-center flex flex-col items-center gap-3 shadow-sm border border-outline-variant/25">
+                <div className="w-12 h-12 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[26px]">shopping_bag</span>
+                </div>
+                <div className="flex flex-col gap-1 max-w-md">
+                  <h3 className="fluid-headline-md text-on-surface">
+                    {orderLookupQuery.trim()
+                      ? 'Pesanan Tidak Ditemukan'
+                      : 'Belum Ada Pesanan Aktif'}
+                  </h3>
+                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                    {orderLookupQuery.trim()
+                      ? `Tidak ada pesanan dengan kata kunci "${orderLookupQuery}".`
+                      : 'Pilih kantin favorit Anda, klik tombol "+ Pesan" pada menu makanan/minuman, lalu bayar via QRIS, DANA/GoPay/OVO, Transfer Bank, atau Tunai di Kasir.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (orderLookupQuery.trim()) setOrderLookupQuery('');
+                    else onChangeSubTab('kantin');
+                  }}
+                  className="min-h-[44px] px-5 py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer"
+                >
+                  {orderLookupQuery.trim() ? 'Tampilkan Semua Pesanan' : 'Mulai Pilih Kantin & Menu'}
+                </button>
               </div>
-              <p className="font-body-sm text-body-sm text-on-surface-variant">
-                Bantu tim riset mengukur apakah KantinKu IBI KKG benar-benar menyelesaikan masalah pencarian makan di kampus:
-              </p>
-              <div className="flex flex-col gap-2.5">
-                <label className="min-h-[48px] flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-container-low cursor-pointer">
-                  <span className="font-body-sm text-body-sm text-on-surface">
-                    1. Lebih cepat menemukan makanan sesuai budget?
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={surveyFastBudget}
-                    onChange={(e) => setSurveyFastBudget(e.target.checked)}
-                    className="w-5 h-5 accent-primary shrink-0"
-                  />
-                </label>
-                <label className="min-h-[48px] flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-container-low cursor-pointer">
-                  <span className="font-body-sm text-body-sm text-on-surface">
-                    2. Informasi harga &amp; &ldquo;Terakhir diperbarui&rdquo; lebih jelas?
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={surveyClearPrice}
-                    onChange={(e) => setSurveyClearPrice(e.target.checked)}
-                    className="w-5 h-5 accent-primary shrink-0"
-                  />
-                </label>
-                <label className="min-h-[48px] flex items-center justify-between gap-3 p-3 rounded-lg bg-surface-container-low cursor-pointer">
-                  <span className="font-body-sm text-body-sm text-on-surface">
-                    3. Terbantu menemukan lokasi kantin terdekat?
-                  </span>
-                  <input
-                    type="checkbox"
-                    checked={surveyNearLocation}
-                    onChange={(e) => setSurveyNearLocation(e.target.checked)}
-                    className="w-5 h-5 accent-primary shrink-0"
-                  />
-                </label>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {filteredStudentOrders.map((ord) => {
+                  const statusMeta =
+                    ord.status === 'waiting_payment_verification'
+                      ? {
+                          badge: '⏳ Menunggu Verifikasi Bayar Penjual',
+                          className: 'bg-tertiary-fixed text-tertiary',
+                          step: 1,
+                        }
+                      : ord.status === 'cooking'
+                      ? {
+                          badge: '🍳 Sedang Dimasak oleh Kantin',
+                          className: 'bg-primary-fixed text-on-primary-fixed',
+                          step: 2,
+                        }
+                      : ord.status === 'ready_pickup'
+                      ? {
+                          badge: '🔔 Siap Diambil di Stan Sekarang!',
+                          className: 'bg-secondary-container text-on-secondary-container',
+                          step: 3,
+                        }
+                      : ord.status === 'completed'
+                      ? {
+                          badge: '✅ Pesanan Selesai Diambil',
+                          className: 'bg-surface-container-high text-on-surface-variant',
+                          step: 4,
+                        }
+                      : {
+                          badge: '❌ Ditolak / Dibatalkan',
+                          className: 'bg-error-container text-on-error-container',
+                          step: 0,
+                        };
+
+                  return (
+                    <div
+                      key={ord.id}
+                      className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col justify-between gap-3.5"
+                    >
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div className="flex flex-col">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-xs font-bold text-primary">
+                                {ord.id}
+                              </span>
+                              <span className="text-outline-variant">•</span>
+                              <span className="font-label-sm text-xs text-on-surface-variant">
+                                {ord.createdAt}
+                              </span>
+                            </div>
+                            <h3 className="fluid-headline-md text-on-surface mt-0.5">
+                              {ord.stallName}
+                            </h3>
+                            <span className="font-body-sm text-xs text-on-surface-variant">
+                              📍 {ord.stallLocation}
+                            </span>
+                          </div>
+                          <span
+                            className={`px-2.5 py-1 rounded-lg font-label-sm text-xs font-bold ${statusMeta.className}`}
+                          >
+                            {statusMeta.badge}
+                          </span>
+                        </div>
+
+                        {/* Progress Stepper Bar */}
+                        {statusMeta.step > 0 && (
+                          <div className="grid grid-cols-3 gap-1.5 pt-1">
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                statusMeta.step >= 1 ? 'bg-primary' : 'bg-surface-container-high'
+                              }`}
+                            />
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                statusMeta.step >= 2 ? 'bg-primary' : 'bg-surface-container-high'
+                              }`}
+                            />
+                            <div
+                              className={`h-1.5 rounded-full ${
+                                statusMeta.step >= 3 ? 'bg-secondary' : 'bg-surface-container-high'
+                              }`}
+                            />
+                          </div>
+                        )}
+
+                        {/* Info Pemesan & Jam Ambil */}
+                        <div className="p-3 rounded-lg bg-surface-container-low flex flex-col gap-1 text-xs">
+                          <div className="flex justify-between gap-2">
+                            <span className="text-on-surface-variant">Pemesan:</span>
+                            <span className="font-semibold text-on-surface">
+                              {ord.studentName} (NIM: {ord.studentNim})
+                            </span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-on-surface-variant">Target Jam Ambil:</span>
+                            <span className="font-semibold text-primary">{ord.pickupTime}</span>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-on-surface-variant">Metode Pembayaran:</span>
+                            <span className="font-semibold text-on-surface">
+                              {ord.paymentProviderLabel}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Daftar Menu yang Dipesan */}
+                        <div className="flex flex-col gap-1.5 border-t border-outline-variant/20 pt-2.5">
+                          {(ord.items ?? []).map((it, idx) => (
+                            <div
+                              key={`${ord.id}-item-${idx}`}
+                              className="flex items-center justify-between text-xs"
+                            >
+                              <span className="text-on-surface">
+                                <strong>{it.quantity}x</strong> {it.name}
+                              </span>
+                              <span className="font-semibold text-on-surface">
+                                Rp {(it.price * it.quantity).toLocaleString('id-ID')}
+                              </span>
+                            </div>
+                          ))}
+                          <div className="flex items-center justify-between pt-2 border-t border-outline-variant/20 font-label-md text-sm">
+                            <span className="font-bold text-on-surface">Total Bayar</span>
+                            <span className="font-bold text-primary">
+                              Rp {(ord.totalAmount ?? 0).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        </div>
+
+                        {ord.rejectionReason && (
+                          <div className="p-2.5 rounded-lg bg-error-container/60 text-on-error-container text-xs">
+                            <strong>Catatan Penjual:</strong> {ord.rejectionReason}
+                          </div>
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => onSelectStall(ord.stallId)}
+                        className="w-full min-h-[40px] px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">storefront</span>
+                        <span>Buka Halaman {ord.stallName}</span>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
-              <button
-                type="button"
-                onClick={() => setSurveySubmitted(true)}
-                className="w-full min-h-[44px] py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer active:scale-[0.98] mt-1"
-              >
-                {surveySubmitted
-                  ? '✓ Terima Kasih! Evaluasi Tersimpan'
-                  : 'Kirim Evaluasi Mahasiswa'}
-              </button>
-            </div>
+            )}
           </div>
         ) : (
           /* THREE-STATE RESPONSIVE LAYOUT:
@@ -634,7 +746,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => {
-                          if (activeSubTab === 'favorit') onChangeSubTab('beranda');
+                          if (activeSubTab === 'favorit') onChangeSubTab('kantin');
                           else resetAllFilters();
                         }}
                         className="mt-2 min-h-[44px] px-5 py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md cursor-pointer"
