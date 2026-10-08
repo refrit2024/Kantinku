@@ -1,0 +1,49 @@
+{
+  "entities": {
+    "KantinKuState": {
+      "title": "KantinKuState",
+      "description": "Shared real-time state document for KantinKu IBI KKG Pilot Project Tahap 1 across laptops and mobile devices.",
+      "type": "object",
+      "properties": {
+        "stallsJson": {
+          "type": "string",
+          "description": "Serialized JSON of active verified stalls and their menu items.",
+          "minLength": 2,
+          "maxLength": 450000
+        },
+        "verificationsJson": {
+          "type": "string",
+          "description": "Serialized JSON of pending, approved, and rejected verification requests.",
+          "minLength": 2,
+          "maxLength": 200000
+        },
+        "sellerAccountsJson": {
+          "type": "string",
+          "description": "Serialized JSON of registered seller accounts and verification status.",
+          "minLength": 2,
+          "maxLength": 200000
+        },
+        "updatedAtIso": {
+          "type": "string",
+          "description": "ISO timestamp of last state update.",
+          "minLength": 10,
+          "maxLength": 64
+        }
+      },
+      "required": [
+        "stallsJson",
+        "verificationsJson",
+        "sellerAccountsJson",
+        "updatedAtIso"
+      ]
+    }
+  },
+  "firestore": {
+    "/kantinku_state/{docId}": {
+      "schema": {
+        "$ref": "#/entities/KantinKuState"
+      },
+      "description": "Stores the synchronized pilot project state for KantinKu IBI KKG under document ID 'pilot_v1'."
+    }
+  }
+}

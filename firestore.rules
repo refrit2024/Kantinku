@@ -1,0 +1,58 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Default-Deny Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function isValidKantinKuState(data) {
+      return data.keys().hasAll([
+        'stallsJson',
+        'verificationsJson',
+        'sellerAccountsJson',
+        'updatedAtIso'
+      ]) &&
+      data.keys().hasOnly([
+        'stallsJson',
+        'verificationsJson',
+        'sellerAccountsJson',
+        'updatedAtIso'
+      ]) &&
+      data.stallsJson is string &&
+      data.stallsJson.size() >= 2 &&
+      data.stallsJson.size() <= 450000 &&
+      data.verificationsJson is string &&
+      data.verificationsJson.size() >= 2 &&
+      data.verificationsJson.size() <= 200000 &&
+      data.sellerAccountsJson is string &&
+      data.sellerAccountsJson.size() >= 2 &&
+      data.sellerAccountsJson.size() <= 200000 &&
+      data.updatedAtIso is string &&
+      data.updatedAtIso.size() >= 10 &&
+      data.updatedAtIso.size() <= 64;
+    }
+
+    // Connection test path used on boot
+    match /test/connection {
+      allow get: if true;
+    }
+
+    // Shared real-time Pilot Project state document ('pilot_v1')
+    match /kantinku_state/{docId} {
+      allow get: if isValidId(docId) && docId == 'pilot_v1';
+      allow create: if isValidId(docId) && docId == 'pilot_v1' && isValidKantinKuState(incoming());
+      allow update: if isValidId(docId) && docId == 'pilot_v1' && isValidKantinKuState(incoming());
+      allow delete: if false;
+    }
+  }
+}

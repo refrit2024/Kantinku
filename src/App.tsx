@@ -1,4 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db, handleFirestoreError, OperationType } from './firebase';
 import {
   INITIAL_SELLER_ACCOUNTS,
   INITIAL_STALLS,
@@ -30,8 +32,10 @@ const STORAGE_KEYS = {
   VERIFICATIONS: 'kantinku_ibikkg_verifications_v1',
 };
 
+const FIRESTORE_STATE_PATH = 'kantinku_state/pilot_v1';
+
 export default function App() {
-  // Load persistent accounts & data from localStorage
+  // Load persistent accounts & data from localStorage as instant initial fallback before Cloud Sync arrives
   const [sellerAccounts, setSellerAccounts] = useState<SellerAccount[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SELLER_ACCOUNTS);
@@ -95,7 +99,91 @@ export default function App() {
     }
   });
 
-  // Persist sessions & data changes automatically to localStorage
+  // Refs to always access latest state inside synchronous handlers
+  const stallsRef = useRef(stalls);
+  stallsRef.current = stalls;
+  const verificationsRef = useRef(verifications);
+  verificationsRef.current = verifications;
+  const sellerAccountsRef = useRef(sellerAccounts);
+  sellerAccountsRef.current = sellerAccounts;
+
+  // Helper to push shared state to Firebase Firestore Cloud Database
+  const syncStateToCloud = async (
+    nextStalls: Stall[],
+    nextVerifications: VerificationRequest[],
+    nextSellerAccounts: SellerAccount[]
+  ) => {
+    const stallsJson = JSON.stringify(nextStalls).slice(0, 449000);
+    const verificationsJson = JSON.stringify(nextVerifications).slice(0, 199000);
+    const sellerAccountsJson = JSON.stringify(nextSellerAccounts).slice(0, 199000);
+    const updatedAtIso = new Date().toISOString();
+
+    try {
+      await setDoc(doc(db, 'kantinku_state', 'pilot_v1'), {
+        stallsJson,
+        verificationsJson,
+        sellerAccountsJson,
+        updatedAtIso,
+      });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, FIRESTORE_STATE_PATH);
+    }
+  };
+
+  // Real-time Firebase Firestore listener (onSnapshot) across all laptops & phones
+  useEffect(() => {
+    const docRef = doc(db, 'kantinku_state', 'pilot_v1');
+    const unsubscribe = onSnapshot(
+      docRef,
+      (snapshot) => {
+        if (snapshot.exists()) {
+          const data = snapshot.data();
+          try {
+            if (typeof data.stallsJson === 'string') {
+              const parsedStalls = JSON.parse(data.stallsJson);
+              if (Array.isArray(parsedStalls)) {
+                setStalls(parsedStalls);
+              }
+            }
+            if (typeof data.verificationsJson === 'string') {
+              const parsedVerifs = JSON.parse(data.verificationsJson);
+              if (Array.isArray(parsedVerifs)) {
+                setVerifications(parsedVerifs);
+              }
+            }
+            if (typeof data.sellerAccountsJson === 'string') {
+              const parsedAccounts: SellerAccount[] = JSON.parse(data.sellerAccountsJson);
+              if (Array.isArray(parsedAccounts)) {
+                setSellerAccounts(parsedAccounts);
+                // Keep loggedInSeller status in sync if Admin approves/rejects from another laptop
+                setLoggedInSeller((prev) => {
+                  if (!prev) return null;
+                  const updatedSelf = parsedAccounts.find((a) => a.id === prev.id);
+                  return updatedSelf || prev;
+                });
+              }
+            }
+          } catch (e) {
+            console.error('Failed to parse synced Firestore state:', e);
+          }
+        } else {
+          // Seed initial Pilot Project state to Cloud Database on first run
+          syncStateToCloud(
+            stallsRef.current,
+            verificationsRef.current,
+            sellerAccountsRef.current
+          );
+        }
+      },
+      (error) => {
+        handleFirestoreError(error, OperationType.GET, FIRESTORE_STATE_PATH);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  // Persist local device session & cache to localStorage
   useEffect(() => {
     try {
       if (loggedInSeller) {
@@ -265,8 +353,12 @@ export default function App() {
       primaryActionText: 'Setujui & Terbitkan',
     };
 
-    setSellerAccounts((prev) => [...prev, createdAccount]);
-    setVerifications((prev) => [newVerificationCard, ...prev]);
+    const nextAccounts = [...sellerAccountsRef.current, createdAccount];
+    const nextVerifications = [newVerificationCard, ...verificationsRef.current];
+
+    setSellerAccounts(nextAccounts);
+    setVerifications(nextVerifications);
+    syncStateToCloud(stallsRef.current, nextVerifications, nextAccounts);
 
     showToast(
       `Pendaftaran "${createdAccount.stallName}" berhasil dikirim! Menunggu verifikasi Admin Kampus.`
@@ -307,9 +399,16 @@ export default function App() {
   const currentMerchantStall =
     stalls.find((s) => s.id === activeMerchantStallId) || stalls[0];
 
+  // Helper to update stalls and broadcast to Firebase Cloud
+  const updateStallsAndSync = (updater: (prev: Stall[]) => Stall[]) => {
+    const nextStalls = updater(stallsRef.current);
+    setStalls(nextStalls);
+    syncStateToCloud(nextStalls, verificationsRef.current, sellerAccountsRef.current);
+  };
+
   // Handlers for Merchant Screen (Operates on whichever seller is logged in!)
   const handleToggleStoreOpen = () => {
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) => {
         if (stall.id === activeMerchantStallId) {
           const nextOpen = !stall.isOpen;
@@ -331,7 +430,7 @@ export default function App() {
   };
 
   const handleToggleMenuStatus = (itemId: string) => {
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) => {
         if (stall.id === activeMerchantStallId) {
           const updatedMenu = stall.menuItems.map((item) => {
@@ -364,7 +463,7 @@ export default function App() {
   };
 
   const handleUpdateMenuPrice = (itemId: string, newPrice: number) => {
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) => {
         if (stall.id === activeMerchantStallId) {
           const updatedMenu = stall.menuItems.map((item) =>
@@ -393,7 +492,7 @@ export default function App() {
       ...newItem,
       id: `custom-${Date.now()}`,
     };
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) =>
         stall.id === activeMerchantStallId
           ? {
@@ -408,7 +507,7 @@ export default function App() {
   };
 
   const handleEditMenuItem = (updatedItem: MenuItem) => {
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) =>
         stall.id === activeMerchantStallId
           ? {
@@ -426,7 +525,7 @@ export default function App() {
 
   const handleDeleteMenuItem = (itemId: string) => {
     const target = currentMerchantStall.menuItems.find((m) => m.id === itemId);
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) =>
         stall.id === activeMerchantStallId
           ? {
@@ -444,7 +543,7 @@ export default function App() {
   };
 
   const handleUpdateStallProfile = (updated: Partial<Stall>) => {
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) =>
         stall.id === activeMerchantStallId ? { ...stall, ...updated } : stall
       )
@@ -452,7 +551,7 @@ export default function App() {
   };
 
   const handleReplyReview = (reviewId: string, replyText: string) => {
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) =>
         stall.id === activeMerchantStallId
           ? {
@@ -481,7 +580,7 @@ export default function App() {
       date: '8 Oktober 2026',
       comment,
     };
-    setStalls((prev) =>
+    updateStallsAndSync((prev) =>
       prev.map((stall) =>
         stall.id === stallId
           ? {
@@ -495,39 +594,37 @@ export default function App() {
     showToast('Terima kasih! Ulasan Anda telah ditampilkan di halaman kantin.');
   };
 
-  // Handlers for Admin Screen (Approving a verification also unlocks the Seller Account and creates their Stall!)
+  // Handlers for Admin Screen (Approving a verification also unlocks the Seller Account and creates their Stall in Cloud!)
   const handleApproveVerification = (id: string, name: string) => {
-    const targetVerif = verifications.find((v) => v.id === id);
+    const targetVerif = verificationsRef.current.find((v) => v.id === id);
 
-    setVerifications((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, approved: true } : v))
+    const nextVerifications = verificationsRef.current.map((v) =>
+      v.id === id ? { ...v, approved: true } : v
     );
+    let nextAccounts = sellerAccountsRef.current;
+    let nextStalls = stallsRef.current;
 
     if (targetVerif?.sellerAccountId) {
-      const targetAcc = sellerAccounts.find(
+      const targetAcc = sellerAccountsRef.current.find(
         (acc) => acc.id === targetVerif.sellerAccountId
       );
 
-      setSellerAccounts((prev) =>
-        prev.map((acc) =>
-          acc.id === targetVerif.sellerAccountId
-            ? { ...acc, status: 'approved', rejectedNote: undefined }
-            : acc
-        )
+      nextAccounts = sellerAccountsRef.current.map((acc) =>
+        acc.id === targetVerif.sellerAccountId
+          ? { ...acc, status: 'approved', rejectedNote: undefined }
+          : acc
       );
 
       if (targetAcc) {
-        setStalls((prev) => {
-          const alreadyExists = prev.some((s) => s.id === targetAcc.stallId);
-          if (alreadyExists) return prev;
-
+        const alreadyExists = stallsRef.current.some((s) => s.id === targetAcc.stallId);
+        if (!alreadyExists) {
           const newStall: Stall = {
             id: targetAcc.stallId,
             name: targetAcc.stallName,
             code:
               targetAcc.building === 'Gedung A'
-                ? `Stan A-0${prev.length + 1}`
-                : `Stan B-0${prev.length + 1}`,
+                ? `Stan A-0${stallsRef.current.length + 1}`
+                : `Stan B-0${stallsRef.current.length + 1}`,
             mapPinCode: targetAcc.building === 'Gedung A' ? 'Kantin A' : 'Kantin C',
             building: targetAcc.building,
             distanceMeters: targetAcc.building === 'Gedung A' ? 95 : 190,
@@ -563,10 +660,15 @@ export default function App() {
               },
             ],
           };
-          return [newStall, ...prev];
-        });
+          nextStalls = [newStall, ...stallsRef.current];
+        }
       }
     }
+
+    setVerifications(nextVerifications);
+    setSellerAccounts(nextAccounts);
+    setStalls(nextStalls);
+    syncStateToCloud(nextStalls, nextVerifications, nextAccounts);
 
     showToast(
       `Akun & Stan "${name}" disetujui! Penjual kini dapat login ke Dashboard Penjual.`
@@ -574,21 +676,24 @@ export default function App() {
   };
 
   const handleRejectVerification = (id: string, name: string, note: string) => {
-    const targetVerif = verifications.find((v) => v.id === id);
+    const targetVerif = verificationsRef.current.find((v) => v.id === id);
 
-    setVerifications((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, rejectedReason: note } : v))
+    const nextVerifications = verificationsRef.current.map((v) =>
+      v.id === id ? { ...v, rejectedReason: note } : v
     );
+    let nextAccounts = sellerAccountsRef.current;
 
     if (targetVerif?.sellerAccountId) {
-      setSellerAccounts((prev) =>
-        prev.map((acc) =>
-          acc.id === targetVerif.sellerAccountId
-            ? { ...acc, status: 'rejected', rejectedNote: note }
-            : acc
-        )
+      nextAccounts = sellerAccountsRef.current.map((acc) =>
+        acc.id === targetVerif.sellerAccountId
+          ? { ...acc, status: 'rejected', rejectedNote: note }
+          : acc
       );
     }
+
+    setVerifications(nextVerifications);
+    setSellerAccounts(nextAccounts);
+    syncStateToCloud(stallsRef.current, nextVerifications, nextAccounts);
 
     showToast(`Pemberitahuan revisi dikirimkan ke mitra "${name}": "${note}"`);
   };
