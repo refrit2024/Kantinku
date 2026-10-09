@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   getStallPaymentDetails,
   MenuItem,
+  normalizeStallLocation,
   OrderItem,
   OrderTransaction,
   PaymentMethodType,
@@ -29,7 +30,7 @@ interface DetailStanScreenProps {
 }
 
 export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
-  stall,
+  stall: rawStall,
   orders,
   isFavorite,
   onToggleFavorite,
@@ -39,6 +40,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   onOpenReportModal,
   onShowToast,
 }) => {
+  const stall = normalizeStallLocation(rawStall);
   const [selectedCategory, setSelectedCategory] = useState<
     'all' | 'makanan' | 'minuman' | 'snack'
   >('all');
@@ -282,7 +284,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             className="min-h-[44px] inline-flex items-center gap-1.5 text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Kembali ke Direktori Kantin / {stall.building}</span>
+            <span>Kembali ke Direktori Kantin • Dekat Hall D ({stall.code})</span>
           </button>
           <button
             type="button"
@@ -316,7 +318,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <div className="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md w-fit">
                   <span className="material-symbols-outlined text-[14px]">verified</span>
                   <span className="font-label-sm text-label-sm">
-                    Dikelola Langsung oleh Penjual • {stall.mapPinCode}
+                    Dikelola Langsung oleh Penjual • {stall.code} (Dekat Hall D)
                   </span>
                 </div>
                 <h2 className="fluid-headline-xl text-surface-bright tracking-tight">

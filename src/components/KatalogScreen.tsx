@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { OrderTransaction, Stall } from '../data/kantinData';
+import { normalizeStallLocation, OrderTransaction, Stall } from '../data/kantinData';
 
 export type StudentSubTab = 'kantin' | 'kategori' | 'favorit' | 'pesanan';
 
@@ -412,68 +412,38 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     </h1>
                   </div>
 
-                  {/* Mobile/Tablet Map Toggle Button */}
-                  <button
-                    type="button"
-                    onClick={() => setMobileMapOpen(!mobileMapOpen)}
-                    className="lg:hidden min-h-[40px] px-3 py-1.5 rounded-lg bg-surface-container-high text-primary font-label-sm text-label-sm flex items-center gap-1 shrink-0 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">map</span>
-                    <span>{mobileMapOpen ? 'Tutup Peta' : 'Lihat Peta'}</span>
-                  </button>
+                  {/* Badge Info Lokasi Kampus IBI KKG */}
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-high text-primary font-label-sm text-[11px] font-semibold shrink-0">
+                    <span className="material-symbols-outlined text-[15px]">storefront</span>
+                    <span>Area Kantin Hall D</span>
+                  </div>
                 </div>
 
-                {/* Peta Lokasi Kantin IBI KKG (Always visible on Desktop lg+, Collapsible on Mobile/Tablet so it doesn't push stalls below the fold) */}
-                <div
-                  className={`${
-                    mobileMapOpen ? 'flex' : 'hidden lg:flex'
-                  } bg-surface-container-low rounded-xl p-3 flex-col gap-2.5 border border-outline-variant/30`}
-                >
+                {/* Daftar Pintasan Stan Kantin IBI KKG (Tanpa Peta karena terpusat di 1 area kantin IBI KKG) */}
+                <div className="bg-surface-container-low rounded-xl p-3 flex flex-col gap-2.5 border border-outline-variant/30">
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-label-sm text-label-sm text-on-surface font-semibold truncate">
-                      Peta Titik Kantin (A–D)
+                    <span className="font-label-sm text-label-sm text-on-surface font-bold">
+                      Pilih Cepat Stan Kantin IBI KKG
                     </span>
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setMapBuildingTab('A')}
-                        className={`min-h-[32px] px-2.5 py-1 rounded-md text-label-sm font-semibold cursor-pointer transition-colors ${
-                          mapBuildingTab === 'A'
-                            ? 'bg-primary text-on-primary'
-                            : 'bg-surface-container-lowest text-on-surface-variant'
-                        }`}
-                      >
-                        Gedung A
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setMapBuildingTab('B')}
-                        className={`min-h-[32px] px-2.5 py-1 rounded-md text-label-sm font-semibold cursor-pointer transition-colors ${
-                          mapBuildingTab === 'B'
-                            ? 'bg-primary text-on-primary'
-                            : 'bg-surface-container-lowest text-on-surface-variant'
-                        }`}
-                      >
-                        Gedung B
-                      </button>
-                    </div>
+                    <span className="font-body-sm text-[11px] text-on-surface-variant">
+                      {stalls.length} Stan Terdaftar
+                    </span>
                   </div>
 
-                  {/* Interactive Pins */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-2">
-                    {stalls.map((stall) => (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-1.5">
+                    {stalls.map((stall, idx) => (
                       <button
                         key={stall.id}
                         type="button"
                         onClick={() => onSelectStall(stall.id)}
-                        className="min-h-[48px] p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high active:scale-[0.99] transition-all flex items-center justify-between gap-2 text-left shadow-xs cursor-pointer"
+                        className="min-h-[48px] p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high active:scale-[0.99] transition-all flex items-center justify-between gap-2 text-left border border-outline-variant/20 cursor-pointer"
                       >
                         <div className="flex flex-col min-w-0">
-                          <span className="font-label-sm text-[11px] text-primary font-bold">
-                            📍 {stall.mapPinCode} • {stall.name}
+                          <span className="font-label-sm text-[11px] text-primary font-bold truncate">
+                            Stan 0{idx + 1} • {stall.name}
                           </span>
-                          <span className="font-body-sm text-[11px] text-on-surface-variant">
-                            {stall.building} (±{stall.distanceMeters} m) •{' '}
+                          <span className="font-body-sm text-[11px] text-on-surface-variant truncate">
+                            {stall.specialty} •{' '}
                             <strong className={stall.isOpen ? 'text-secondary' : 'text-error'}>
                               {stall.isOpen ? 'Buka' : 'Tutup'}
                             </strong>
@@ -484,12 +454,6 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         </span>
                       </button>
                     ))}
-                  </div>
-
-                  <div className="px-2.5 py-1.5 bg-surface-container-high rounded-md text-center text-[11px] text-on-surface-variant font-medium">
-                    {mapBuildingTab === 'A'
-                      ? 'Pujasera Gedung A Lt. 1 (Jarak ±85m – 180m)'
-                      : 'Kantin Gedung B Lt. Dasar (Jarak ±340m – 420m)'}
                   </div>
                 </div>
               </div>
@@ -756,7 +720,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {filteredStalls.map((stall) => {
+                      {filteredStalls.map((rawStall, idx) => {
+                        const stall = normalizeStallLocation(rawStall, idx);
                         const isFav = favoriteStallIds.includes(stall.id);
                         const matchingMenus = stall.menuItems.filter((item) => {
                           const catMatch =
@@ -832,7 +797,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                       location_on
                                     </span>
                                     <span className="truncate">
-                                      {stall.mapPinCode} ({stall.code}) • {stall.locationDetail}
+                                      {stall.code} • {stall.locationDetail}
                                     </span>
                                   </div>
                                 </div>

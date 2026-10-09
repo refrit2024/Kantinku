@@ -171,6 +171,53 @@ export const INITIAL_ADMIN_CREDENTIALS: AdminCredentials = {
   password: 'admin123',
 };
 
+export function normalizeStallLocation<
+  T extends {
+    id?: string;
+    code?: string;
+    locationDetail?: string;
+    fullLocation?: string;
+    walkingGuide?: string;
+  }
+>(stall: T, index = 0): T {
+  const defaultCode =
+    stall.id === 'stan-bu-sari'
+      ? 'Stan 01'
+      : stall.id === 'stan-mas-budi'
+      ? 'Stan 02'
+      : stall.id === 'stan-berkah'
+      ? 'Stan 03'
+      : stall.id === 'stan-kopi-roti'
+      ? 'Stan 04'
+      : `Stan 0${index + 1}`;
+
+  const cleanCode =
+    !stall.code || /Stan [AB]-/i.test(stall.code) ? defaultCode : stall.code;
+
+  const cleanLocationDetail =
+    !stall.locationDetail || /Gedung [AB]|Stan [AB]-|Pujasera/i.test(stall.locationDetail)
+      ? `Area Kantin Dekat Hall D (${cleanCode})`
+      : stall.locationDetail;
+
+  const cleanFullLocation =
+    !stall.fullLocation || /Gedung [AB]|Stan [AB]-|Pujasera/i.test(stall.fullLocation)
+      ? `Gedung Kampus IBI KKG, ${cleanLocationDetail}`
+      : stall.fullLocation;
+
+  const cleanWalkingGuide =
+    !stall.walkingGuide || /Gedung [AB]|Stan [AB]-|Pujasera/i.test(stall.walkingGuide)
+      ? `Berada di area kantin dekat Hall D (${cleanCode}), Lantai Dasar Gedung Kampus IBI KKG.`
+      : stall.walkingGuide;
+
+  return {
+    ...stall,
+    code: cleanCode,
+    locationDetail: cleanLocationDetail,
+    fullLocation: cleanFullLocation,
+    walkingGuide: cleanWalkingGuide,
+  };
+}
+
 export function getStallPaymentDetails(stall: Stall): PaymentDetails {
   if (stall.paymentDetails) return stall.paymentDetails;
   const cleanPhone = (stall.whatsapp || '081290001980').replace(/^62/, '0');
@@ -200,7 +247,7 @@ export const INITIAL_SELLER_ACCOUNTS: SellerAccount[] = [
     stallId: 'stan-bu-sari',
     stallName: 'Kantin Bu Sari',
     building: 'Gedung A',
-    locationDetail: 'Gedung A Lt. 1 Stan 01',
+    locationDetail: 'Area Kantin Dekat Hall D (Stan 01)',
     categorySummary: 'Masakan Rumahan & Ayam Geprek',
     hours: '07.00–20.00',
     status: 'approved',
@@ -214,7 +261,7 @@ export const INITIAL_SELLER_ACCOUNTS: SellerAccount[] = [
     stallId: 'stan-mas-budi',
     stallName: 'Dapur Mas Budi (Mie & Soto)',
     building: 'Gedung A',
-    locationDetail: 'Gedung A Lt. 1 Stan 04',
+    locationDetail: 'Area Kantin Dekat Hall D (Stan 02)',
     categorySummary: 'Mie Ayam Bakso & Soto Lamongan',
     hours: '07.30–18.00',
     status: 'approved',
@@ -228,7 +275,7 @@ export const INITIAL_SELLER_ACCOUNTS: SellerAccount[] = [
     stallId: 'stan-bu-nanik',
     stallName: 'Warung Nasi Uduk Bu Nanik',
     building: 'Gedung A',
-    locationDetail: 'Selasar Gedung A Lt. 2 (Depan Lab Komputer)',
+    locationDetail: 'Area Kantin Dekat Hall D (Stan 05)',
     categorySummary: 'Makanan Berat Tradisional & Gorengan',
     hours: '07.00–16.30',
     status: 'pending',
@@ -341,14 +388,14 @@ export const INITIAL_STALLS: Stall[] = [
   {
     id: 'stan-bu-sari',
     name: 'Kantin Bu Sari',
-    code: 'Stan A-01',
+    code: 'Stan 01',
     mapPinCode: 'Kantin A',
     building: 'Gedung A',
-    distanceMeters: 85,
-    locationDetail: 'Gedung A Lt. 1 (Sayap Kiri Pujasera)',
-    fullLocation: 'Gedung A Lantai 1 (Pujasera, Dekat Lift Timur)',
+    distanceMeters: 45,
+    locationDetail: 'Area Kantin Dekat Hall D (Stan 01)',
+    fullLocation: 'Gedung Kampus IBI KKG, Area Kantin Dekat Hall D (Stan 01)',
     walkingGuide:
-      'Dari Lobi Utama Gedung A, berjalan lurus ±85 meter menuju lorong timur melewati Perpustakaan IBI KKG. Belok kanan di samping Lift Mahasiswa Timur. Kantin Bu Sari berada tepat di depan area meja makan bundar.',
+      'Dari Lobi Utama Gedung IBI KKG, berjalan lurus menuju area Hall D (±45 meter). Kantin Bu Sari berada di deretan pertama Stan 01 tepat di dekat pintu masuk Hall D.',
     specialty: 'Spesialis Masakan Rumahan & Ayam Geprek',
     description:
       'Melayani mahasiswa dan dosen IBI KKG sejak 2018 dengan menu ayam geprek sambal bawang ulek dadakan, nasi goreng, dan minuman segar harga mahasiswa.',
@@ -401,14 +448,14 @@ export const INITIAL_STALLS: Stall[] = [
   {
     id: 'stan-mas-budi',
     name: 'Dapur Mas Budi (Mie & Soto)',
-    code: 'Stan A-04',
+    code: 'Stan 02',
     mapPinCode: 'Kantin B',
     building: 'Gedung A',
-    distanceMeters: 180,
-    locationDetail: 'Gedung A Lt. 1 Stan 04 (Depan Jalur Tangga)',
-    fullLocation: 'Gedung A Lantai 1 (Depan Jalur Tangga Utama)',
+    distanceMeters: 55,
+    locationDetail: 'Area Kantin Dekat Hall D (Stan 02)',
+    fullLocation: 'Gedung Kampus IBI KKG, Area Kantin Dekat Hall D (Stan 02)',
     walkingGuide:
-      'Terletak sekitar 180 meter dari gerbang depan Gedung A, tepat di bawah tangga utama menuju lantai 2.',
+      'Terletak di area kantin utama dekat Hall D (±55 meter dari Lobi Utama), bersebelahan dengan Kantin Bu Sari.',
     specialty: 'Spesialis Mie Ayam Bakso & Soto Lamongan',
     description:
       'Menyajikan hidangan berkuah hangat, mie ayam racikan sendiri, dan soto ayam Lamongan koya gurih.',
@@ -498,14 +545,14 @@ export const INITIAL_STALLS: Stall[] = [
   {
     id: 'stan-berkah-barokah',
     name: 'Kantin Berkah Barokah',
-    code: 'Stan B-01',
+    code: 'Stan 03',
     mapPinCode: 'Kantin C',
-    building: 'Gedung B',
-    distanceMeters: 340,
-    locationDetail: 'Gedung B Lt. Dasar samping parkiran',
-    fullLocation: 'Gedung B Lantai Dasar (Samping Parkiran Motor Mahasiswa)',
+    building: 'Gedung A',
+    distanceMeters: 65,
+    locationDetail: 'Area Kantin Dekat Hall D (Stan 03)',
+    fullLocation: 'Gedung Kampus IBI KKG, Area Kantin Dekat Hall D (Stan 03)',
     walkingGuide:
-      'Berjarak sekitar 340 meter dari Gedung A melalui selasar penghubung menuju Gedung B Lantai Dasar di dekat area parkir motor.',
+      'Berada di deretan tengah area kantin dekat Hall D (±65 meter dari Lobi Utama Gedung IBI KKG).',
     specialty: 'Nasi Rames Hemat & Aneka Gorengan Hangat',
     description:
       'Pilihan paling hemat untuk mahasiswa dengan paket nasi rames sayur lengkap di bawah Rp10.000 dan gorengan hangat.',
@@ -574,21 +621,21 @@ export const INITIAL_STALLS: Stall[] = [
         majorAndYear: 'Informatika 2024',
         rating: 5,
         date: '8 Oktober 2026',
-        comment: 'Nasi rames Rp10.000 paling penyelamat di akhir bulan. Lokasi dekat parkiran motor Gedung B.',
+        comment: 'Nasi rames Rp10.000 paling penyelamat di akhir bulan. Lokasi strategis di area kantin dekat Hall D.',
       },
     ],
   },
   {
     id: 'stan-kopi-roti',
     name: 'Kedai Kopi & Toast Mahasiswa',
-    code: 'Stan B-03',
+    code: 'Stan 04',
     mapPinCode: 'Kantin D',
-    building: 'Gedung B',
-    distanceMeters: 420,
-    locationDetail: 'Gedung B Dasar, Stan B-03 (Saung Terbuka)',
-    fullLocation: 'Gedung B Lantai Dasar, Area Saung Terbuka Stan B-03',
+    building: 'Gedung A',
+    distanceMeters: 75,
+    locationDetail: 'Area Kantin Dekat Hall D (Stan 04)',
+    fullLocation: 'Gedung Kampus IBI KKG, Area Kantin Dekat Hall D (Stan 04)',
     walkingGuide:
-      'Berjarak ±420 meter dari Lobi Utama Gedung A, berada di area Saung Terbuka Gedung B dekat ruang tunggu mahasiswa.',
+      'Berada di sudut area duduk kantin dekat Hall D (±75 meter dari Lobi Utama Gedung IBI KKG).',
     specialty: 'Kopi Susu Gula Aren & Roti Bakar Toast',
     description:
       'Tempat singgah favorit saat jeda kelas untuk membeli es kopi susu gula aren, matcha, dan roti bakar hangat.',
@@ -670,7 +717,7 @@ export const INITIAL_VERIFICATIONS: VerificationRequest[] = [
     badgeText: 'Pengajuan Baru',
     badgeType: 'new',
     name: 'Warung Nasi Uduk Bu Nanik',
-    location: 'Selasar Gedung A Lt. 2 (Depan Lab Komputer)',
+    location: 'Area Kantin Dekat Hall D (Stan 05)',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuDKRZAZhZgUABT21KQQyMihdBy_RG7SjtzahxVvkVUe57WKeshzusCRnnMBqyja36FxAU23sdLyzKXXHBJwc01syJgxv607G4cinlHC5PC9n2UAHfyLtGJOuvlzsDABN1uM888XvesFCvGVqarTpbyGY68Hq8DfrjmXLvtp9SPAr4Pb0aCeYqswDWNqpSFOTQqD8_51cg-6NfYw6CZ0YQQLzfYFIeJlKcgTj3jH3QXt',
     alt: 'Warm authentic Indonesian food stall display with traditional banana leaf nasi uduk and savory chicken dishes at a clean college cafeteria in Jakarta.',
     approved: false,
@@ -689,7 +736,7 @@ export const INITIAL_VERIFICATIONS: VerificationRequest[] = [
     badgeText: 'Pembaruan Menu & QRIS',
     badgeType: 'update',
     name: 'Kopi Kenangan Mahasiswa & Roti',
-    location: 'Gedung B Dasar, Stan B-03',
+    location: 'Area Kantin Dekat Hall D (Stan 04)',
     image: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
     alt: 'Modern barista espresso coffee stall on a university campus interior with artisan bakery and toast bread displays.',
     approved: false,

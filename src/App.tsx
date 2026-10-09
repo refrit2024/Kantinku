@@ -8,6 +8,7 @@ import {
   INITIAL_STALLS,
   INITIAL_VERIFICATIONS,
   MenuItem,
+  normalizeStallLocation,
   OrderStatusType,
   OrderTransaction,
   ReviewItem,
@@ -45,7 +46,8 @@ export default function App() {
   const [sellerAccounts, setSellerAccounts] = useState<SellerAccount[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.SELLER_ACCOUNTS);
-      return saved ? JSON.parse(saved) : INITIAL_SELLER_ACCOUNTS;
+      const parsed: SellerAccount[] = saved ? JSON.parse(saved) : INITIAL_SELLER_ACCOUNTS;
+      return parsed.map((acc, idx) => normalizeStallLocation(acc, idx));
     } catch {
       return INITIAL_SELLER_ACCOUNTS;
     }
@@ -77,10 +79,17 @@ export default function App() {
     }
   });
 
-  // If seller is already logged in from a previous visit (belum keluar dari akunnya),
-  // automatically open Dashboard Penjual without asking them to login again!
+  // Default to 'katalog' (Katalog Kantin) immediately for visitors/students,
+  // or auto-open Dashboard Penjual / Admin Portal if an active session exists.
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(() => {
     try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const hash = window.location.hash.toLowerCase();
+        if (params.has('admin') || params.get('portal') === 'admin' || hash.includes('admin')) {
+          return 'auth-portal';
+        }
+      }
       const savedSeller = localStorage.getItem(STORAGE_KEYS.SELLER_SESSION);
       if (savedSeller) return 'kelola-menu';
       const savedAdmin = localStorage.getItem(STORAGE_KEYS.ADMIN_SESSION);
@@ -88,7 +97,7 @@ export default function App() {
     } catch {
       // ignore storage errors
     }
-    return 'auth-portal';
+    return 'katalog';
   });
 
   const [studentSubTab, setStudentSubTab] = useState<StudentSubTab>('kantin');
@@ -125,7 +134,8 @@ export default function App() {
   const [stalls, setStalls] = useState<Stall[]>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.STALLS);
-      return saved ? JSON.parse(saved) : INITIAL_STALLS;
+      const parsed: Stall[] = saved ? JSON.parse(saved) : INITIAL_STALLS;
+      return parsed.map((s, idx) => normalizeStallLocation(s, idx));
     } catch {
       return INITIAL_STALLS;
     }
@@ -202,23 +212,33 @@ export default function App() {
             if (typeof data.stallsJson === 'string') {
               const parsedStalls = JSON.parse(data.stallsJson);
               if (Array.isArray(parsedStalls)) {
-                setStalls(parsedStalls);
+                setStalls(parsedStalls.map((s: Stall, idx: number) => normalizeStallLocation(s, idx)));
               }
             }
             if (typeof data.verificationsJson === 'string') {
               const parsedVerifs = JSON.parse(data.verificationsJson);
               if (Array.isArray(parsedVerifs)) {
-                setVerifications(parsedVerifs);
+                setVerifications(
+                  parsedVerifs.map((v: VerificationRequest) => ({
+                    ...v,
+                    location: /Gedung [AB]|Stan [AB]-/i.test(v.location || '')
+                      ? 'Area Kantin Dekat Hall D'
+                      : v.location,
+                  }))
+                );
               }
             }
             if (typeof data.sellerAccountsJson === 'string') {
               const parsedAccounts: SellerAccount[] = JSON.parse(data.sellerAccountsJson);
               if (Array.isArray(parsedAccounts)) {
-                setSellerAccounts(parsedAccounts);
+                const cleanedAccounts = parsedAccounts.map((acc, idx) =>
+                  normalizeStallLocation(acc, idx)
+                );
+                setSellerAccounts(cleanedAccounts);
                 // Keep loggedInSeller status in sync if Admin approves/rejects from another laptop
                 setLoggedInSeller((prev) => {
                   if (!prev) return null;
-                  const updatedSelf = parsedAccounts.find((a) => a.id === prev.id);
+                  const updatedSelf = cleanedAccounts.find((a) => a.id === prev.id);
                   return updatedSelf || prev;
                 });
               }
@@ -405,6 +425,28 @@ export default function App() {
     );
   };
 
+  const handleUpdateSellerPassword = (accountId: string, newPassword: string) => {
+    const nextAccounts = sellerAccountsRef.current.map((acc) =>
+      acc.id === accountId ? { ...acc, password: newPassword } : acc
+    );
+    setSellerAccounts(nextAccounts);
+    sellerAccountsRef.current = nextAccounts;
+    setLoggedInSeller((prev) =>
+      prev && prev.id === accountId ? { ...prev, password: newPassword } : prev
+    );
+    syncStateToCloud(
+      stallsRef.current,
+      verificationsRef.current,
+      nextAccounts,
+      adminCredentialsRef.current,
+      ordersRef.current
+    );
+    const targetAcc = nextAccounts.find((a) => a.id === accountId);
+    showToast(
+      `Kata sandi untuk "${targetAcc?.stallName || 'Penjual'}" berhasil diperbarui & disinkronkan ke Cloud!`
+    );
+  };
+
   // Toast State
   const [toast, setToast] = useState<{
     visible: boolean;
@@ -425,7 +467,7 @@ export default function App() {
   } | null>(null);
 
   // Report Form State
-  const [reportStallName, setReportStallName] = useState('Kantin Berkah Barokah (Stan B-01)');
+  const [reportStallName, setReportStallName] = useState('Kantin Berkah Barokah (Stan 03)');
   const [reportMenuName, setReportMenuName] = useState('');
   const [reportCatalogPrice, setReportCatalogPrice] = useState('5000');
   const [reportChargedPrice, setReportChargedPrice] = useState('6000');
@@ -504,7 +546,7 @@ export default function App() {
       badgeText: 'Pendaftaran Akun Baru',
       badgeType: 'new',
       name: createdAccount.stallName,
-      location: `${createdAccount.building} • ${createdAccount.locationDetail}`,
+      location: `Area Kantin Dekat Hall D • ${createdAccount.locationDetail}`,
       image:
         'https://lh3.googleusercontent.com/aida-public/AB6AXuDKRZAZhZgUABT21KQQyMihdBy_RG7SjtzahxVvkVUe57WKeshzusCRnnMBqyja36FxAU23sdLyzKXXHBJwc01syJgxv607G4cinlHC5PC9n2UAHfyLtGJOuvlzsDABN1uM888XvesFCvGVqarTpbyGY68Hq8DfrjmXLvtp9SPAr4Pb0aCeYqswDWNqpSFOTQqD8_51cg-6NfYw6CZ0YQQLzfYFIeJlKcgTj3jH3QXt',
       alt: createdAccount.stallName,
@@ -794,16 +836,13 @@ export default function App() {
           const newStall: Stall = {
             id: targetAcc.stallId,
             name: targetAcc.stallName,
-            code:
-              targetAcc.building === 'Gedung A'
-                ? `Stan A-0${stallsRef.current.length + 1}`
-                : `Stan B-0${stallsRef.current.length + 1}`,
-            mapPinCode: targetAcc.building === 'Gedung A' ? 'Kantin A' : 'Kantin C',
+            code: `Stan 0${stallsRef.current.length + 1}`,
+            mapPinCode: 'Kantin A',
             building: targetAcc.building,
-            distanceMeters: targetAcc.building === 'Gedung A' ? 95 : 190,
+            distanceMeters: 60,
             locationDetail: targetAcc.locationDetail,
-            fullLocation: `${targetAcc.building}, ${targetAcc.locationDetail}`,
-            walkingGuide: `Sekitar 1–2 menit jalan kaki menuju ${targetAcc.locationDetail}.`,
+            fullLocation: `Gedung Kampus IBI KKG, ${targetAcc.locationDetail}`,
+            walkingGuide: `Berada di area kantin dekat Hall D (${targetAcc.locationDetail}).`,
             specialty: targetAcc.categorySummary,
             description: `Mitra kantin terverifikasi di lingkungan kampus IBI Kwik Kian Gie yang dikelola langsung oleh ${targetAcc.ownerName}.`,
             daysOpen: 'Senin–Jumat',
@@ -1056,6 +1095,7 @@ export default function App() {
             onContinueAsStudent={handleContinueAsStudent}
             onLoginSellerSuccess={handleLoginSellerSuccess}
             onRegisterSeller={handleRegisterSeller}
+            onUpdateSellerPassword={handleUpdateSellerPassword}
             onLoginAdminSuccess={handleLoginAdminSuccess}
             onOpenSellerDashboard={() => navigateTo('kelola-menu')}
             onOpenAdminDashboard={() => navigateTo('admin-portal')}
@@ -1103,6 +1143,8 @@ export default function App() {
             allStalls={stalls}
             orders={orders}
             sellerEmail={loggedInSeller?.email}
+            loggedInSeller={loggedInSeller}
+            onUpdateSellerPassword={handleUpdateSellerPassword}
             onSwitchSellerStall={(targetStallId) => {
               const matchingAcc = sellerAccounts.find((a) => a.stallId === targetStallId);
               if (matchingAcc) {
@@ -1142,6 +1184,7 @@ export default function App() {
             verifications={verifications}
             adminCredentials={adminCredentials}
             onUpdateAdminCredentials={handleUpdateAdminCredentials}
+            onUpdateSellerPassword={handleUpdateSellerPassword}
             onApproveVerification={handleApproveVerification}
             onRejectVerification={handleRejectVerification}
             onShowToast={showToast}
@@ -1153,66 +1196,123 @@ export default function App() {
       </main>
 
       {/* FOOTER */}
-      <footer className="w-full bg-surface-container-low border-t border-outline-variant/25 text-on-surface-variant pb-safe">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex flex-col gap-1 max-w-xl">
-            <div className="flex items-center gap-2">
-              <span className="font-label-md text-label-md text-on-surface font-bold">
-                KantinKu IBI KKG • Pilot Project Tahap 1
-              </span>
+      <footer className="w-full bg-surface-container-low border-t border-outline-variant/25 text-on-surface-variant pb-safe mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
+          {/* Top Section: Brand Info, Quick Features & Action Cards */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start justify-between">
+            {/* Left Column: Brand & Mission */}
+            <div className="lg:col-span-7 flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md font-bold shadow-sm shrink-0">
+                  K
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-headline-sm text-base sm:text-lg text-on-surface font-bold tracking-tight">
+                    KantinKu IBI KKG
+                  </span>
+                  <span className="text-outline-variant">•</span>
+                  <span className="font-label-sm text-xs text-primary font-semibold">
+                    Pilot Project Tahap 1
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = footerSecretTap + 1;
+                      if (next >= 5) {
+                        setFooterSecretTap(0);
+                        window.location.hash = 'admin';
+                        setCurrentScreen('auth-portal');
+                        showToast('Gerbang Internal Admin Kampus dibuka.');
+                      } else {
+                        setFooterSecretTap(next);
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-semibold select-none cursor-default"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                    Sistem Aktif
+                  </button>
+                </div>
+              </div>
+
+              <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed max-w-2xl">
+                Platform direktori &amp; pemesanan digital khusus kantin{' '}
+                <strong className="text-on-surface font-semibold">
+                  Institut Bisnis dan Informatika Kwik Kian Gie (Kampus Sunter)
+                </strong>{' '}
+                untuk transparansi harga mahasiswa, navigasi denah stan, serta pencairan saldo penjualan langsung oleh mitra kantin.
+              </p>
+
+              {/* Campus Info Highlights */}
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-[11px]">
+                  <span className="material-symbols-outlined text-[15px] text-primary">
+                    location_on
+                  </span>
+                  Jl. Yos Sudarso Kav. 87, Sunter, Jakarta Utara
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-[11px]">
+                  <span className="material-symbols-outlined text-[15px] text-secondary">
+                    verified
+                  </span>
+                  100% Transparansi Harga Mahasiswa
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Quick Access Action Buttons */}
+            <div className="lg:col-span-5 flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center lg:items-end xl:items-center justify-end gap-2.5 w-full">
               <button
                 type="button"
-                onClick={() => {
-                  const next = footerSecretTap + 1;
-                  if (next >= 5) {
-                    setFooterSecretTap(0);
-                    window.location.hash = 'admin';
-                    setCurrentScreen('auth-portal');
-                    showToast('Gerbang Internal Admin Kampus dibuka.');
-                  } else {
-                    setFooterSecretTap(next);
-                  }
-                }}
-                className="font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded-md select-none cursor-default"
+                onClick={() => setCurrentScreen('auth-portal')}
+                className="min-h-[42px] px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
-                Aktif
+                <span className="material-symbols-outlined text-[18px]">storefront</span>
+                <span>Portal Mitra Kantin</span>
               </button>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={openPilotConceptModal}
+                  className="flex-1 sm:flex-initial min-h-[42px] px-3.5 py-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/40 text-on-surface hover:bg-surface-container font-label-sm text-label-sm font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-primary">
+                    info
+                  </span>
+                  <span>Konsep Tahap 1</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(true)}
+                  className="flex-1 sm:flex-initial min-h-[42px] px-3.5 py-2.5 rounded-xl bg-surface-container-lowest border border-error/30 text-error hover:bg-error-container/30 font-label-sm text-label-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[17px]">gavel</span>
+                  <span>Lapor Harga</span>
+                </button>
+              </div>
             </div>
-            <p className="font-body-sm text-body-sm text-on-surface-variant">
-              Platform digital khusus kantin Institut Bisnis dan Informatika Kwik Kian Gie (Sunter) untuk transparansi harga, lokasi, dan pengelolaan menu langsung oleh penjual kantin.
-            </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setCurrentScreen('auth-portal')}
-              className="min-h-[40px] font-label-sm text-label-sm text-primary font-semibold hover:underline cursor-pointer"
-            >
-              Portal Login &amp; Registrasi Mitra
-            </button>
-            <span className="text-outline-variant">•</span>
-            <button
-              type="button"
-              onClick={openPilotConceptModal}
-              className="min-h-[40px] font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface cursor-pointer"
-            >
-              Konsep Tahap 1
-            </button>
-            <span className="text-outline-variant">•</span>
-            <button
-              type="button"
-              onClick={() => setReportModalOpen(true)}
-              className="min-h-[40px] font-label-sm text-label-sm text-on-surface-variant hover:text-on-surface cursor-pointer"
-            >
-              Lapor Harga
-            </button>
+
+          {/* Bottom Bar: Copyright & Operational Hours */}
+          <div className="pt-4 border-t border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-on-surface-variant/80">
+            <span>
+              © {new Date().getFullYear()} KantinKu IBI KKG • Inovasi Kampus IBI Kwik Kian Gie
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[15px] text-secondary">
+                schedule
+              </span>
+              Jam Operasional Kantin: Senin – Jumat (07.30 – 17.00 WIB)
+            </span>
           </div>
         </div>
       </footer>
 
       {/* NAVIGATION DRAWER MODAL */}
       {navDrawerOpen && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 w-full max-w-sm shadow-xl flex flex-col gap-3.5 max-h-[90dvh] overflow-y-auto border border-outline-variant/25">
             {/* Header Drawer */}
             <div className="flex items-center justify-between">

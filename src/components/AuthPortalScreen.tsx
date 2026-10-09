@@ -9,6 +9,7 @@ interface AuthPortalScreenProps {
   onContinueAsStudent: () => void;
   onLoginSellerSuccess: (account: SellerAccount) => void;
   onRegisterSeller: (newAccount: Omit<SellerAccount, 'id' | 'stallId' | 'status'>) => SellerAccount;
+  onUpdateSellerPassword: (accountId: string, newPassword: string) => void;
   onLoginAdminSuccess: () => void;
   onOpenSellerDashboard: () => void;
   onOpenAdminDashboard: () => void;
@@ -24,6 +25,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   onContinueAsStudent,
   onLoginSellerSuccess,
   onRegisterSeller,
+  onUpdateSellerPassword,
   onLoginAdminSuccess,
   onOpenSellerDashboard,
   onOpenAdminDashboard,
@@ -93,6 +95,16 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   // Seller Login State
   const [sellerEmail, setSellerEmail] = useState('');
   const [sellerPassword, setSellerPassword] = useState('');
+  const [showSellerPassword, setShowSellerPassword] = useState(false);
+
+  // Forgot Password Modal State
+  const [forgotModalOpen, setForgotModalOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotWhatsapp, setForgotWhatsapp] = useState('');
+  const [forgotNewPassword, setForgotNewPassword] = useState('');
+  const [forgotConfirmPassword, setForgotConfirmPassword] = useState('');
+  const [forgotStep, setForgotStep] = useState<'verify' | 'reset'>('verify');
+  const [verifiedForgotAccount, setVerifiedForgotAccount] = useState<SellerAccount | null>(null);
   const [trackedAccountId, setTrackedAccountId] = useState<string | null>(() => {
     try {
       return localStorage.getItem('kantinku_ibikkg_tracked_seller_id_v1');
@@ -297,7 +309,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
       ownerName: regOwnerName.trim(),
       stallName: regStallName.trim(),
       building: regBuilding,
-      locationDetail: regLocationDetail.trim() || `${regBuilding} Lantai 1`,
+      locationDetail: regLocationDetail.trim() || 'Area Kantin Dekat Hall D',
       categorySummary: regCategory.trim(),
       hours: regHours.trim(),
       whatsapp: regWhatsapp.trim() || '6281200000000',
@@ -387,7 +399,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
               </span>
             </div>
             <p className="font-body-sm text-[12px] text-on-surface-variant leading-relaxed">
-              Setiap pendaftaran akun penjual baru akan divalidasi oleh pihak kampus terlebih dahulu agar hanya pemilik stan resmi di Gedung A dan Gedung B IBI KKG yang dapat memperbarui daftar menu serta harga.
+              Setiap pendaftaran akun penjual baru akan divalidasi oleh pihak kampus terlebih dahulu agar hanya pemilik stan resmi di Area Kantin Dekat Hall D IBI KKG yang dapat memperbarui daftar menu serta harga.
             </p>
           </div>
         </div>
@@ -654,17 +666,46 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   </div>
 
                   <div className="flex flex-col gap-1">
-                    <label className="font-label-sm text-label-sm text-on-surface-variant">
-                      Kata Sandi
-                    </label>
-                    <input
-                      type="password"
-                      required
-                      placeholder="Masukkan kata sandi"
-                      value={sellerPassword}
-                      onChange={(e) => setSellerPassword(e.target.value)}
-                      className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    <div className="flex items-center justify-between gap-2">
+                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                        Kata Sandi
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForgotEmail(sellerEmail);
+                          setForgotWhatsapp('');
+                          setForgotNewPassword('');
+                          setForgotConfirmPassword('');
+                          setForgotStep('verify');
+                          setVerifiedForgotAccount(null);
+                          setForgotModalOpen(true);
+                        }}
+                        className="font-label-sm text-xs text-primary hover:underline font-semibold cursor-pointer"
+                      >
+                        Lupa Kata Sandi?
+                      </button>
+                    </div>
+                    <div className="relative flex items-center">
+                      <input
+                        type={showSellerPassword ? 'text' : 'password'}
+                        required
+                        placeholder="Masukkan kata sandi"
+                        value={sellerPassword}
+                        onChange={(e) => setSellerPassword(e.target.value)}
+                        className="w-full h-11 pl-3.5 pr-10 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSellerPassword((p) => !p)}
+                        className="absolute right-2.5 text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center"
+                        title={showSellerPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
+                      >
+                        <span className="material-symbols-outlined text-[18px]">
+                          {showSellerPassword ? 'visibility_off' : 'visibility'}
+                        </span>
+                      </button>
+                    </div>
                   </div>
 
                   <button
@@ -763,7 +804,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="flex flex-col gap-1">
                       <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Gedung Kantin IBI KKG
+                        Area Lokasi Kantin IBI KKG
                       </label>
                       <select
                         value={regBuilding}
@@ -772,8 +813,8 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                         }
                         className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
                       >
-                        <option value="Gedung A">Gedung A (Pujasera Utama)</option>
-                        <option value="Gedung B">Gedung B (Lantai Dasar)</option>
+                        <option value="Gedung A">Area Kantin Dekat Hall D (Deretan Utama)</option>
+                        <option value="Gedung B">Area Kantin Dekat Hall D (Sudut Tempat Duduk)</option>
                       </select>
                     </div>
                     <div className="flex flex-col gap-1">
@@ -783,7 +824,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                       <input
                         type="text"
                         required
-                        placeholder="Contoh: Stan A-05 samping dispenser"
+                        placeholder="Contoh: Stan 05 dekat pintu Hall D"
                         value={regLocationDetail}
                         onChange={(e) => setRegLocationDetail(e.target.value)}
                         className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
@@ -1040,6 +1081,204 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   Saya Mengerti
                 </button>
               </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL LUPA KATA SANDI PENJUAL (VERIFIKASI MANDIRI EMAIL + WHATSAPP ATAU BANTUAN ADMIN) */}
+      {forgotModalOpen && (
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-outline-variant/30 max-h-[90dvh] overflow-y-auto">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">lock_reset</span>
+                </div>
+                <div>
+                  <span className="font-label-sm text-[11px] text-primary font-bold uppercase tracking-wider">
+                    Pemulihan Akses Mitra Kantin
+                  </span>
+                  <h3 className="fluid-headline-md text-on-surface">
+                    Lupa Kata Sandi Penjual?
+                  </h3>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setForgotModalOpen(false)}
+                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            {forgotStep === 'verify' ? (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const cleanEmail = forgotEmail.trim().toLowerCase();
+                  const digitsInput = forgotWhatsapp.replace(/[^0-9]/g, '');
+                  const last4Input = digitsInput.slice(-4);
+
+                  const foundAcc = sellerAccounts.find(
+                    (a) => a.email.toLowerCase() === cleanEmail
+                  );
+                  if (!foundAcc) {
+                    onShowToast('Email akun penjual tersebut tidak ditemukan.', true);
+                    return;
+                  }
+
+                  const accDigits = (foundAcc.whatsapp || '').replace(/[^0-9]/g, '');
+                  const accLast4 = accDigits.slice(-4);
+
+                  if (!last4Input || (digitsInput !== accDigits && last4Input !== accLast4)) {
+                    onShowToast(
+                      'Nomor WhatsApp atau 4 digit terakhir tidak cocok dengan data pendaftaran stan.',
+                      true
+                    );
+                    return;
+                  }
+
+                  setVerifiedForgotAccount(foundAcc);
+                  setForgotStep('reset');
+                }}
+                className="flex flex-col gap-3.5"
+              >
+                <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  Ibu/Bapak Kantin dapat langsung mereset kata sandi secara mandiri dengan memverifikasi <strong>Email Akun</strong> dan <strong>Nomor WhatsApp</strong> (atau cukup 4 angka terakhir WA) yang terdaftar:
+                </p>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                    1. Email Login Penjual
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="Contoh: busari@ibikkg.ac.id"
+                    value={forgotEmail}
+                    onChange={(e) => setForgotEmail(e.target.value)}
+                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                    2. Nomor WhatsApp Terdaftar (atau 4 Digit Terakhir)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: 081290001980 atau 1980"
+                    value={forgotWhatsapp}
+                    onChange={(e) => setForgotWhatsapp(e.target.value)}
+                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <span className="text-[11px] text-on-surface-variant">
+                    Petunjuk: Masukkan nomor WA saat mendaftar stan (misal: akhiran <strong>1980</strong> untuk Bu Sari, <strong>3311</strong> untuk Mas Budi).
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                >
+                  <span className="material-symbols-outlined text-[18px]">verified_user</span>
+                  <span>Verifikasi &amp; Buat Kata Sandi Baru</span>
+                </button>
+
+                <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-1.5">
+                  <span className="font-label-sm text-xs text-on-surface font-bold flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-secondary">
+                      support_agent
+                    </span>
+                    Lupa Email &amp; Nomor WhatsApp Sekaligus?
+                  </span>
+                  <p className="font-body-sm text-[11px] text-on-surface-variant leading-relaxed">
+                    Jangan khawatir! Penjual cukup menghubungi <strong>Admin Kampus (Sarpras IBI KKG)</strong>. Admin dapat meresetkan kata sandi stan secara instan melalui <em>Portal Admin → Pengaturan Akun Admin / Tabel Akun Penjual</em>.
+                  </p>
+                </div>
+              </form>
+            ) : (
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (!verifiedForgotAccount) return;
+                  if (forgotNewPassword.trim().length < 4) {
+                    onShowToast('Kata sandi baru minimal 4 karakter.', true);
+                    return;
+                  }
+                  if (forgotNewPassword !== forgotConfirmPassword) {
+                    onShowToast('Konfirmasi kata sandi baru tidak cocok.', true);
+                    return;
+                  }
+
+                  onUpdateSellerPassword(verifiedForgotAccount.id, forgotNewPassword);
+                  setSellerEmail(verifiedForgotAccount.email);
+                  setSellerPassword(forgotNewPassword);
+                  setForgotModalOpen(false);
+                }}
+                className="flex flex-col gap-3.5"
+              >
+                <div className="p-3 rounded-xl bg-secondary-container/50 border border-secondary/30 flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-secondary text-[22px]">
+                    check_circle
+                  </span>
+                  <div className="flex flex-col">
+                    <span className="font-label-sm text-xs text-on-surface font-bold">
+                      Identitas Terverifikasi: {verifiedForgotAccount?.stallName}
+                    </span>
+                    <span className="text-[11px] text-on-surface-variant">
+                      {verifiedForgotAccount?.ownerName} ({verifiedForgotAccount?.email})
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                    Kata Sandi Baru
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Masukkan kata sandi baru yang mudah diingat"
+                    value={forgotNewPassword}
+                    onChange={(e) => setForgotNewPassword(e.target.value)}
+                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                    Ulangi Kata Sandi Baru
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ketik ulang kata sandi baru"
+                    value={forgotConfirmPassword}
+                    onChange={(e) => setForgotConfirmPassword(e.target.value)}
+                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <div className="flex gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setForgotStep('verify')}
+                    className="w-1/3 min-h-[44px] rounded-xl bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold cursor-pointer"
+                  >
+                    Kembali
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-2/3 min-h-[44px] rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer shadow-sm"
+                  >
+                    Simpan Kata Sandi Baru
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>

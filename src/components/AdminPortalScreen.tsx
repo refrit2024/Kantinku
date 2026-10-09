@@ -15,6 +15,7 @@ interface AdminPortalScreenProps {
   verifications: VerificationRequest[];
   adminCredentials: AdminCredentials;
   onUpdateAdminCredentials: (newEmail: string, newPassword: string) => void;
+  onUpdateSellerPassword: (accountId: string, newPassword: string) => void;
   onApproveVerification: (id: string, name: string) => void;
   onRejectVerification: (id: string, name: string, note: string) => void;
   onShowToast: (message: string, isError?: boolean) => void;
@@ -28,6 +29,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
   verifications,
   adminCredentials,
   onUpdateAdminCredentials,
+  onUpdateSellerPassword,
   onApproveVerification,
   onRejectVerification,
   onShowToast,
@@ -48,6 +50,10 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
   const [newAdminPassword, setNewAdminPassword] = useState('');
   const [confirmAdminPassword, setConfirmAdminPassword] = useState('');
   const [showAdminPasswords, setShowAdminPasswords] = useState(false);
+
+  // Admin Reset Seller Password Modal State
+  const [resetSellerTarget, setResetSellerTarget] = useState<SellerAccount | null>(null);
+  const [resetSellerNewPass, setResetSellerNewPass] = useState('');
 
   React.useEffect(() => {
     setNewAdminEmail(adminCredentials.email);
@@ -161,7 +167,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                 Program Pilot Tahap 1 - Kampus IBI KKG
               </h2>
               <p className="font-body-sm text-body-sm text-on-surface-variant mt-1 leading-relaxed">
-                Pengawasan operasional kantin terpadu, verifikasi penjual, dan moderasi transparansi harga di Gedung A dan Gedung B Sunter.
+                Pengawasan operasional kantin terpadu, verifikasi penjual, dan moderasi transparansi harga di Area Kantin Dekat Hall D (Gedung Kampus IBI KKG Sunter).
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/25 text-on-surface-variant font-label-sm text-label-sm">
@@ -194,12 +200,12 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               </div>
               <div className="mt-2">
                 <span className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface leading-none">
-                  14
+                  {stalls.length}
                 </span>
                 <span className="font-label-sm text-label-sm text-on-surface ml-1">Stan</span>
               </div>
               <div className="mt-1 font-label-sm text-label-sm text-on-surface-variant">
-                10 Gedung A • 4 Gedung B
+                Area Kantin Dekat Hall D
               </div>
             </div>
 
@@ -496,7 +502,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                     Tiket #LP-049
                   </span>
                   <h4 className="fluid-headline-md text-on-surface mt-0.5">
-                    Stan Kantin Berkah (Stan A-08)
+                    Stan Kantin Berkah (Stan 03 • Dekat Hall D)
                   </h4>
                   <span className="font-label-sm text-label-sm text-on-surface-variant">
                     Pelapor: Mahasiswa Akuntansi 2023 (NIM Terverifikasi)
@@ -617,45 +623,45 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Building A Progress */}
+              {/* Area Hall D Utama */}
               <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-2">
                 <div className="flex justify-between items-center gap-2">
                   <div>
-                    <h4 className="fluid-headline-md text-on-surface">Gedung A (Utama)</h4>
+                    <h4 className="fluid-headline-md text-on-surface">Deretan Utama Kantin (Dekat Hall D)</h4>
                     <span className="font-body-sm text-body-sm text-on-surface-variant">
-                      Kantin Selasar Lt. 1 &amp; Lt. 2
+                      Stan Makanan Berat &amp; Masakan Harian
                     </span>
                   </div>
                   <span className="font-headline-md text-headline-md text-primary font-bold">
-                    10 / 12 Stan
+                    3 / 4 Stan
                   </span>
                 </div>
                 <div className="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden mt-1">
-                  <div className="bg-primary h-full rounded-full" style={{ width: '83.3%' }}></div>
+                  <div className="bg-primary h-full rounded-full" style={{ width: '75%' }}></div>
                 </div>
                 <span className="font-label-sm text-label-sm text-on-surface-variant mt-1">
-                  Tersedia 2 slot kosong untuk kemitraan wirausaha mahasiswa IBI KKG.
+                  Tersedia 1 slot kosong untuk kemitraan wirausaha kantin IBI KKG.
                 </span>
               </div>
 
-              {/* Building B Progress */}
+              {/* Area Sudut Kopi & Snack Hall D */}
               <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-2">
                 <div className="flex justify-between items-center gap-2">
                   <div>
-                    <h4 className="fluid-headline-md text-on-surface">Gedung B (Pascasarjana)</h4>
+                    <h4 className="fluid-headline-md text-on-surface">Sudut Minuman &amp; Snack (Dekat Hall D)</h4>
                     <span className="font-body-sm text-body-sm text-on-surface-variant">
-                      Kantin Basemen &amp; Hall Lt. Dasar
+                      Area Tempat Duduk Mahasiswa Hall D
                     </span>
                   </div>
                   <span className="font-headline-md text-headline-md text-secondary font-bold">
-                    4 / 4 Stan
+                    1 / 2 Stan
                   </span>
                 </div>
                 <div className="w-full bg-surface-container-high h-2.5 rounded-full overflow-hidden mt-1">
-                  <div className="bg-secondary h-full rounded-full" style={{ width: '100%' }}></div>
+                  <div className="bg-secondary h-full rounded-full" style={{ width: '50%' }}></div>
                 </div>
                 <span className="font-label-sm text-label-sm text-secondary font-semibold mt-1">
-                  Kapasitas Penuh (100% Okupansi Terisi).
+                  Kapasitas Terkendali &amp; Nyaman saat Jam Istirahat Siang.
                 </span>
               </div>
             </div>
@@ -775,6 +781,65 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                   <span>Simpan Email &amp; Kata Sandi Admin Baru</span>
                 </button>
               </form>
+            </div>
+
+            {/* Bantuan Reset Kata Sandi Penjual Kantin (Jika Ibu Kantin Lupa Sandi) */}
+            <div className="rounded-xl bg-surface-container-lowest p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
+              <div className="flex flex-col gap-1 border-b border-outline-variant/25 pb-3">
+                <div className="flex items-center gap-2 text-secondary">
+                  <span className="material-symbols-outlined text-[22px]">lock_reset</span>
+                  <h3 className="fluid-headline-md text-on-surface">
+                    Bantuan Reset Kata Sandi Penjual Kantin
+                  </h3>
+                </div>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  Jika ada Ibu/Bapak Kantin yang lupa kata sandi dan meminta bantuan Admin, Anda dapat melihat atau mengubah kata sandi akun mereka secara langsung di bawah ini:
+                </p>
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                {sellerAccounts.map((acc) => (
+                  <div
+                    key={acc.id}
+                    className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-wrap items-center justify-between gap-3"
+                  >
+                    <div className="flex flex-col gap-0.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-label-md text-on-surface font-bold">
+                          {acc.stallName}
+                        </span>
+                        <span className="text-[11px] text-on-surface-variant">
+                          ({acc.ownerName})
+                        </span>
+                      </div>
+                      <div className="text-xs text-on-surface-variant flex flex-wrap items-center gap-2">
+                        <span>
+                          Email: <strong className="text-primary font-mono">{acc.email}</strong>
+                        </span>
+                        <span>•</span>
+                        <span>
+                          Sandi Aktif:{' '}
+                          <code className="px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface font-bold">
+                            {acc.password}
+                          </code>
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setResetSellerTarget(acc);
+                        setResetSellerNewPass('kantin123');
+                      }}
+                      className="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">key</span>
+                      <span>Ubah / Reset Sandi</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -1018,9 +1083,10 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                         <th className="py-2.5 px-3">ID Akun</th>
                         <th className="py-2.5 px-3">Nama Pemilik</th>
                         <th className="py-2.5 px-3">Email Login</th>
+                        <th className="py-2.5 px-3">Kata Sandi</th>
                         <th className="py-2.5 px-3">Nama Stan</th>
-                        <th className="py-2.5 px-3">Gedung</th>
-                        <th className="py-2.5 px-3">Status Verifikasi</th>
+                        <th className="py-2.5 px-3">Status</th>
+                        <th className="py-2.5 px-3">Aksi Admin</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant/20 text-xs">
@@ -1029,12 +1095,14 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                           <td className="py-2.5 px-3 font-mono text-on-surface-variant">{acc.id}</td>
                           <td className="py-2.5 px-3 font-semibold text-on-surface">{acc.ownerName}</td>
                           <td className="py-2.5 px-3 font-mono text-primary">{acc.email}</td>
+                          <td className="py-2.5 px-3 font-mono font-bold text-on-surface">
+                            {acc.password}
+                          </td>
                           <td className="py-2.5 px-3 font-semibold">{acc.stallName}</td>
-                          <td className="py-2.5 px-3">{acc.building}</td>
                           <td className="py-2.5 px-3">
                             <span
                               className={`px-2 py-0.5 rounded-md font-semibold text-[11px] ${
-                                acc.status === 'verified'
+                                acc.status === 'approved'
                                   ? 'bg-secondary-container text-on-secondary-container'
                                   : acc.status === 'pending'
                                   ? 'bg-tertiary-fixed text-tertiary'
@@ -1043,6 +1111,18 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                             >
                               {acc.status.toUpperCase()}
                             </span>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setResetSellerTarget(acc);
+                                setResetSellerNewPass('kantin123');
+                              }}
+                              className="px-2.5 py-1 rounded bg-primary text-on-primary font-semibold text-[11px] cursor-pointer whitespace-nowrap"
+                            >
+                              Reset Sandi
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -1321,6 +1401,77 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               Tutup Pratinjau
             </button>
           </div>
+        </div>
+      )}
+
+      {/* Modal: Reset Kata Sandi Penjual oleh Admin */}
+      {resetSellerTarget && (
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!resetSellerNewPass.trim()) return;
+              onUpdateSellerPassword(resetSellerTarget.id, resetSellerNewPass.trim());
+              setResetSellerTarget(null);
+            }}
+            className="bg-surface-container-lowest rounded-xl p-5 w-full max-w-md shadow-xl flex flex-col gap-4 border border-outline-variant/30"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-primary">
+                <span className="material-symbols-outlined text-[22px]">lock_reset</span>
+                <h4 className="fluid-headline-md text-on-surface">
+                  Reset Kata Sandi Penjual
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResetSellerTarget(null)}
+                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <div className="p-3 rounded-lg bg-surface-container-low flex flex-col gap-1 text-xs">
+              <span className="font-bold text-on-surface">{resetSellerTarget.stallName}</span>
+              <span className="text-on-surface-variant">
+                Pemilik: {resetSellerTarget.ownerName} • Email: {resetSellerTarget.email}
+              </span>
+            </div>
+
+            <div className="flex flex-col gap-1.5">
+              <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                Kata Sandi Baru untuk Penjual
+              </label>
+              <input
+                type="text"
+                required
+                value={resetSellerNewPass}
+                onChange={(e) => setResetSellerNewPass(e.target.value)}
+                placeholder="Masukkan sandi baru"
+                className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md font-bold focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+              <span className="text-[11px] text-on-surface-variant">
+                Sandi baru ini langsung berlaku di semua perangkat (tersinkronisasi ke Cloud Firestore).
+              </span>
+            </div>
+
+            <div className="flex gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setResetSellerTarget(null)}
+                className="w-1/2 min-h-[44px] rounded-lg bg-surface-container text-on-surface font-label-md text-label-md font-semibold cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="w-1/2 min-h-[44px] rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer"
+              >
+                Simpan Sandi Baru
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>

@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import {
   getStallPaymentDetails,
   MenuItem,
+  normalizeStallLocation,
   OrderStatusType,
   OrderTransaction,
   PaymentDetails,
+  SellerAccount,
   Stall,
   WithdrawalRecord,
 } from '../data/kantinData';
@@ -23,6 +25,8 @@ interface KelolaMenuScreenProps {
   allStalls?: Stall[];
   orders: OrderTransaction[];
   sellerEmail?: string;
+  loggedInSeller?: SellerAccount | null;
+  onUpdateSellerPassword?: (accountId: string, newPassword: string) => void;
   onSwitchSellerStall?: (stallId: string) => void;
   onLogoutSeller?: () => void;
   onToggleStoreOpen: () => void;
@@ -61,10 +65,12 @@ const PRESET_FOOD_PHOTOS = [
 ];
 
 export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
-  stall,
+  stall: rawStall,
   allStalls = [],
   orders,
   sellerEmail,
+  loggedInSeller,
+  onUpdateSellerPassword,
   onSwitchSellerStall,
   onLogoutSeller,
   onToggleStoreOpen,
@@ -78,7 +84,9 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   onReplyReview,
   onShowToast,
 }) => {
+  const stall = normalizeStallLocation(rawStall);
   const [sellerSubTab, setSellerSubTab] = useState<SellerSubTab>('dashboard');
+  const [newSellerPassInput, setNewSellerPassInput] = useState('');
   const [activeCategory, setActiveCategory] = useState<
     'all' | 'makanan' | 'minuman' | 'snack' | 'habis'
   >('all');
@@ -1730,6 +1738,53 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 </button>
               )}
             </div>
+
+            {/* Ubah Kata Sandi Akun Penjual */}
+            {loggedInSeller && onUpdateSellerPassword && (
+              <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-3.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-primary">
+                    <span className="material-symbols-outlined text-[20px]">lock_reset</span>
+                    <h4 className="fluid-headline-md text-on-surface">
+                      Kata Sandi Akun Penjual
+                    </h4>
+                  </div>
+                  <span className="font-label-sm text-xs bg-surface-container-high px-2.5 py-1 rounded text-on-surface">
+                    Sandi Saat Ini: <strong>{loggedInSeller.password}</strong>
+                  </span>
+                </div>
+                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  Jika Anda ingin mengganti kata sandi agar lebih mudah diingat, ketik kata sandi baru di bawah ini:
+                </p>
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (!newSellerPassInput.trim() || newSellerPassInput.trim().length < 4) {
+                      onShowToast('Kata sandi baru minimal 4 karakter.');
+                      return;
+                    }
+                    onUpdateSellerPassword(loggedInSeller.id, newSellerPassInput.trim());
+                    setNewSellerPassInput('');
+                  }}
+                  className="flex flex-col sm:flex-row gap-2.5"
+                >
+                  <input
+                    type="text"
+                    required
+                    value={newSellerPassInput}
+                    onChange={(e) => setNewSellerPassInput(e.target.value)}
+                    placeholder="Ketik kata sandi baru (min. 4 karakter)"
+                    className="flex-1 h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                  <button
+                    type="submit"
+                    className="min-h-[44px] px-5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer shrink-0"
+                  >
+                    Simpan Sandi Baru
+                  </button>
+                </form>
+              </div>
+            )}
 
             <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
               <h4 className="fluid-headline-md text-on-surface">
