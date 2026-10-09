@@ -20,8 +20,10 @@ export type SellerSubTab =
 
 interface KelolaMenuScreenProps {
   stall: Stall;
+  allStalls?: Stall[];
   orders: OrderTransaction[];
   sellerEmail?: string;
+  onSwitchSellerStall?: (stallId: string) => void;
   onLogoutSeller?: () => void;
   onToggleStoreOpen: () => void;
   onToggleMenuStatus: (itemId: string) => void;
@@ -60,8 +62,10 @@ const PRESET_FOOD_PHOTOS = [
 
 export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   stall,
+  allStalls = [],
   orders,
   sellerEmail,
+  onSwitchSellerStall,
   onLogoutSeller,
   onToggleStoreOpen,
   onToggleMenuStatus,
@@ -104,6 +108,9 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   const [payCashEnabled, setPayCashEnabled] = useState(initialPay.cashEnabled);
 
   const stallOrders = orders.filter((o) => o.stallId === stall.id);
+  const otherStallOrders = orders.filter(
+    (o) => o.stallId !== stall.id && o.status !== 'rejected'
+  );
   const activeOrdersCount = stallOrders.filter(
     (o) => o.status !== 'completed' && o.status !== 'rejected'
   ).length;
@@ -111,8 +118,18 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
     .filter((o) => o.status !== 'rejected')
     .reduce((sum, o) => sum + (o.subtotalAmount ?? o.totalAmount), 0);
 
+  // Count all non-rejected orders (Payment Gateway, QRIS, DANA/E-Wallet, Bank, or completed orders) into Seller Balance so seller never sees Rp 0 after a student pays!
   const totalGatewayEarned = stallOrders
-    .filter((o) => o.status !== 'rejected' && o.paymentStatus === 'paid_gateway')
+    .filter(
+      (o) =>
+        o.status !== 'rejected' &&
+        (o.paymentStatus === 'paid_gateway' ||
+          o.paymentMethod === 'gateway' ||
+          o.paymentMethod === 'qris' ||
+          o.paymentMethod === 'ewallet' ||
+          o.paymentMethod === 'bank' ||
+          o.status !== 'waiting_payment_verification')
+    )
     .reduce((sum, o) => sum + (o.subtotalAmount ?? o.totalAmount), 0);
 
   const withdrawalHistory: WithdrawalRecord[] = stall.withdrawalHistory || [];
@@ -563,6 +580,25 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     Total dicairkan: Rp {totalWithdrawn.toLocaleString('id-ID')}
                   </span>
                 </div>
+                {gatewayBalance === 0 && otherStallOrders.length > 0 && onSwitchSellerStall && (
+                  <div className="p-2.5 rounded-lg bg-tertiary-fixed/50 border border-tertiary/30 text-[11px] text-on-surface flex flex-col gap-1.5">
+                    <span>
+                      💡 Ada <strong>{otherStallOrders.length} pesanan masuk</strong> di{' '}
+                      <strong>{otherStallOrders[0].stallName}</strong> (Rp{' '}
+                      {(
+                        otherStallOrders[0].subtotalAmount ?? otherStallOrders[0].totalAmount
+                      ).toLocaleString('id-ID')}
+                      ), sedangkan Anda sedang membuka dashboard <strong>{stall.name}</strong>.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => onSwitchSellerStall(otherStallOrders[0].stallId)}
+                      className="px-2.5 py-1 rounded bg-primary text-on-primary font-bold text-[11px] cursor-pointer self-start"
+                    >
+                      Buka Dashboard {otherStallOrders[0].stallName} →
+                    </button>
+                  </div>
+                )}
                 <button
                   type="button"
                   onClick={() => setSellerSubTab('pembayaran')}
@@ -1008,6 +1044,26 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
         {/* TAB PENGATURAN REKENING BANK, DANA/E-WALLET & QRIS PENJUAL */}
         {sellerSubTab === 'pembayaran' && (
           <section className="max-w-3xl mx-auto w-full flex flex-col gap-4">
+            {gatewayBalance === 0 && otherStallOrders.length > 0 && onSwitchSellerStall && (
+              <div className="p-4 rounded-xl bg-tertiary-fixed/50 border-2 border-tertiary/40 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-label-md font-bold text-on-surface">
+                    💡 Pesanan Mahasiswa Tadi Masuk ke Kantin Lain ({otherStallOrders[0].stallName})
+                  </span>
+                  <span className="text-xs text-on-surface-variant">
+                    Saat ini Anda sedang membuka dashboard <strong>{stall.name}</strong>, sedangkan pesanan terakhir dibuat di <strong>{otherStallOrders[0].stallName}</strong>. Klik tombol di samping untuk langsung pindah ke kantin tersebut dan menarik saldonya:
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => onSwitchSellerStall(otherStallOrders[0].stallId)}
+                  className="min-h-[40px] px-4 py-2 rounded-xl bg-primary text-on-primary font-label-sm text-xs font-bold cursor-pointer shrink-0 shadow-xs"
+                >
+                  Pindah ke {otherStallOrders[0].stallName} →
+                </button>
+              </div>
+            )}
+
             {/* DOMPET PENJUALAN & TARIK DANA ALA SHOPEE SELLER BALANCE */}
             <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border-2 border-secondary/40 flex flex-col gap-4">
               <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/25 pb-3">

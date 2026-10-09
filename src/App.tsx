@@ -1100,8 +1100,26 @@ export default function App() {
         {currentScreen === 'kelola-menu' && (
           <KelolaMenuScreen
             stall={currentMerchantStall}
+            allStalls={stalls}
             orders={orders}
             sellerEmail={loggedInSeller?.email}
+            onSwitchSellerStall={(targetStallId) => {
+              const matchingAcc = sellerAccounts.find((a) => a.stallId === targetStallId);
+              if (matchingAcc) {
+                setLoggedInSeller(matchingAcc);
+                showToast(`Beralih ke Dashboard Penjual: ${matchingAcc.stallName}`);
+              } else {
+                const targetStall = stalls.find((s) => s.id === targetStallId);
+                if (targetStall) {
+                  setLoggedInSeller((prev) =>
+                    prev
+                      ? { ...prev, stallId: targetStall.id, stallName: targetStall.name }
+                      : null
+                  );
+                  showToast(`Beralih ke Dashboard Penjual: ${targetStall.name}`);
+                }
+              }
+            }}
             onLogoutSeller={handleLogoutSession}
             onToggleStoreOpen={handleToggleStoreOpen}
             onToggleMenuStatus={handleToggleMenuStatus}
