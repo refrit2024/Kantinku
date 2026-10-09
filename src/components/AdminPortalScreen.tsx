@@ -94,6 +94,12 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
     (v) => !v.approved && !v.rejectedReason
   );
   const pendingVerificationsCount = pendingVerifications.length;
+  const totalPlatformFeeRevenue = orders
+    .filter((o) => o.status !== 'rejected')
+    .reduce((sum, o) => sum + (o.serviceFee || 0), 0);
+  const totalGrossTransactions = orders
+    .filter((o) => o.status !== 'rejected')
+    .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
   const handleSendSP = () => {
     if (spSending || spSent) return;
@@ -160,10 +166,17 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
             </div>
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/25 text-on-surface-variant font-label-sm text-label-sm">
               <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px] text-primary">schedule</span>
-                Pembaruan Terakhir: 8 Oktober 2026
+                <span className="material-symbols-outlined text-[16px] text-secondary">
+                  payments
+                </span>
+                Keuntungan Platform (Biaya Layanan):{' '}
+                <strong className="text-secondary">
+                  Rp {totalPlatformFeeRevenue.toLocaleString('id-ID')}
+                </strong>
               </span>
-              <span className="font-semibold text-on-surface">Biro Sarpras IBI KKG</span>
+              <span className="font-semibold text-on-surface">
+                GMV: Rp {totalGrossTransactions.toLocaleString('id-ID')}
+              </span>
             </div>
           </div>
 

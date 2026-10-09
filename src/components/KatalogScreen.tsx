@@ -247,7 +247,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         }
                       : ord.status === 'cooking'
                       ? {
-                          badge: '🍳 Sedang Dimasak oleh Kantin',
+                          badge: '🥣 Sedang Disiapkan / Dibungkus',
                           className: 'bg-primary-fixed text-on-primary-fixed',
                           step: 2,
                         }

@@ -47,7 +47,7 @@ export interface OrderItem {
   quantity: number;
 }
 
-export type PaymentMethodType = 'qris' | 'ewallet' | 'bank' | 'tunai';
+export type PaymentMethodType = 'gateway' | 'qris' | 'ewallet' | 'bank' | 'tunai';
 
 export type OrderStatusType =
   | 'waiting_payment_verification'
@@ -66,12 +66,25 @@ export interface OrderTransaction {
   pickupTime: string;
   notes?: string;
   items: OrderItem[];
+  subtotalAmount?: number;
+  serviceFee?: number;
   totalAmount: number;
   paymentMethod: PaymentMethodType;
   paymentProviderLabel: string;
   paymentReference?: string;
+  paymentStatus?: 'paid_gateway' | 'manual_verification' | 'cash_on_pickup';
+  paymentGatewayTxId?: string;
   status: OrderStatusType;
   rejectionReason?: string;
+  createdAt: string;
+}
+
+export interface WithdrawalRecord {
+  id: string;
+  amount: number;
+  destinationType: 'bank' | 'ewallet';
+  destinationLabel: string;
+  status: 'completed';
   createdAt: string;
 }
 
@@ -102,6 +115,7 @@ export interface Stall {
   whatsapp: string;
   paymentMethods: string[];
   paymentDetails?: PaymentDetails;
+  withdrawalHistory?: WithdrawalRecord[];
   menuItems: MenuItem[];
   reviews: ReviewItem[];
 }

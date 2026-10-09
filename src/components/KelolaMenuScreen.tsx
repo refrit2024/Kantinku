@@ -6,6 +6,7 @@ import {
   OrderTransaction,
   PaymentDetails,
   Stall,
+  WithdrawalRecord,
 } from '../data/kantinData';
 
 export type SellerSubTab =
@@ -108,7 +109,54 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   ).length;
   const totalRevenueToday = stallOrders
     .filter((o) => o.status !== 'rejected')
-    .reduce((sum, o) => sum + o.totalAmount, 0);
+    .reduce((sum, o) => sum + (o.subtotalAmount ?? o.totalAmount), 0);
+
+  const totalGatewayEarned = stallOrders
+    .filter((o) => o.status !== 'rejected' && o.paymentStatus === 'paid_gateway')
+    .reduce((sum, o) => sum + (o.subtotalAmount ?? o.totalAmount), 0);
+
+  const withdrawalHistory: WithdrawalRecord[] = stall.withdrawalHistory || [];
+  const totalWithdrawn = withdrawalHistory.reduce((sum, w) => sum + w.amount, 0);
+  const gatewayBalance = Math.max(0, totalGatewayEarned - totalWithdrawn);
+
+  const [withdrawDestination, setWithdrawDestination] = useState<'ewallet' | 'bank'>('ewallet');
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+
+  const handleWithdrawSellerBalance = () => {
+    if (gatewayBalance <= 0 || isWithdrawing) {
+      onShowToast('Belum ada saldo penjualan baru yang siap ditarik.');
+      return;
+    }
+    setIsWithdrawing(true);
+    const nowStr = new Date().toLocaleTimeString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+    const destLabel =
+      withdrawDestination === 'ewallet'
+        ? `${payEwalletProviders} (${payEwalletNumber} a.n. ${payEwalletAccountName})`
+        : `Bank ${payBankName} (${payBankAccountNumber} a.n. ${payBankAccountName})`;
+
+    setTimeout(() => {
+      const newRecord: WithdrawalRecord = {
+        id: `WD-${Date.now().toString().slice(-6)}`,
+        amount: gatewayBalance,
+        destinationType: withdrawDestination,
+        destinationLabel: destLabel,
+        status: 'completed',
+        createdAt: `Hari ini, ${nowStr} WIB`,
+      };
+      onUpdateStallProfile({
+        withdrawalHistory: [newRecord, ...withdrawalHistory],
+        lastUpdatedDate: '8 Oktober 2026',
+        lastUpdatedTime: 'Baru saja',
+      });
+      setIsWithdrawing(false);
+      onShowToast(
+        `Berhasil! Saldo Rp ${newRecord.amount.toLocaleString('id-ID')} (Bebas Potongan Rp 0) telah ditransfer ke ${destLabel}!`
+      );
+    }, 900);
+  };
 
   const handleQrisImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -492,6 +540,39 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 </div>
               </div>
 
+              {/* DOMPET PENJUALAN (ALA SHOPEE SELLER BALANCE) DI SIDEBAR DASHBOARD */}
+              <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border-2 border-secondary/35 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-secondary text-[18px]">
+                      account_balance_wallet
+                    </span>
+                    <span className="font-label-sm text-xs font-bold text-on-surface">
+                      Saldo Penjualan (Siap Tarik)
+                    </span>
+                  </div>
+                  <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-bold">
+                    Bebas Potongan 100%
+                  </span>
+                </div>
+                <div className="flex items-baseline justify-between gap-2">
+                  <span className="font-headline-md text-[22px] font-bold text-secondary leading-none">
+                    Rp {gatewayBalance.toLocaleString('id-ID')}
+                  </span>
+                  <span className="text-[11px] text-on-surface-variant">
+                    Total dicairkan: Rp {totalWithdrawn.toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSellerSubTab('pembayaran')}
+                  className="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[16px]">payments</span>
+                  <span>Tarik Saldo ke Rekening / DANA</span>
+                </button>
+              </div>
+
               {/* Quick Action: + Tambah Menu */}
               <button
                 onClick={openAddModal}
@@ -791,11 +872,11 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           }`}
                         >
                           {ord.status === 'waiting_payment_verification'
-                            ? '⏳ Menunggu Konfirmasi Bayar'
+                            ? '⏳ Pesanan Baru (Cek Bayar)'
                             : ord.status === 'cooking'
-                            ? '🍳 Sedang Dimasak'
+                            ? '🥣 Sedang Disiapkan / Dibungkus'
                             : ord.status === 'ready_pickup'
-                            ? '✅ Siap Diambil Mahasiswa'
+                            ? '🔔 Siap Diambil Mahasiswa'
                             : ord.status === 'completed'
                             ? '🎉 Selesai'
                             : '❌ Ditolak'}
@@ -823,22 +904,36 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           </div>
                         )}
                         <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/25">
-                          <div className="flex flex-col">
+                          <div className="flex flex-col gap-0.5">
                             <span className="text-[11px] text-on-surface-variant">
                               Metode Pembayaran Mahasiswa:
                             </span>
-                            <span className="font-label-sm text-on-surface font-bold">
-                              {ord.paymentProviderLabel}
-                            </span>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-label-sm text-on-surface font-bold">
+                                {ord.paymentProviderLabel}
+                              </span>
+                              {ord.paymentStatus === 'paid_gateway' && (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-secondary text-on-secondary font-bold">
+                                  ✅ LUNAS OTOMATIS (PAYMENT GATEWAY)
+                                </span>
+                              )}
+                            </div>
                             {ord.paymentReference && (
                               <span className="text-[11px] text-secondary">
                                 Info Bayar: {ord.paymentReference}
                               </span>
                             )}
                           </div>
-                          <span className="font-headline-md text-[18px] text-primary font-bold">
-                            Rp {ord.totalAmount.toLocaleString('id-ID')}
-                          </span>
+                          <div className="flex flex-col items-end">
+                            <span className="font-headline-md text-[18px] text-primary font-bold">
+                              Rp {(ord.subtotalAmount ?? ord.totalAmount).toLocaleString('id-ID')}
+                            </span>
+                            {ord.serviceFee ? (
+                              <span className="text-[10px] text-on-surface-variant">
+                                (Total Mahasiswa: Rp {ord.totalAmount.toLocaleString('id-ID')})
+                              </span>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
 
@@ -848,13 +943,23 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           <>
                             <button
                               type="button"
-                              onClick={() => onUpdateOrderStatus(ord.id, 'cooking')}
-                              className="min-h-[42px] px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                              onClick={() => onUpdateOrderStatus(ord.id, 'ready_pickup')}
+                              className="min-h-[42px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
                             >
                               <span className="material-symbols-outlined text-[18px]">
-                                check_circle
+                                bolt
                               </span>
-                              <span>Terima Pembayaran &amp; Masak Pesanan</span>
+                              <span>⚡ Langsung Siap Diambil (Menu Etalase / Matang)</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onUpdateOrderStatus(ord.id, 'cooking')}
+                              className="min-h-[42px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
+                            >
+                              <span className="material-symbols-outlined text-[18px]">
+                                soup_kitchen
+                              </span>
+                              <span>🥣 Sedang Disiapkan / Dibungkus</span>
                             </button>
                             <button
                               type="button"
@@ -875,7 +980,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                             <span className="material-symbols-outlined text-[18px]">
                               notifications_active
                             </span>
-                            <span>Tandai Siap Diambil di Stan!</span>
+                            <span>🔔 Tandai Siap Diambil di Stan!</span>
                           </button>
                         )}
 
@@ -902,18 +1007,172 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
 
         {/* TAB PENGATURAN REKENING BANK, DANA/E-WALLET & QRIS PENJUAL */}
         {sellerSubTab === 'pembayaran' && (
-          <section className="max-w-3xl mx-auto w-full">
+          <section className="max-w-3xl mx-auto w-full flex flex-col gap-4">
+            {/* DOMPET PENJUALAN & TARIK DANA ALA SHOPEE SELLER BALANCE */}
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border-2 border-secondary/40 flex flex-col gap-4">
+              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/25 pb-3">
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider">
+                      Dompet Penjualan Kantin (Sistem Mirip Shopee Seller Balance)
+                    </span>
+                    <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px] font-semibold">
+                      0% Potongan Bagi Ibu Kantin
+                    </span>
+                  </div>
+                  <h3 className="fluid-headline-md text-on-surface mt-0.5">
+                    Saldo Penjualan Siap Ditarik: Rp {gatewayBalance.toLocaleString('id-ID')}
+                  </h3>
+                  <p className="font-body-sm text-xs text-on-surface-variant max-w-xl">
+                    Supaya Ibu Kantin <strong>tidak rugi biaya transfer bank per pesanan</strong>, seluruh pembayaran mahasiswa terkumpul utuh 100% di Saldo Penjualan ini. Ibu Kantin bebas klik <strong>Tarik Dana</strong> kapan saja (misal sore hari selesai jualan) tanpa potongan sepeser pun!
+                  </p>
+                </div>
+
+                <div className="bg-surface-container-low px-3.5 py-2.5 rounded-xl border border-outline-variant/30 flex flex-col items-end shrink-0">
+                  <span className="text-[11px] text-on-surface-variant">
+                    Total Sudah Dicairkan
+                  </span>
+                  <span className="font-headline-md text-base font-bold text-on-surface">
+                    Rp {totalWithdrawn.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              {/* Pilihan Tujuan Pencairan (DANA/E-Wallet vs Rekening Bank) & Tombol Tarik */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/25">
+                <div className="sm:col-span-8 flex flex-col gap-2">
+                  <span className="text-xs font-bold text-on-surface">
+                    Pilih Tujuan Pencairan Saldo:
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setWithdrawDestination('ewallet')}
+                      className={`p-2.5 rounded-lg border text-left flex items-center gap-2.5 cursor-pointer transition-all ${
+                        withdrawDestination === 'ewallet'
+                          ? 'border-secondary bg-secondary-container/25 text-on-surface font-semibold'
+                          : 'border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-secondary text-[20px]">
+                        smartphone
+                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold truncate">
+                          E-Wallet ({payEwalletProviders.split('/')[0].trim()})
+                        </span>
+                        <span className="text-[11px] truncate">
+                          {payEwalletNumber} • {payEwalletAccountName}
+                        </span>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setWithdrawDestination('bank')}
+                      className={`p-2.5 rounded-lg border text-left flex items-center gap-2.5 cursor-pointer transition-all ${
+                        withdrawDestination === 'bank'
+                          ? 'border-secondary bg-secondary-container/25 text-on-surface font-semibold'
+                          : 'border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-primary text-[20px]">
+                        account_balance
+                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="text-xs font-bold truncate">
+                          Rekening {payBankName}
+                        </span>
+                        <span className="text-[11px] truncate">
+                          {payBankAccountNumber} • {payBankAccountName}
+                        </span>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="sm:col-span-4 flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    disabled={gatewayBalance <= 0 || isWithdrawing}
+                    onClick={handleWithdrawSellerBalance}
+                    className={`w-full min-h-[46px] px-4 py-2.5 rounded-xl font-label-md text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all ${
+                      gatewayBalance > 0 && !isWithdrawing
+                        ? 'bg-secondary text-on-secondary cursor-pointer active:scale-95 hover:opacity-95'
+                        : 'bg-surface-container-highest text-on-surface-variant opacity-60 cursor-not-allowed'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">
+                      {isWithdrawing ? 'sync' : 'System_Update_Alt'}
+                    </span>
+                    <span>
+                      {isWithdrawing
+                        ? 'Memproses Transfer...'
+                        : gatewayBalance > 0
+                        ? `Tarik Rp ${gatewayBalance.toLocaleString('id-ID')}`
+                        : 'Saldo Rp 0 (Sudah Ditarik)'}
+                    </span>
+                  </button>
+                  <span className="text-[10px] text-center text-secondary font-semibold">
+                    ✓ Gratis Biaya Admin Penarikan (Rp 0)
+                  </span>
+                </div>
+              </div>
+
+              {/* Riwayat Penarikan Dana Ibu Kantin */}
+              {withdrawalHistory.length > 0 && (
+                <div className="flex flex-col gap-2 pt-1">
+                  <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-secondary">
+                      history
+                    </span>
+                    Riwayat Penarikan Dana ke Rekening / DANA Ibu Kantin:
+                  </span>
+                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                    {withdrawalHistory.map((wd) => (
+                      <div
+                        key={wd.id}
+                        className="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/25 flex flex-wrap items-center justify-between gap-2 text-xs"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-bold text-[10px]">
+                            BERHASIL CAIR
+                          </span>
+                          <div className="flex flex-col">
+                            <span className="font-bold text-on-surface">
+                              {wd.destinationLabel}
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              ID Penarikan: {wd.id} • {wd.createdAt}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <span className="font-bold text-secondary text-sm">
+                            + Rp {wd.amount.toLocaleString('id-ID')}
+                          </span>
+                          <span className="block text-[10px] text-on-surface-variant">
+                            Diterima Utuh 100%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
               <div className="flex items-start justify-between gap-2 border-b border-outline-variant/25 pb-3">
                 <div>
                   <span className="font-label-sm text-[11px] text-secondary font-bold uppercase tracking-wider">
-                    Direct-to-Merchant • Tanpa Potongan Payment Gateway
+                    Tujuan Pencairan Payment Gateway &amp; Pembayaran Langsung
                   </span>
                   <h3 className="fluid-headline-md text-on-surface">
                     Pengaturan Rekening Bank, DANA/E-Wallet &amp; QRIS {stall.name}
                   </h3>
                   <p className="font-body-sm text-body-sm text-on-surface-variant mt-0.5">
-                    Uang pembayaran dari mahasiswa langsung masuk 100% ke QRIS, DANA/GoPay/OVO, atau Rekening Bank Anda tanpa biaya potongan admin.
+                    Rekening dan E-Wallet di bawah ini digunakan sebagai tujuan pencairan dana Payment Gateway otomatis maupun transfer langsung dari mahasiswa.
                   </p>
                 </div>
               </div>

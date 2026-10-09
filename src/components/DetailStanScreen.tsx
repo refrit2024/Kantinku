@@ -65,12 +65,21 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const [pickupTime, setPickupTime] = useState('Istirahat Siang (12.00 WIB)');
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState<PaymentMethodType>('qris');
+    useState<PaymentMethodType>('gateway');
   const [selectedEwalletProvider, setSelectedEwalletProvider] = useState<
     'DANA' | 'GoPay' | 'OVO' | 'ShopeePay'
   >('DANA');
   const [paymentReference, setPaymentReference] = useState('');
 
+  // Payment Gateway Sandbox (Midtrans Snap Simulation) State
+  const [snapGatewayOpen, setSnapGatewayOpen] = useState(false);
+  const [snapChannel, setSnapChannel] = useState<
+    'qris_snap' | 'gopay_dana' | 'bca_va' | 'mandiri_va'
+  >('qris_snap');
+  const [snapStep, setSnapStep] = useState<'select' | 'processing' | 'success'>('select');
+  const [snapTxId, setSnapTxId] = useState('MID-IBIKKG-882910');
+
+  const PLATFORM_SERVICE_FEE = 1000;
   const paymentConfig = getStallPaymentDetails(stall);
 
   const updateCartQty = (item: MenuItem, delta: number) => {
@@ -97,7 +106,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     }));
 
   const cartTotalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
-  const cartTotalAmount = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const cartSubtotalAmount = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const activeServiceFee = selectedPaymentMethod === 'gateway' ? PLATFORM_SERVICE_FEE : 0;
+  const cartTotalAmount = cartSubtotalAmount + activeServiceFee;
 
   // Student's orders for this stall (or recent orders matching student NIM)
   const stallOrders = orders.filter((o) => o.stallId === stall.id);
@@ -111,6 +122,39 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     }
   };
 
+  const completeOrderPlacement = (
+    providerLabel: string,
+    refNote: string,
+    payStatus: 'paid_gateway' | 'manual_verification' | 'cash_on_pickup',
+    txId?: string
+  ) => {
+    onPlaceOrder({
+      stallId: stall.id,
+      stallName: stall.name,
+      stallLocation: stall.fullLocation,
+      studentName: studentName.trim(),
+      studentNim: studentNim.trim(),
+      pickupTime,
+      notes: orderNotes.trim() || undefined,
+      items: cartItems,
+      subtotalAmount: cartSubtotalAmount,
+      serviceFee: activeServiceFee,
+      totalAmount: cartTotalAmount,
+      paymentMethod: selectedPaymentMethod,
+      paymentProviderLabel: providerLabel,
+      paymentReference: refNote,
+      paymentStatus: payStatus,
+      paymentGatewayTxId: txId,
+    });
+
+    setCartQuantities({});
+    setOrderNotes('');
+    setPaymentReference('');
+    setCheckoutModalOpen(false);
+    setSnapGatewayOpen(false);
+    setSnapStep('select');
+  };
+
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0 || !studentName.trim() || !studentNim.trim()) return;
@@ -122,37 +166,55 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       // ignore
     }
 
+    // If Payment Gateway Sandbox is selected, open the interactive Midtrans Snap Sandbox Modal
+    if (selectedPaymentMethod === 'gateway') {
+      const generatedTx = `SANDBOX-SNAP-${Date.now().toString().slice(-6)}`;
+      setSnapTxId(generatedTx);
+      setSnapStep('select');
+      setSnapGatewayOpen(true);
+      return;
+    }
+
     let providerLabel = 'Tunai di Kasir';
     if (selectedPaymentMethod === 'qris') {
-      providerLabel = `QRIS (${selectedEwalletProvider} / M-Banking)`;
+      providerLabel = `QRIS Manual (${selectedEwalletProvider} / M-Banking)`;
     } else if (selectedPaymentMethod === 'ewallet') {
       providerLabel = `Transfer ${selectedEwalletProvider} (${paymentConfig.ewalletNumber})`;
     } else if (selectedPaymentMethod === 'bank') {
       providerLabel = `Transfer Bank ${paymentConfig.bankName}`;
     }
 
-    onPlaceOrder({
-      stallId: stall.id,
-      stallName: stall.name,
-      stallLocation: stall.fullLocation,
-      studentName: studentName.trim(),
-      studentNim: studentNim.trim(),
-      pickupTime,
-      notes: orderNotes.trim() || undefined,
-      items: cartItems,
-      totalAmount: cartTotalAmount,
-      paymentMethod: selectedPaymentMethod,
-      paymentProviderLabel: providerLabel,
-      paymentReference:
-        selectedPaymentMethod === 'tunai'
-          ? 'Bayar Tunai saat Ambil di Stan'
-          : paymentReference.trim() || `Dibayar via ${providerLabel}`,
-    });
+    completeOrderPlacement(
+      providerLabel,
+      selectedPaymentMethod === 'tunai'
+        ? 'Bayar Tunai saat Ambil di Stan'
+        : paymentReference.trim() || `Dibayar via ${providerLabel}`,
+      selectedPaymentMethod === 'tunai' ? 'cash_on_pickup' : 'manual_verification'
+    );
+  };
 
-    setCartQuantities({});
-    setOrderNotes('');
-    setPaymentReference('');
-    setCheckoutModalOpen(false);
+  const handleSimulateGatewaySuccess = () => {
+    setSnapStep('processing');
+    setTimeout(() => {
+      setSnapStep('success');
+      const channelName =
+        snapChannel === 'qris_snap'
+          ? 'Payment Gateway • QRIS Otomatis (DANA/GoPay/OVO/M-Banking)'
+          : snapChannel === 'gopay_dana'
+          ? `Payment Gateway • ${selectedEwalletProvider} Instant`
+          : snapChannel === 'bca_va'
+          ? 'Payment Gateway • BCA Virtual Account'
+          : 'Payment Gateway • Mandiri Bill Payment';
+
+      setTimeout(() => {
+        completeOrderPlacement(
+          channelName,
+          `LUNAS OTOMATIS (Sandbox Callback • ID: ${snapTxId})`,
+          'paid_gateway',
+          snapTxId
+        );
+      }, 1100);
+    }, 900);
   };
 
   // Review Form State
@@ -755,9 +817,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           {ord.status === 'waiting_payment_verification'
                             ? '⏳ Menunggu Konfirmasi Penjual'
                             : ord.status === 'cooking'
-                            ? '🍳 Sedang Dimasak Penjual'
+                            ? '🥣 Sedang Disiapkan / Dibungkus'
                             : ord.status === 'ready_pickup'
-                            ? '✅ SIAP DIAMBIL DI STAN!'
+                            ? '🔔 SIAP DIAMBIL DI STAN!'
                             : ord.status === 'completed'
                             ? '🎉 Selesai Diambil'
                             : '❌ Dibatalkan / Revisi'}
@@ -943,9 +1005,17 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   </span>
                 </div>
               ))}
+              {selectedPaymentMethod === 'gateway' && (
+                <div className="flex items-center justify-between text-xs text-secondary pt-1 border-t border-outline-variant/20">
+                  <span>Biaya Layanan Platform &amp; Payment Gateway</span>
+                  <span className="font-semibold">
+                    +Rp {PLATFORM_SERVICE_FEE.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between pt-2 border-t border-outline-variant/30">
                 <span className="font-label-md text-on-surface font-bold">
-                  Total Bayar ke Penjual
+                  Total Pembayaran
                 </span>
                 <span className="font-headline-md text-[18px] text-primary font-bold">
                   Rp {cartTotalAmount.toLocaleString('id-ID')}
@@ -1013,11 +1083,50 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
             </div>
 
-            {/* PILIH METODE PEMBAYARAN DIRECT-TO-MERCHANT */}
+            {/* PILIH METODE PEMBAYARAN (PAYMENT GATEWAY SANDBOX VS DIRECT) */}
             <div className="flex flex-col gap-2">
               <label className="font-label-sm text-label-sm text-on-surface font-bold">
-                Pilih Metode Pembayaran ke {stall.name}:
+                Pilih Metode Pembayaran:
               </label>
+
+              {/* Featured Option: Payment Gateway Otomatis (Simulasi Sandbox) */}
+              <button
+                type="button"
+                onClick={() => setSelectedPaymentMethod('gateway')}
+                className={`w-full p-3 rounded-xl flex items-center justify-between gap-3 border text-left transition-all cursor-pointer ${
+                  selectedPaymentMethod === 'gateway'
+                    ? 'bg-primary text-on-primary border-primary shadow-sm'
+                    : 'bg-surface-container-low text-on-surface border-outline-variant/40 hover:bg-surface-container'
+                }`}
+              >
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-[24px]">bolt</span>
+                  <div className="flex flex-col">
+                    <span className="font-label-md font-bold flex items-center gap-1.5">
+                      ⚡ Payment Gateway Otomatis (Simulasi Sandbox)
+                    </span>
+                    <span
+                      className={`text-[11px] ${
+                        selectedPaymentMethod === 'gateway'
+                          ? 'text-on-primary/90'
+                          : 'text-on-surface-variant'
+                      }`}
+                    >
+                      QRIS Dinamis, GoPay, DANA, OVO &amp; Virtual Account • Otomatis Lunas!
+                    </span>
+                  </div>
+                </div>
+                <span
+                  className={`text-[10px] px-2 py-0.5 rounded font-bold shrink-0 ${
+                    selectedPaymentMethod === 'gateway'
+                      ? 'bg-secondary-container text-on-secondary-container'
+                      : 'bg-primary-fixed text-on-primary-fixed'
+                  }`}
+                >
+                  Rekomendasi
+                </span>
+              </button>
+
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {paymentConfig.qrisEnabled && (
                   <button
@@ -1030,7 +1139,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     }`}
                   >
                     <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>
-                    <span>QRIS Stan</span>
+                    <span>QRIS Manual</span>
                   </button>
                 )}
 
@@ -1084,6 +1193,23 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             </div>
 
             {/* INSTRUKSI PEMBAYARAN SESUAI METODE YANG DIPILIH */}
+            {selectedPaymentMethod === 'gateway' && (
+              <div className="p-3.5 rounded-xl bg-secondary-container/40 border border-secondary/30 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="font-label-sm text-secondary font-bold flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                    Mode Simulasi Payment Gateway (Midtrans Snap Sandbox)
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container-lowest text-secondary font-bold">
+                    Saldo Aman Rp 0
+                  </span>
+                </div>
+                <p className="font-body-sm text-[12px] text-on-surface leading-relaxed">
+                  Klik tombol di bawah untuk membuka jendela simulasi pembayaran otomatis. Begitu Anda klik <strong>&ldquo;Simulasikan Pembayaran Berhasil&rdquo;</strong>, status pesanan otomatis <strong>LUNAS TERVERIFIKASI</strong> dan saldo penjual langsung bertambah!
+                </p>
+              </div>
+            )}
+
             {selectedPaymentMethod === 'qris' && (
               <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 flex flex-col items-center text-center gap-2.5">
                 <div className="flex items-center justify-between w-full text-left">
@@ -1227,7 +1353,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
             )}
 
-            {selectedPaymentMethod !== 'tunai' && (
+            {selectedPaymentMethod !== 'tunai' && selectedPaymentMethod !== 'gateway' && (
               <div className="flex flex-col gap-1">
                 <label className="font-label-sm text-label-sm text-on-surface-variant">
                   Catatan / Nama Pengirim di {selectedEwalletProvider} / M-Banking (Untuk Dicek Penjual)
@@ -1256,15 +1382,248 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 type="submit"
                 className="w-2/3 min-h-[48px] rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[20px]">check_circle</span>
+                <span className="material-symbols-outlined text-[20px]">
+                  {selectedPaymentMethod === 'gateway' ? 'bolt' : 'check_circle'}
+                </span>
                 <span>
-                  {selectedPaymentMethod === 'tunai'
+                  {selectedPaymentMethod === 'gateway'
+                    ? 'Lanjut ke Payment Gateway (Simulasi)'
+                    : selectedPaymentMethod === 'tunai'
                     ? 'Kirim Pesanan ke Stan'
                     : 'Konfirmasi Sudah Bayar'}
                 </span>
               </button>
             </div>
           </form>
+        </div>
+      )}
+
+      {/* POP-UP SIMULASI PAYMENT GATEWAY OTOMATIS (MIDTRANS SNAP SANDBOX) */}
+      {snapGatewayOpen && (
+        <div className="fixed inset-0 z-[60] bg-on-surface/75 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-outline-variant/40 flex flex-col">
+            {/* Top Sandbox Header Bar */}
+            <div className="bg-primary text-on-primary px-5 py-4 flex items-center justify-between">
+              <div className="flex flex-col">
+                <div className="flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-mono text-[10px] font-bold uppercase">
+                    SANDBOX SIMULATOR
+                  </span>
+                  <span className="text-[11px] text-on-primary/80 font-medium">
+                    KantinKu Pay • Midtrans Snap
+                  </span>
+                </div>
+                <span className="font-headline-md text-[17px] font-bold mt-0.5">
+                  {stall.name} — IBI KKG
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSnapGatewayOpen(false)}
+                className="w-8 h-8 rounded-full bg-on-primary/15 text-on-primary flex items-center justify-center cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            {/* Amount & Order ID Banner */}
+            <div className="bg-surface-container-low px-5 py-3 border-b border-outline-variant/30 flex items-center justify-between">
+              <div className="flex flex-col">
+                <span className="text-[11px] text-on-surface-variant">Total Tagihan</span>
+                <span className="font-headline-md text-[20px] text-primary font-bold">
+                  Rp {cartTotalAmount.toLocaleString('id-ID')}
+                </span>
+              </div>
+              <div className="flex flex-col text-right">
+                <span className="text-[10px] text-on-surface-variant">ID Transaksi Sandbox</span>
+                <span className="font-mono text-xs font-bold text-on-surface">{snapTxId}</span>
+              </div>
+            </div>
+
+            {/* Body Step: Select Channel / Processing / Success */}
+            <div className="p-5 flex flex-col gap-4">
+              {snapStep === 'select' && (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <span className="font-label-sm text-on-surface font-bold">
+                      Pilih Kanal Pembayaran Otomatis:
+                    </span>
+                    <div className="grid grid-cols-2 gap-2">
+                      {[
+                        {
+                          id: 'qris_snap',
+                          label: 'QRIS Dinamis',
+                          sub: 'DANA, GoPay, OVO, M-Banking',
+                          icon: 'qr_code_2',
+                        },
+                        {
+                          id: 'gopay_dana',
+                          label: 'GoPay / DANA Instant',
+                          sub: 'Auto-Debit E-Wallet',
+                          icon: 'account_balance_wallet',
+                        },
+                        {
+                          id: 'bca_va',
+                          label: 'BCA Virtual Account',
+                          sub: 'Cek Otomatis',
+                          icon: 'account_balance',
+                        },
+                        {
+                          id: 'mandiri_va',
+                          label: 'Mandiri Bill / Livin',
+                          sub: 'Cek Otomatis',
+                          icon: 'credit_card',
+                        },
+                      ].map((ch) => (
+                        <button
+                          key={ch.id}
+                          type="button"
+                          onClick={() =>
+                            setSnapChannel(
+                              ch.id as 'qris_snap' | 'gopay_dana' | 'bca_va' | 'mandiri_va'
+                            )
+                          }
+                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 cursor-pointer transition-all ${
+                            snapChannel === ch.id
+                              ? 'bg-primary-fixed/60 border-primary text-on-primary-fixed font-bold'
+                              : 'bg-surface-container-low border-outline-variant/30 text-on-surface'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className="material-symbols-outlined text-[16px] text-primary">
+                              {ch.icon}
+                            </span>
+                            <span className="text-xs font-bold">{ch.label}</span>
+                          </div>
+                          <span className="text-[10px] text-on-surface-variant">{ch.sub}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Visual Preview inside Snap */}
+                  {snapChannel === 'qris_snap' && (
+                    <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col items-center text-center gap-2">
+                      <div className="w-36 h-36 rounded-xl bg-surface-container-lowest border-2 border-primary/30 flex flex-col items-center justify-center p-2 shadow-xs">
+                        <span className="material-symbols-outlined text-[72px] text-on-surface">
+                          qr_code_2
+                        </span>
+                        <span className="text-[9px] font-mono font-bold text-primary">
+                          QRIS DINAMIS • {snapTxId}
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-on-surface-variant">
+                        Nominal <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong> sudah terkunci otomatis di dalam kode QRIS ini.
+                      </span>
+                    </div>
+                  )}
+
+                  {snapChannel === 'gopay_dana' && (
+                    <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-2">
+                      <span className="text-xs font-bold text-on-surface">
+                        Pilih Aplikasi E-Wallet Simulasi:
+                      </span>
+                      <div className="flex gap-2">
+                        {(['DANA', 'GoPay', 'OVO', 'ShopeePay'] as const).map((prov) => (
+                          <button
+                            key={prov}
+                            type="button"
+                            onClick={() => setSelectedEwalletProvider(prov)}
+                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
+                              selectedEwalletProvider === prov
+                                ? 'bg-secondary text-on-secondary border-secondary'
+                                : 'bg-surface-container-lowest text-on-surface border-outline-variant/30'
+                            }`}
+                          >
+                            {prov}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="text-[11px] text-on-surface-variant">
+                        Klik tombol hijau di bawah untuk menyimulasikan pelunasan instan via{' '}
+                        <strong>{selectedEwalletProvider}</strong>.
+                      </span>
+                    </div>
+                  )}
+
+                  {(snapChannel === 'bca_va' || snapChannel === 'mandiri_va') && (
+                    <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-1.5">
+                      <span className="text-[11px] text-on-surface-variant">
+                        Nomor Virtual Account Simulasi ({snapChannel === 'bca_va' ? 'BCA' : 'Mandiri'}):
+                      </span>
+                      <div className="flex items-center justify-between bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/30">
+                        <span className="font-mono text-base font-bold text-on-surface tracking-wider">
+                          {snapChannel === 'bca_va' ? '88012 0812 9000 198' : '70014 0812 9000 198'}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            handleCopyText('8801208129000198', 'Nomor Virtual Account')
+                          }
+                          className="text-xs text-primary font-bold cursor-pointer"
+                        >
+                          Salin
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rincian Aliran Dana */}
+                  <div className="p-3 rounded-xl bg-surface-container text-[11px] text-on-surface-variant flex flex-col gap-1">
+                    <div className="flex justify-between">
+                      <span>Hak Bersih Penjual ({stall.name}):</span>
+                      <strong className="text-on-surface">
+                        Rp {cartSubtotalAmount.toLocaleString('id-ID')}
+                      </strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Pendapatan Platform (Biaya Layanan):</span>
+                      <strong className="text-secondary">
+                        Rp {PLATFORM_SERVICE_FEE.toLocaleString('id-ID')}
+                      </strong>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleSimulateGatewaySuccess}
+                    className="w-full min-h-[48px] py-3 rounded-xl bg-secondary hover:opacity-95 text-on-secondary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.99]"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">verified</span>
+                    <span>⚡ Simulasikan Pembayaran Berhasil (Lunas)</span>
+                  </button>
+                </>
+              )}
+
+              {snapStep === 'processing' && (
+                <div className="py-8 flex flex-col items-center text-center gap-3">
+                  <span className="material-symbols-outlined text-[44px] text-primary animate-spin">
+                    sync
+                  </span>
+                  <h4 className="font-headline-md text-[17px] text-on-surface font-bold">
+                    Memverifikasi Callback Payment Gateway...
+                  </h4>
+                  <p className="font-body-sm text-xs text-on-surface-variant max-w-xs">
+                    Menghubungkan ke server Sandbox &amp; meneruskan notifikasi lunas otomatis ke Dashboard {stall.name}.
+                  </p>
+                </div>
+              )}
+
+              {snapStep === 'success' && (
+                <div className="py-6 flex flex-col items-center text-center gap-3">
+                  <div className="w-14 h-14 rounded-full bg-secondary-container text-secondary flex items-center justify-center">
+                    <span className="material-symbols-outlined text-[34px]">check_circle</span>
+                  </div>
+                  <h4 className="font-headline-md text-[18px] text-secondary font-bold">
+                    Pembayaran Berhasil &amp; Terverifikasi!
+                  </h4>
+                  <p className="font-body-sm text-xs text-on-surface-variant max-w-xs">
+                    Dana Rp {cartSubtotalAmount.toLocaleString('id-ID')} telah masuk ke saldo {stall.name}. Pesanan Anda sedang disiapkan!
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

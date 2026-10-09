@@ -329,10 +329,11 @@ export default function App() {
       hour: '2-digit',
       minute: '2-digit',
     });
+    const isAutoPaidGateway = orderData.paymentStatus === 'paid_gateway';
     const newOrder: OrderTransaction = {
       ...orderData,
       id: `ORD-${Date.now().toString().slice(-6)}`,
-      status: 'waiting_payment_verification',
+      status: isAutoPaidGateway ? 'cooking' : 'waiting_payment_verification',
       createdAt: `Hari ini, ${nowTime} WIB`,
     };
     const nextOrders = [newOrder, ...ordersRef.current];
@@ -346,7 +347,9 @@ export default function App() {
       nextOrders
     );
     showToast(
-      `Pesanan ${newOrder.id} (Rp ${newOrder.totalAmount.toLocaleString('id-ID')}) berhasil dikirim ke ${newOrder.stallName}!`
+      isAutoPaidGateway
+        ? `Pembayaran Lunas Otomatis! Pesanan ${newOrder.id} langsung diproses oleh ${newOrder.stallName}.`
+        : `Pesanan ${newOrder.id} (Rp ${newOrder.totalAmount.toLocaleString('id-ID')}) berhasil dikirim ke ${newOrder.stallName}!`
     );
     return newOrder;
   };
@@ -369,11 +372,11 @@ export default function App() {
     if (target) {
       if (nextStatus === 'cooking') {
         showToast(
-          `Pembayaran ${target.studentName} diterima! Status pesanan diubah menjadi Sedang Dimasak.`
+          `Pembayaran ${target.studentName} diterima! Pesanan ditandai 🥣 Sedang Disiapkan / Dibungkus.`
         );
       } else if (nextStatus === 'ready_pickup') {
         showToast(
-          `Notifikasi dikirim ke ${target.studentName}: Makanan sudah SIAP DIAMBIL di stan!`
+          `Notifikasi dikirim ke ${target.studentName}: Pesanan sudah 🔔 SIAP DIAMBIL di stan!`
         );
       } else if (nextStatus === 'completed') {
         showToast(`Transaksi pesanan ${target.studentName} selesai!`);
