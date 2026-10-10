@@ -237,6 +237,40 @@ export function getStallPaymentDetails(stall: Stall): PaymentDetails {
   };
 }
 
+export const CUSTOM_DOMAIN_STORAGE_KEY = 'kantinku_custom_public_domain_v1';
+
+export function isAiStudioPreviewHost(): boolean {
+  if (typeof window === 'undefined') return false;
+  return (
+    window.location.hostname.startsWith('ais-dev-') ||
+    window.location.hostname.startsWith('ais-pre-')
+  );
+}
+
+export function getPublicStallUrl(stallId: string, customBaseUrl?: string): string {
+  const savedCustom =
+    customBaseUrl !== undefined
+      ? customBaseUrl
+      : typeof window !== 'undefined'
+      ? localStorage.getItem(CUSTOM_DOMAIN_STORAGE_KEY) || ''
+      : '';
+
+  if (savedCustom && savedCustom.trim().length > 0) {
+    const cleaned = savedCustom.trim().replace(/\/$/, '');
+    const withProtocol = /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
+    return `${withProtocol}/?stan=${encodeURIComponent(stallId)}`;
+  }
+
+  if (typeof window !== 'undefined') {
+    // Replace private AI Studio dev iframe origin (ais-dev-) with Shared App origin (ais-pre-)
+    const publicOrigin = window.location.origin.replace('//ais-dev-', '//ais-pre-');
+    const cleanPath = window.location.pathname.replace(/\/$/, '');
+    return `${publicOrigin}${cleanPath}/?stan=${encodeURIComponent(stallId)}`;
+  }
+
+  return `https://kantinku-ibikkg.web.app/?stan=${encodeURIComponent(stallId)}`;
+}
+
 export const INITIAL_SELLER_ACCOUNTS: SellerAccount[] = [
   {
     id: 'seller-bu-sari',

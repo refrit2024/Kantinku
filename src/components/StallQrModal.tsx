@@ -1,11 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { Stall } from '../data/kantinData';
+import {
+  CUSTOM_DOMAIN_STORAGE_KEY,
+  getPublicStallUrl,
+  isAiStudioPreviewHost,
+  Stall,
+} from '../data/kantinData';
 
 interface StallQrModalProps {
   stall: Stall;
   allStalls?: Stall[];
   onClose: () => void;
+  onSimulateScan?: (stallId: string) => void;
   onShowToast?: (message: string) => void;
 }
 
@@ -13,20 +19,24 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
   stall: initialStall,
   allStalls,
   onClose,
+  onSimulateScan,
   onShowToast,
 }) => {
   const [selectedStallId, setSelectedStallId] = useState(initialStall.id);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
+  const [customDomain, setCustomDomain] = useState<string>(() => {
+    try {
+      return localStorage.getItem(CUSTOM_DOMAIN_STORAGE_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
 
   const activeStall =
     allStalls?.find((s) => s.id === selectedStallId) || initialStall;
 
-  const baseUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin}${window.location.pathname.replace(/\/$/, '')}`
-      : 'https://kantinku.ibikkg.ac.id';
-  const directStallUrl = `${baseUrl}/?stan=${encodeURIComponent(activeStall.id)}`;
-  const displayCampusUrl = `kantinku.ibikkg.ac.id/?stan=${activeStall.id}`;
+  const directStallUrl = getPublicStallUrl(activeStall.id, customDomain);
+  const isSandboxPreview = isAiStudioPreviewHost() && !customDomain.trim();
 
   useEffect(() => {
     let isMounted = true;
@@ -51,6 +61,19 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
     };
   }, [directStallUrl]);
 
+  const handleSaveCustomDomain = (val: string) => {
+    setCustomDomain(val);
+    try {
+      if (val.trim()) {
+        localStorage.setItem(CUSTOM_DOMAIN_STORAGE_KEY, val.trim());
+      } else {
+        localStorage.removeItem(CUSTOM_DOMAIN_STORAGE_KEY);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
   const handleCopyLink = async () => {
     try {
       await navigator.clipboard.writeText(directStallUrl);
@@ -58,6 +81,21 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
     } catch {
       onShowToast?.('Tautan siap dibagikan: ' + directStallUrl);
     }
+  };
+
+  const handleSimulateQrScan = () => {
+    if (typeof window !== 'undefined') {
+      const newUrl = `${window.location.pathname}?stan=${encodeURIComponent(activeStall.id)}`;
+      window.history.pushState({ stan: activeStall.id }, '', newUrl);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    }
+    if (onSimulateScan) {
+      onSimulateScan(activeStall.id);
+    }
+    onClose();
+    onShowToast?.(
+      `📱 Simulasi Scan QR berhasil! Membuka langsung etalase ${activeStall.name} (${activeStall.code}).`
+    );
   };
 
   const handleDownloadPosterPng = () => {
@@ -296,26 +334,6 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
                 </span>
               </div>
             </div>
-          </div>
-
-          {/* Direct URL Preview & Copy */}
-          <div className="shrink-0 p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex items-center justify-between gap-2">
-            <div className="flex flex-col min-w-0">
-              <span className="text-[10px] font-label-sm text-on-surface-variant uppercase">
-                Tautan Menu Stan (Otomatis Mengikuti Domain Hosting):
-              </span>
-              <span className="font-mono text-xs text-primary font-semibold truncate">
-                https://{displayCampusUrl}
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={handleCopyLink}
-              className="min-h-[36px] px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high text-on-surface border border-outline-variant/30 font-label-sm text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[15px]">content_copy</span>
-              <span>Salin Link</span>
-            </button>
           </div>
         </div>
 

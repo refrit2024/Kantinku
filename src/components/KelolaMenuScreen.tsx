@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import {
+  getPublicStallUrl,
   getStallPaymentDetails,
   MenuItem,
   normalizeStallLocation,
@@ -100,11 +101,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
 
   useEffect(() => {
     let mounted = true;
-    const baseUrl =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}${window.location.pathname}`
-        : 'https://kantinku-ibikkg.web.app';
-    const stallUrl = `${baseUrl}?stan=${encodeURIComponent(stall.id)}`;
+    const stallUrl = getPublicStallUrl(stall.id);
 
     QRCode.toDataURL(stallUrl, {
       width: 320,
@@ -175,6 +172,160 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   const totalRevenueToday = stallOrders
     .filter((o) => o.status !== 'rejected')
     .reduce((sum, o) => sum + (o.subtotalAmount ?? o.totalAmount), 0);
+
+  // Real-Time Sound Alert ("Ting-Tong!") & Live Order Banner State for Seller
+  const [soundAlertEnabled, setSoundAlertEnabled] = useState<boolean>(true);
+  const [liveOrderAlert, setLiveOrderAlert] = useState<OrderTransaction | null>(null);
+  const seenOrderIdsRef = useRef<Set<string> | null>(null);
+  const lastStallIdRef = useRef<string>(stall.id);
+
+  // Web Audio API Synthesizer for clear 2-tone "Ting-Tong!" Kitchen Bell
+  const playTingTongSound = (announceText?: string) => {
+    try {
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      if (AudioCtx) {
+        const ctx = new AudioCtx();
+        const now = ctx.currentTime;
+
+        // First chime: "TING!" (High E5 - 659.25 Hz)
+        const osc1 = ctx.createOscillator();
+        const gain1 = ctx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, now);
+        gain1.gain.setValueAtTime(0.001, now);
+        gain1.gain.exponentialRampToValueAtTime(0.45, now + 0.02);
+        gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+        osc1.connect(gain1);
+        gain1.connect(ctx.destination);
+        osc1.start(now);
+        osc1.stop(now + 0.46);
+
+        // Second chime: "TONG!" (Warm C5 - 523.25 Hz)
+        const osc2 = ctx.createOscillator();
+        const gain2 = ctx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(523.25, now + 0.28);
+        gain2.gain.setValueAtTime(0.001, now + 0.28);
+        gain2.gain.exponentialRampToValueAtTime(0.5, now + 0.31);
+        gain2.gain.exponentialRampToValueAtTime(0.001, now + 1.05);
+        osc2.connect(gain2);
+        gain2.connect(ctx.destination);
+        osc2.start(now + 0.28);
+        osc2.stop(now + 1.08);
+
+        // Repeat chime once more after 1.15s so busy seller definitely hears it
+        const osc3 = ctx.createOscillator();
+        const gain3 = ctx.createGain();
+        osc3.type = 'triangle';
+        osc3.frequency.setValueAtTime(783.99, now + 1.15); // G5
+        gain3.gain.setValueAtTime(0.001, now + 1.15);
+        gain3.gain.exponentialRampToValueAtTime(0.4, now + 1.18);
+        gain3.gain.exponentialRampToValueAtTime(0.001, now + 1.55);
+        osc3.connect(gain3);
+        gain3.connect(ctx.destination);
+        osc3.start(now + 1.15);
+        osc3.stop(now + 1.56);
+
+        const osc4 = ctx.createOscillator();
+        const gain4 = ctx.createGain();
+        osc4.type = 'sine';
+        osc4.frequency.setValueAtTime(523.25, now + 1.42); // C5
+        gain4.gain.setValueAtTime(0.001, now + 1.42);
+        gain4.gain.exponentialRampToValueAtTime(0.45, now + 1.45);
+        gain4.gain.exponentialRampToValueAtTime(0.001, now + 2.15);
+        osc4.connect(gain4);
+        gain4.connect(ctx.destination);
+        osc4.start(now + 1.42);
+        osc4.stop(now + 2.18);
+      }
+
+      // Optional Indonesian Voice Announcement if supported by browser
+      if (announceText && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(announceText);
+        utter.lang = 'id-ID';
+        utter.rate = 1.02;
+        setTimeout(() => {
+          window.speechSynthesis.speak(utter);
+        }, 700);
+      }
+    } catch {
+      // ignore audio context block if no user interaction yet
+    }
+  };
+
+  // Detect brand new incoming orders in real-time from Firestore
+  useEffect(() => {
+    // Reset seen set if seller switches stall
+    if (lastStallIdRef.current !== stall.id) {
+      lastStallIdRef.current = stall.id;
+      seenOrderIdsRef.current = new Set(stallOrders.map((o) => o.id));
+      return;
+    }
+
+    if (seenOrderIdsRef.current === null) {
+      seenOrderIdsRef.current = new Set(stallOrders.map((o) => o.id));
+      return;
+    }
+
+    const newlyArrived = stallOrders.filter(
+      (o) => !seenOrderIdsRef.current!.has(o.id) && o.status !== 'rejected'
+    );
+
+    if (newlyArrived.length > 0) {
+      newlyArrived.forEach((o) => seenOrderIdsRef.current!.add(o.id));
+      const latestOrder = newlyArrived[0];
+      setLiveOrderAlert(latestOrder);
+      if (soundAlertEnabled) {
+        const menuSummary = latestOrder.items
+          .map((i) => `${i.quantity} ${i.name}`)
+          .join(', ');
+        playTingTongSound(
+          `Pesanan baru masuk di ${stall.name}, atas nama ${latestOrder.studentName}, ${menuSummary}`
+        );
+      }
+    }
+  }, [stallOrders, stall.id, stall.name, soundAlertEnabled]);
+
+  const handleTriggerDemoOrderAlert = () => {
+    const sampleOrder: OrderTransaction =
+      stallOrders[0] || {
+        id: `ORD-${Date.now().toString().slice(-6)}`,
+        stallId: stall.id,
+        stallName: stall.name,
+        stallLocation: stall.fullLocation,
+        studentName: 'Rizky Pratama',
+        studentNim: '22240109',
+        pickupTime: '12:00 WIB (Istirahat Siang)',
+        paymentMethod: 'qris',
+        paymentProviderLabel: 'QRIS Standar Nasional (Lunas)',
+        paymentStatus: 'paid_gateway',
+        items: [
+          {
+            menuId: stall.menuItems[0]?.id || 'm-1',
+            name: stall.menuItems[0]?.name || 'Paket Ayam Geprek + Nasi',
+            price: stall.menuItems[0]?.price || 15000,
+            quantity: 2,
+          },
+        ],
+        subtotalAmount: (stall.menuItems[0]?.price || 15000) * 2,
+        serviceFee: 1000,
+        totalAmount: (stall.menuItems[0]?.price || 15000) * 2 + 1000,
+        status: 'cooking',
+        createdAt: 'Baru saja masuk',
+      };
+
+    setLiveOrderAlert(sampleOrder);
+    const menuSummary = sampleOrder.items
+      .map((i) => `${i.quantity} ${i.name}`)
+      .join(', ');
+    playTingTongSound(
+      `Ting tong! Pesanan baru masuk di ${stall.name}, atas nama ${sampleOrder.studentName}, ${menuSummary}`
+    );
+    onShowToast('🔔 Nada dering "Ting-Tong!" & pengingat suara pesanan berbunyi!');
+  };
 
   // Count all non-rejected orders (Payment Gateway, QRIS, DANA/E-Wallet, Bank, or completed orders) into Seller Balance so seller never sees Rp 0 after a student pays!
   const totalGatewayEarned = stallOrders
@@ -430,48 +581,97 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
 
   return (
     <div className="flex flex-col w-full pb-12">
-      {/* Top Sub-Navigation Penjual (min-h 44px touch targets) */}
+      {/* Top Sub-Navigation Penjual (min-h 44px touch targets) + Sound Alert Control */}
       <div className="w-full bg-surface-container-high border-b border-outline-variant/30 px-4 sm:px-6 lg:px-8 py-2">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {[
-            { id: 'dashboard', label: 'Dashboard & Stok', icon: 'space_dashboard' },
-            {
-              id: 'pesanan',
-              label: `Pesanan Masuk (${activeOrdersCount})`,
-              icon: 'receipt_long',
-            },
-            { id: 'menu', label: 'Menu & Harga', icon: 'restaurant_menu' },
-            {
-              id: 'pembayaran',
-              label: 'Rekening, DANA & QRIS',
-              icon: 'account_balance_wallet',
-            },
-            { id: 'profil', label: 'Profil Kantin', icon: 'store' },
-            { id: 'ulasan', label: `Ulasan (${stall.reviews.length})`, icon: 'reviews' },
-            { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' },
-          ].map((tab) => {
-            const isActive = sellerSubTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setSellerSubTab(tab.id as SellerSubTab)}
-                className={`min-h-[44px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
-                  isActive
-                    ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                    : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+            {[
+              { id: 'dashboard', label: 'Dashboard & Stok', icon: 'space_dashboard' },
+              {
+                id: 'pesanan',
+                label: `Pesanan Masuk (${activeOrdersCount})`,
+                icon: 'receipt_long',
+              },
+              { id: 'menu', label: 'Menu & Harga', icon: 'restaurant_menu' },
+              {
+                id: 'pembayaran',
+                label: 'Rekening, DANA & QRIS',
+                icon: 'account_balance_wallet',
+              },
+              { id: 'profil', label: 'Profil Kantin', icon: 'store' },
+              { id: 'ulasan', label: `Ulasan (${stall.reviews.length})`, icon: 'reviews' },
+              { id: 'pengaturan', label: 'Pengaturan', icon: 'settings' },
+            ].map((tab) => {
+              const isActive = sellerSubTab === tab.id;
+              const isPesananWithActive = tab.id === 'pesanan' && activeOrdersCount > 0;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSellerSubTab(tab.id as SellerSubTab)}
+                  className={`min-h-[42px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
+                    isActive
+                      ? 'bg-primary text-on-primary font-semibold shadow-xs'
+                      : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                  {isPesananWithActive && (
+                    <span
+                      className={`w-2.5 h-2.5 rounded-full animate-ping ${
+                        isActive ? 'bg-on-primary' : 'bg-secondary'
+                      }`}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Sound Notification Toggle & Test Chime Button for Busy Sellers */}
+          <div className="flex items-center gap-2 shrink-0 ml-auto">
+            <button
+              type="button"
+              onClick={() => {
+                const next = !soundAlertEnabled;
+                setSoundAlertEnabled(next);
+                if (next) {
+                  playTingTongSound();
+                  onShowToast('🔊 Suara pengingat pesanan masuk ("Ting-Tong!") DIAKTIFKAN.');
+                } else {
+                  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                  onShowToast('🔇 Suara pengingat pesanan masuk DINONAKTIFKAN.');
+                }
+              }}
+              className={`min-h-[38px] px-3 py-1.5 rounded-lg font-label-sm text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+                soundAlertEnabled
+                  ? 'bg-secondary-container text-on-secondary-container border-secondary/30'
+                  : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/30'
+              }`}
+              title="Aktifkan/Matikan suara dering otomatis saat ada pesanan baru"
+            >
+              <span className="material-symbols-outlined text-[17px]">
+                {soundAlertEnabled ? 'notifications_active' : 'notifications_off'}
+              </span>
+              <span>{soundAlertEnabled ? 'Suara Dering: ON' : 'Suara Dering: OFF'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleTriggerDemoOrderAlert}
+              className="min-h-[38px] px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-primary-fixed text-primary border border-primary/30 font-label-sm text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+              title="Simulasikan bunyi dering Ting-Tong & banner pesanan baru"
+            >
+              <span className="material-symbols-outlined text-[17px]">volume_up</span>
+              <span>Tes Bunyi &quot;Ting-Tong!&quot;</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Main Responsive Container */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-6">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-5">
         {isQrModalOpen && (
           <StallQrModal
             stall={stall}
@@ -479,6 +679,86 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
             onClose={() => setIsQrModalOpen(false)}
             onShowToast={onShowToast}
           />
+        )}
+
+        {/* HIGH-VISIBILITY LIVE INCOMING ORDER BANNER ALERT (FOR BUSY CANTEEN SELLERS) */}
+        {liveOrderAlert && (
+          <div
+            role="alert"
+            className="w-full rounded-2xl bg-secondary text-on-secondary p-4 sm:p-5 shadow-lg border-2 border-secondary-container flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-300"
+          >
+            <div className="flex items-start gap-3.5 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-on-secondary text-secondary flex items-center justify-center shrink-0 shadow-xs">
+                <span className="material-symbols-outlined text-[28px] animate-bounce">
+                  notifications_active
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="px-2.5 py-0.5 rounded-md bg-on-secondary text-secondary font-label-sm text-xs font-extrabold uppercase tracking-wider">
+                    🔔 TING-TONG! PESANAN BARU MASUK
+                  </span>
+                  <span className="font-mono text-xs font-bold text-on-secondary/90">
+                    {liveOrderAlert.id} • {liveOrderAlert.createdAt}
+                  </span>
+                </div>
+                <h3 className="font-headline-md text-lg sm:text-xl font-bold text-on-secondary leading-snug">
+                  {liveOrderAlert.studentName} (NIM: {liveOrderAlert.studentNim}) —{' '}
+                  <span className="underline decoration-2">
+                    Rp {(liveOrderAlert.subtotalAmount ?? liveOrderAlert.totalAmount).toLocaleString('id-ID')}
+                  </span>
+                </h3>
+                <div className="text-xs sm:text-sm text-on-secondary/95 font-medium flex flex-wrap items-center gap-x-3 gap-y-1">
+                  <span>
+                    🍛 <strong>Menu:</strong>{' '}
+                    {liveOrderAlert.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    ⏰ <strong>Ambil:</strong> {liveOrderAlert.pickupTime}
+                  </span>
+                  <span>•</span>
+                  <span>
+                    💳 <strong>Bayar:</strong> {liveOrderAlert.paymentProviderLabel}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => playTingTongSound()}
+                className="min-h-[42px] px-3.5 py-2 rounded-xl bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary border border-on-secondary/30 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[17px]">replay</span>
+                <span>Bunyikan Lagi</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSellerSubTab('pesanan');
+                  setLiveOrderAlert(null);
+                  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                }}
+                className="min-h-[42px] px-4 py-2 rounded-xl bg-on-secondary text-secondary hover:opacity-95 font-label-md text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+                <span>Lihat &amp; Proses Pesanan</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setLiveOrderAlert(null);
+                  if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                }}
+                aria-label="Tutup Pengingat Pesanan"
+                className="w-10 h-10 rounded-xl bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary flex items-center justify-center cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </div>
+          </div>
         )}
 
         {/* TAB 1 & 2: DASHBOARD & MENU HARGA */}

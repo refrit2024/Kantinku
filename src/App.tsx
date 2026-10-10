@@ -123,13 +123,27 @@ export default function App() {
   const [favoriteStallIds, setFavoriteStallIds] = useState<string[]>(['stan-bu-sari']);
   const [footerSecretTap, setFooterSecretTap] = useState(0);
 
-  // Global secret Admin entry from ANY screen via URL (?admin / #admin) or Keyboard Shortcut (Ctrl+Shift+A)
+  // Global URL routing for QR Code Scan (?stan=...) and secret Admin entry (?admin / #admin / Ctrl+Shift+A)
   useEffect(() => {
-    const checkUrlAdmin = () => {
+    const checkUrlRouting = () => {
       const params = new URLSearchParams(window.location.search);
-      const hash = window.location.hash.toLowerCase();
-      if (params.has('admin') || params.get('portal') === 'admin' || hash.includes('admin')) {
+      const hash = window.location.hash;
+      const hashLower = hash.toLowerCase();
+      if (params.has('admin') || params.get('portal') === 'admin' || hashLower.includes('admin')) {
         setCurrentScreen('auth-portal');
+        return;
+      }
+      const qrStall = params.get('stan') || params.get('stall');
+      if (qrStall) {
+        setSelectedStallId(qrStall);
+        setCurrentScreen('detail-stan');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        return;
+      }
+      if (hashLower.startsWith('#stan-')) {
+        setSelectedStallId(hash.slice(1));
+        setCurrentScreen('detail-stan');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
     const handleGlobalAdminKey = (e: KeyboardEvent) => {
@@ -139,11 +153,13 @@ export default function App() {
         setCurrentScreen('auth-portal');
       }
     };
-    checkUrlAdmin();
-    window.addEventListener('hashchange', checkUrlAdmin);
+    checkUrlRouting();
+    window.addEventListener('hashchange', checkUrlRouting);
+    window.addEventListener('popstate', checkUrlRouting);
     window.addEventListener('keydown', handleGlobalAdminKey);
     return () => {
-      window.removeEventListener('hashchange', checkUrlAdmin);
+      window.removeEventListener('hashchange', checkUrlRouting);
+      window.removeEventListener('popstate', checkUrlRouting);
       window.removeEventListener('keydown', handleGlobalAdminKey);
     };
   }, []);

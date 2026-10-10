@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import {
+  getPublicStallUrl,
   getStallPaymentDetails,
   MenuItem,
   normalizeStallLocation,
@@ -88,14 +89,15 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const paymentConfig = getStallPaymentDetails(stall);
   const [stallQrDataUrl, setStallQrDataUrl] = useState<string>('');
   const [paymentQrisDataUrl, setPaymentQrisDataUrl] = useState<string>('');
+  const [isOpenedFromQrScan, setIsOpenedFromQrScan] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return Boolean(params.get('stan') || params.get('stall'));
+  });
 
   useEffect(() => {
     let mounted = true;
-    const baseUrl =
-      typeof window !== 'undefined'
-        ? `${window.location.origin}${window.location.pathname}`
-        : 'https://kantinku-ibikkg.web.app';
-    const stallUrl = `${baseUrl}?stan=${encodeURIComponent(stall.id)}`;
+    const stallUrl = getPublicStallUrl(stall.id);
 
     QRCode.toDataURL(stallUrl, {
       width: 360,
@@ -366,12 +368,32 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
         <StallQrModal
           stall={stall}
           onClose={() => setIsQrModalOpen(false)}
+          onSimulateScan={() => setIsOpenedFromQrScan(true)}
           onShowToast={onShowToast}
         />
       )}
 
       {/* Main Responsive Container */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-6">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-5">
+        {isOpenedFromQrScan && (
+          <div className="rounded-xl bg-secondary text-on-secondary px-4 py-3 shadow-sm flex flex-wrap items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-[20px]">qr_code_scanner</span>
+              <span className="font-label-md text-xs sm:text-sm font-bold">
+                📱 Akses Langsung via Scan QR Etalase Aktif — Anda berada di menu resmi{' '}
+                <span className="underline">{stall.name}</span> ({stall.code})
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsOpenedFromQrScan(false)}
+              className="px-2.5 py-1 rounded-lg bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary text-xs font-semibold cursor-pointer"
+            >
+              Tutup Info
+            </button>
+          </div>
+        )}
+
         {/* Hero Profile Banner */}
         <section className="flex flex-col w-full rounded-xl overflow-hidden shadow-sm border border-outline-variant/25 bg-surface-container-lowest">
           <div className="relative w-full h-52 sm:h-64 bg-surface-container-high overflow-hidden">
