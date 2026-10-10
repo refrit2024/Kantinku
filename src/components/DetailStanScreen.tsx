@@ -6,6 +6,7 @@ import {
   MenuItem,
   normalizeStallLocation,
   OrderItem,
+  OrderStatusType,
   OrderTransaction,
   PaymentMethodType,
   Stall,
@@ -20,6 +21,11 @@ interface DetailStanScreenProps {
   onPlaceOrder: (
     orderData: Omit<OrderTransaction, 'id' | 'status' | 'createdAt'>
   ) => OrderTransaction;
+  onUpdateOrderStatus?: (
+    orderId: string,
+    nextStatus: OrderStatusType,
+    rejectionReason?: string
+  ) => void;
   onAddReview: (
     stallId: string,
     studentName: string,
@@ -38,6 +44,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   isFavorite,
   onToggleFavorite,
   onPlaceOrder,
+  onUpdateOrderStatus,
   onAddReview,
   onBackToKatalog,
   onOpenReportModal,
@@ -47,7 +54,6 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<
     'all' | 'makanan' | 'minuman' | 'snack'
   >('all');
-  const [checkedItemIds, setCheckedItemIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
@@ -169,8 +175,13 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     };
   }, [paymentConfig.qrisNmid, paymentConfig.qrisMerchantName, stall.name, cartTotalAmount]);
 
-  // Student's orders for this stall (or recent orders matching student NIM)
-  const stallOrders = orders.filter((o) => o.stallId === stall.id);
+  // Active orders for this stall (completed/rejected automatically disappear from live board)
+  const stallOrders = orders.filter(
+    (o) =>
+      o.stallId === stall.id &&
+      o.status !== 'completed' &&
+      o.status !== 'rejected'
+  );
 
   const handleCopyText = (text: string, label: string) => {
     if (navigator.clipboard) {
@@ -291,37 +302,6 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     return item.category === selectedCategory;
   });
 
-  const toggleCalcCheckbox = (id: string) => {
-    setCheckedItemIds((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
-  };
-
-  const totalCost = safeMenuItems
-    .filter((item) => checkedItemIds.includes(item.id))
-    .reduce((acc, item) => acc + item.price, 0);
-
-  const maxBudget = 20000;
-  const percentage = Math.min(Math.round((totalCost / maxBudget) * 100), 100);
-
-  let statusText = 'Pilih menu untuk melihat simulasi';
-  let statusColorClass = 'text-on-surface-variant font-semibold';
-  let barColorClass = 'h-full bg-secondary transition-all duration-300';
-
-  if (totalCost > 0 && totalCost <= maxBudget) {
-    const sisa = maxBudget - totalCost;
-    statusText = `Aman & Hemat! Sisa budget: Rp ${sisa.toLocaleString('id-ID')}`;
-    statusColorClass = 'text-secondary font-semibold';
-    barColorClass = 'h-full bg-secondary transition-all duration-300';
-  } else if (totalCost > maxBudget) {
-    const lebih = totalCost - maxBudget;
-    statusText = `Melebihi target hemat Rp ${lebih.toLocaleString('id-ID')}`;
-    statusColorClass = 'text-error font-semibold';
-    barColorClass = 'h-full bg-error transition-all duration-300';
-  }
-
-  const calcItems = safeMenuItems.filter((m) => m.status === 'ready').slice(0, 5);
-
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!revName.trim() || !revComment.trim()) return;
@@ -387,14 +367,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             <div className="flex items-center gap-2.5">
               <span className="material-symbols-outlined text-[20px]">qr_code_scanner</span>
               <span className="font-label-md text-xs sm:text-sm font-bold">
-                📱 Akses Langsung via Scan QR Etalase Aktif — Anda berada di menu resmi{' '}
+                Akses Langsung via Scan QR Etalase Aktif — Anda berada di menu resmi{' '}
                 <span className="underline">{stall.name}</span> ({stall.code})
               </span>
             </div>
             <button
               type="button"
               onClick={() => setIsOpenedFromQrScan(false)}
-              className="px-2.5 py-1 rounded-lg bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary text-xs font-semibold cursor-pointer"
+              className="min-h-[38px] px-3 py-1.5 rounded-lg bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary text-xs font-semibold cursor-pointer"
             >
               Tutup Info
             </button>
@@ -428,26 +408,34 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             </div>
           </div>
 
-          {/* Section 6 Header Bar: ⭐ 4.7 | 📍 85 m | 🟢 Buka | 07.00–20.00 */}
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-surface-container-lowest">
             <div className="flex items-center gap-2.5 flex-wrap">
               <span className="font-label-lg text-label-lg text-on-surface flex items-center gap-1">
-                ⭐ {stall.rating}{' '}
+                <span className="material-symbols-outlined text-[18px] text-tertiary">star</span>
+                <span>{stall.rating}</span>
                 <span className="font-body-sm text-body-sm text-on-surface-variant">
                   ({stall.reviewCount} ulasan)
                 </span>
               </span>
               <span className="text-outline-variant">•</span>
-              <span className="font-label-md text-label-md text-on-surface flex items-center gap-0.5">
-                📍 {stall.distanceMeters} m
+              <span className="font-label-md text-label-md text-on-surface flex items-center gap-1">
+                <span className="material-symbols-outlined text-[16px] text-secondary">
+                  location_on
+                </span>
+                <span>{stall.distanceMeters} m</span>
               </span>
               <span className="text-outline-variant">•</span>
               <span
-                className={`font-label-md text-label-md font-semibold ${
+                className={`font-label-md text-label-md font-semibold inline-flex items-center gap-1.5 ${
                   stall.isOpen ? 'text-secondary' : 'text-error'
                 }`}
               >
-                {stall.isOpen ? '🟢 Buka' : '🔴 Tutup'}
+                <span
+                  className={`w-2 h-2 rounded-full ${
+                    stall.isOpen ? 'bg-secondary' : 'bg-error'
+                  }`}
+                />
+                <span>{stall.isOpen ? 'Buka' : 'Tutup'}</span>
               </span>
             </div>
             <div className="font-label-sm text-label-sm bg-surface-container-low text-on-surface px-3 py-1.5 rounded-lg">
@@ -524,7 +512,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               {/* Category Filter Buttons */}
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
                 {[
-                  { id: 'all', label: `Semua (${stall.menuItems.length})` },
+                  { id: 'all', label: `Semua (${safeMenuItems.length})` },
                   { id: 'makanan', label: `Makanan (${makananCount})` },
                   { id: 'minuman', label: `Minuman (${minumanCount})` },
                   { id: 'snack', label: `Snack (${snackCount})` },
@@ -576,13 +564,18 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
                             <span
-                              className={`font-label-sm text-label-sm px-2 py-0.5 rounded ${
+                              className={`font-label-sm text-label-sm px-2 py-0.5 rounded inline-flex items-center gap-1.5 ${
                                 item.status === 'ready'
                                   ? 'bg-secondary-container text-on-secondary-container'
                                   : 'bg-error-container text-on-error-container'
                               }`}
                             >
-                              {item.status === 'ready' ? '🟢 Tersedia' : '🔴 Habis'}
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  item.status === 'ready' ? 'bg-secondary' : 'bg-error'
+                                }`}
+                              />
+                              <span>{item.status === 'ready' ? 'Tersedia' : 'Habis'}</span>
                             </span>
                           </td>
                           <td className="py-3 px-4 text-right font-label-lg text-primary font-bold whitespace-nowrap">
@@ -643,28 +636,30 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                               >
                                 Rp {item.price.toLocaleString('id-ID')}
                               </span>
-                              <span className="text-[10px] text-on-surface-variant truncate">
+                              <span className="text-[11px] text-on-surface-variant truncate">
                                 Update: {item.lastUpdated}
                               </span>
                             </div>
                             {isAvailable ? (
                               <div className="flex items-center shrink-0">
                                 {(cartQuantities[item.id] || 0) > 0 ? (
-                                  <div className="flex items-center gap-1.5 bg-primary-fixed text-on-primary-fixed px-2 py-1 rounded-lg border border-primary/30">
+                                  <div className="flex items-center gap-1 bg-primary-fixed text-on-primary-fixed p-1 rounded-xl border border-primary/30">
                                     <button
                                       type="button"
+                                      aria-label={`Kurangi ${item.name}`}
                                       onClick={() => updateCartQty(item, -1)}
-                                      className="w-7 h-7 rounded bg-surface-container-lowest text-primary font-bold flex items-center justify-center cursor-pointer"
+                                      className="w-9 h-9 rounded-lg bg-surface-container-lowest text-primary font-bold flex items-center justify-center cursor-pointer active:scale-95"
                                     >
                                       -
                                     </button>
-                                    <span className="font-label-md font-bold min-w-[20px] text-center">
+                                    <span className="font-label-md font-bold min-w-[24px] text-center">
                                       {cartQuantities[item.id]}
                                     </span>
                                     <button
                                       type="button"
+                                      aria-label={`Tambah ${item.name}`}
                                       onClick={() => updateCartQty(item, 1)}
-                                      className="w-7 h-7 rounded bg-primary text-on-primary font-bold flex items-center justify-center cursor-pointer"
+                                      className="w-9 h-9 rounded-lg bg-primary text-on-primary font-bold flex items-center justify-center cursor-pointer active:scale-95"
                                     >
                                       +
                                     </button>
@@ -673,9 +668,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => updateCartQty(item, 1)}
-                                    className="min-h-[36px] px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
+                                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
                                   >
-                                    <span className="material-symbols-outlined text-[15px]">
+                                    <span className="material-symbols-outlined text-[16px]">
                                       add_shopping_cart
                                     </span>
                                     <span>+ Pesan</span>
@@ -684,7 +679,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                               </div>
                             ) : (
                               <span className="font-label-sm text-xs bg-error-container text-on-error-container px-2.5 py-1 rounded-lg shrink-0 whitespace-nowrap">
-                                🔴 Habis
+                                Habis
                               </span>
                             )}
                           </div>
@@ -708,12 +703,13 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   </span>
                 </div>
                 <div className="flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1.5 rounded-lg font-label-md font-bold shrink-0">
-                  <span>⭐ {stall.rating}</span>
+                  <span className="material-symbols-outlined text-[16px]">star</span>
+                  <span>{stall.rating}</span>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3">
-                {stall.reviews.map((rev) => (
+                {(Array.isArray(stall.reviews) ? stall.reviews : []).map((rev) => (
                   <div
                     key={rev.id}
                     className="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-1.5"
@@ -723,18 +719,18 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                         <span className="font-label-md text-label-md text-on-surface font-bold">
                           {rev.studentName}
                         </span>
-                        <span className="font-body-sm text-[11px] text-on-surface-variant ml-1.5">
+                        <span className="font-body-sm text-xs text-on-surface-variant ml-1.5">
                           • {rev.majorAndYear}
                         </span>
                       </div>
-                      <span className="font-label-sm text-label-sm text-tertiary">
-                        {'⭐'.repeat(rev.rating)}
+                      <span className="font-label-sm text-label-sm text-tertiary font-bold">
+                        {Math.max(1, Math.min(5, Number(rev.rating) || 5))}/5 Bintang
                       </span>
                     </div>
                     <p className="font-body-sm text-body-sm text-on-surface leading-relaxed">
                       {rev.comment}
                     </p>
-                    <span className="text-[10px] text-on-surface-variant">{rev.date}</span>
+                    <span className="text-[11px] text-on-surface-variant">{rev.date}</span>
                     {rev.reply && (
                       <div className="mt-1 p-2.5 rounded bg-surface-container-lowest border-l-2 border-primary text-body-sm text-on-surface-variant">
                         <strong className="text-on-surface">Balasan Penjual:</strong> {rev.reply}
@@ -744,7 +740,6 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 ))}
               </div>
 
-              {/* Form Tambah Review Mahasiswa (44px inputs & button) */}
               <form
                 onSubmit={handleReviewSubmit}
                 className="pt-3 border-t border-outline-variant/30 flex flex-col gap-2.5"
@@ -766,9 +761,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     onChange={(e) => setRevRating(Number(e.target.value))}
                     className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
                   >
-                    <option value={5}>⭐⭐⭐⭐⭐ (5/5 Sangat Puas)</option>
-                    <option value={4}>⭐⭐⭐⭐ (4/5 Sesuai Harga)</option>
-                    <option value={3}>⭐⭐⭐ (3/5 Cukup)</option>
+                    <option value={5}>5/5 — Sangat Puas</option>
+                    <option value={4}>4/5 — Sesuai Harga</option>
+                    <option value={3}>3/5 — Cukup</option>
                   </select>
                 </div>
                 <input
@@ -937,9 +932,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           {ord.studentName} ({ord.studentNim})
                         </span>
                         <span
-                          className={`text-[10px] px-2 py-0.5 rounded font-bold ${
+                          className={`text-[11px] px-2 py-0.5 rounded font-bold ${
                             ord.status === 'ready_pickup'
-                              ? 'bg-secondary text-on-secondary animate-pulse'
+                              ? 'bg-secondary text-on-secondary'
                               : ord.status === 'cooking'
                               ? 'bg-primary-fixed text-on-primary-fixed'
                               : ord.status === 'completed'
@@ -950,14 +945,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           }`}
                         >
                           {ord.status === 'waiting_payment_verification'
-                            ? '⏳ Menunggu Konfirmasi Penjual'
+                            ? 'Menunggu Konfirmasi Penjual'
                             : ord.status === 'cooking'
-                            ? '🥣 Sedang Disiapkan / Dibungkus'
+                            ? 'Sedang Disiapkan / Dibungkus'
                             : ord.status === 'ready_pickup'
-                            ? '🔔 SIAP DIAMBIL DI STAN!'
+                            ? 'SIAP DIAMBIL DI STAN'
                             : ord.status === 'completed'
-                            ? '🎉 Selesai Diambil'
-                            : '❌ Dibatalkan / Revisi'}
+                            ? 'Selesai Diambil'
+                            : 'Dibatalkan / Revisi'}
                         </span>
                       </div>
                       <div className="text-[12px] text-on-surface-variant">
@@ -969,90 +964,21 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           Rp {ord.totalAmount.toLocaleString('id-ID')}
                         </strong>
                       </div>
+                      {ord.status === 'ready_pickup' && onUpdateOrderStatus && (
+                        <button
+                          type="button"
+                          onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
+                          className="mt-1 w-full min-h-[44px] px-3 py-2 rounded-lg bg-secondary text-on-secondary hover:opacity-95 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-[0.99]"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">task_alt</span>
+                          <span>Sudah Saya Ambil (Selesaikan)</span>
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
               </div>
             )}
-
-            {/* Fitur Kalkulator Makan Siang Mahasiswa (Simulasi Budget) */}
-            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3.5">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-9 h-9 rounded-lg bg-tertiary-fixed text-on-tertiary-fixed flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[18px]">calculate</span>
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <h3 className="font-headline-md text-[16px] text-on-surface font-bold leading-tight truncate">
-                      Simulasi Budget Makan
-                    </h3>
-                    <span className="font-label-sm text-label-sm text-on-surface-variant truncate">
-                      Hitung kombinasi menu sebelum datang
-                    </span>
-                  </div>
-                </div>
-                <span className="font-label-sm text-label-sm bg-surface-container text-on-surface px-2.5 py-1 rounded shrink-0">
-                  Maks Rp 20rb
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-2">
-                {calcItems.map((item) => {
-                  const checked = checkedItemIds.includes(item.id);
-                  return (
-                    <label
-                      key={item.id}
-                      className="min-h-[48px] flex items-center justify-between gap-2 p-3 rounded-lg bg-surface-container-low cursor-pointer"
-                    >
-                      <div className="flex items-center gap-2.5 min-w-0">
-                        <input
-                          className="calc-chk accent-primary w-5 h-5 rounded shrink-0"
-                          checked={checked}
-                          onChange={() => toggleCalcCheckbox(item.id)}
-                          type="checkbox"
-                        />
-                        <span className="font-label-md text-label-md text-on-surface truncate">
-                          {item.name}
-                        </span>
-                      </div>
-                      <span className="font-label-md text-label-md text-on-surface font-semibold shrink-0">
-                        Rp {item.price.toLocaleString('id-ID')}
-                      </span>
-                    </label>
-                  );
-                })}
-              </div>
-
-              <div
-                className="p-3.5 rounded-xl bg-surface-container flex flex-col gap-2 transition-colors"
-                id="calc-summary-box"
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-label-md text-label-md text-on-surface-variant">
-                    Estimasi Total Makan:
-                  </span>
-                  <span
-                    className="font-headline-md text-headline-md text-on-surface font-bold"
-                    id="calc-total-display"
-                  >
-                    Rp {totalCost.toLocaleString('id-ID')}
-                  </span>
-                </div>
-                <div className="w-full bg-surface-container-highest h-2 rounded-full overflow-hidden">
-                  <div
-                    className={barColorClass}
-                    id="calc-budget-bar"
-                    style={{ width: `${percentage}%` }}
-                  ></div>
-                </div>
-                <div className="flex items-center justify-between gap-2 text-[11px] font-label-sm">
-                  <span className={statusColorClass} id="calc-status-text">
-                    {statusText}
-                  </span>
-                  <span className="text-on-surface-variant shrink-0">Batas Rp 20.000</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
@@ -1114,10 +1040,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
               <button
                 type="button"
+                aria-label="Tutup Checkout"
                 onClick={() => setCheckoutModalOpen(false)}
-                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
@@ -1238,7 +1165,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <span className="material-symbols-outlined text-[24px]">bolt</span>
                   <div className="flex flex-col">
                     <span className="font-label-md font-bold flex items-center gap-1.5">
-                      ⚡ Payment Gateway Otomatis (Simulasi Sandbox)
+                      Payment Gateway Otomatis (Simulasi Sandbox)
                     </span>
                     <span
                       className={`text-[11px] ${
@@ -1557,10 +1484,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
               <button
                 type="button"
+                aria-label="Tutup Simulator"
                 onClick={() => setSnapGatewayOpen(false)}
-                className="w-8 h-8 rounded-full bg-on-primary/15 text-on-primary flex items-center justify-center cursor-pointer"
+                className="w-11 h-11 rounded-full bg-on-primary/15 text-on-primary flex items-center justify-center cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
@@ -1736,7 +1664,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     className="w-full min-h-[48px] py-3 rounded-xl bg-secondary hover:opacity-95 text-on-secondary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.99]"
                   >
                     <span className="material-symbols-outlined text-[20px]">verified</span>
-                    <span>⚡ Simulasikan Pembayaran Berhasil (Lunas)</span>
+                    <span>Simulasikan Pembayaran Berhasil (Lunas)</span>
                   </button>
                 </>
               )}

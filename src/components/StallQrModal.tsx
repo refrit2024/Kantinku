@@ -19,12 +19,11 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
   stall: initialStall,
   allStalls,
   onClose,
-  onSimulateScan,
   onShowToast,
 }) => {
   const [selectedStallId, setSelectedStallId] = useState(initialStall.id);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
-  const [customDomain, setCustomDomain] = useState<string>(() => {
+  const [customDomain] = useState<string>(() => {
     try {
       return localStorage.getItem(CUSTOM_DOMAIN_STORAGE_KEY) || '';
     } catch {
@@ -36,7 +35,6 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
     allStalls?.find((s) => s.id === selectedStallId) || initialStall;
 
   const directStallUrl = getPublicStallUrl(activeStall.id, customDomain);
-  const isSandboxPreview = isAiStudioPreviewHost() && !customDomain.trim();
 
   useEffect(() => {
     let isMounted = true;
@@ -60,43 +58,6 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
       isMounted = false;
     };
   }, [directStallUrl]);
-
-  const handleSaveCustomDomain = (val: string) => {
-    setCustomDomain(val);
-    try {
-      if (val.trim()) {
-        localStorage.setItem(CUSTOM_DOMAIN_STORAGE_KEY, val.trim());
-      } else {
-        localStorage.removeItem(CUSTOM_DOMAIN_STORAGE_KEY);
-      }
-    } catch {
-      // ignore
-    }
-  };
-
-  const handleCopyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(directStallUrl);
-      onShowToast?.(`Tautan langsung ke ${activeStall.name} berhasil disalin!`);
-    } catch {
-      onShowToast?.('Tautan siap dibagikan: ' + directStallUrl);
-    }
-  };
-
-  const handleSimulateQrScan = () => {
-    if (typeof window !== 'undefined') {
-      const newUrl = `${window.location.pathname}?stan=${encodeURIComponent(activeStall.id)}`;
-      window.history.pushState({ stan: activeStall.id }, '', newUrl);
-      window.dispatchEvent(new PopStateEvent('popstate'));
-    }
-    if (onSimulateScan) {
-      onSimulateScan(activeStall.id);
-    }
-    onClose();
-    onShowToast?.(
-      `📱 Simulasi Scan QR berhasil! Membuka langsung etalase ${activeStall.name} (${activeStall.code}).`
-    );
-  };
 
   const handleDownloadPosterPng = () => {
     if (!qrDataUrl) return;
@@ -234,15 +195,13 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Tutup Modal QR"
-            className="w-9 h-9 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center cursor-pointer shrink-0"
+            className="w-11 h-11 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center cursor-pointer shrink-0"
           >
             <span className="material-symbols-outlined text-[20px]">close</span>
           </button>
         </div>
 
-        {/* Scrollable Poster Preview Body */}
         <div className="p-4 sm:p-5 flex-1 min-h-0 overflow-y-auto flex flex-col gap-4">
-          {/* Optional Stall Switcher (When opened by Admin or Seller with multiple stalls) */}
           {allStalls && allStalls.length > 1 && (
             <div className="flex flex-col gap-1.5 shrink-0">
               <label
@@ -255,7 +214,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
                 id="selectQrStall"
                 value={activeStall.id}
                 onChange={(e) => setSelectedStallId(e.target.value)}
-                className="h-10 px-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface font-label-md text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
+                className="h-11 px-3 rounded-xl bg-surface-container-low border border-outline-variant/30 text-on-surface font-label-md text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 {allStalls.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -314,7 +273,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
 
               <div className="flex flex-col gap-1 pt-1">
                 <span className="font-label-lg text-sm font-bold text-primary uppercase tracking-tight">
-                  📱 Scan Kamera HP untuk Cek Harga &amp; Pesan
+                  Scan Kamera HP untuk Cek Harga &amp; Pesan
                 </span>
                 <div className="flex flex-wrap items-center justify-center gap-2 text-[11px] font-semibold text-secondary">
                   <span>✓ Tanpa Login</span>
@@ -337,12 +296,11 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
           </div>
         </div>
 
-        {/* Modal Footer Actions */}
         <div className="px-5 py-3.5 bg-surface-container-low border-t border-outline-variant/25 flex flex-wrap sm:flex-nowrap items-center justify-end gap-2.5 shrink-0">
           <button
             type="button"
             onClick={() => window.print()}
-            className="flex-1 sm:flex-initial min-h-[42px] px-4 py-2 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high text-on-surface border border-outline-variant/30 font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+            className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-xl bg-surface-container-lowest hover:bg-surface-container-high text-on-surface border border-outline-variant/30 font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
           >
             <span className="material-symbols-outlined text-[17px]">print</span>
             <span>Cetak Kertas</span>
@@ -350,7 +308,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
           <button
             type="button"
             onClick={handleDownloadPosterPng}
-            className="flex-1 sm:flex-initial min-h-[42px] px-4 py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+            className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
           >
             <span className="material-symbols-outlined text-[17px]">download</span>
             <span>Unduh Poster QR (PNG)</span>

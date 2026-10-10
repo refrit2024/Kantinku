@@ -289,45 +289,6 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
     }
   }, [stallOrders, stall.id, stall.name, soundAlertEnabled]);
 
-  const handleTriggerDemoOrderAlert = () => {
-    const sampleOrder: OrderTransaction =
-      stallOrders[0] || {
-        id: `ORD-${Date.now().toString().slice(-6)}`,
-        stallId: stall.id,
-        stallName: stall.name,
-        stallLocation: stall.fullLocation,
-        studentName: 'Rizky Pratama',
-        studentNim: '22240109',
-        pickupTime: '12:00 WIB (Istirahat Siang)',
-        paymentMethod: 'qris',
-        paymentProviderLabel: 'QRIS Standar Nasional (Lunas)',
-        paymentStatus: 'paid_gateway',
-        items: [
-          {
-            menuId: stall.menuItems[0]?.id || 'm-1',
-            name: stall.menuItems[0]?.name || 'Paket Ayam Geprek + Nasi',
-            price: stall.menuItems[0]?.price || 15000,
-            quantity: 2,
-          },
-        ],
-        subtotalAmount: (stall.menuItems[0]?.price || 15000) * 2,
-        serviceFee: 1000,
-        totalAmount: (stall.menuItems[0]?.price || 15000) * 2 + 1000,
-        status: 'cooking',
-        createdAt: 'Baru saja masuk',
-      };
-
-    setLiveOrderAlert(sampleOrder);
-    const menuSummary = sampleOrder.items
-      .map((i) => `${i.quantity} ${i.name}`)
-      .join(', ');
-    playTingTongSound(
-      `Ting tong! Pesanan baru masuk di ${stall.name}, atas nama ${sampleOrder.studentName}, ${menuSummary}`
-    );
-    onShowToast('🔔 Nada dering "Ting-Tong!" & pengingat suara pesanan berbunyi!');
-  };
-
-  // Count all non-rejected orders (Payment Gateway, QRIS, DANA/E-Wallet, Bank, or completed orders) into Seller Balance so seller never sees Rp 0 after a student pays!
   const totalGatewayEarned = stallOrders
     .filter(
       (o) =>
@@ -582,9 +543,9 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   return (
     <div className="flex flex-col w-full pb-12">
       {/* Top Sub-Navigation Penjual (min-h 44px touch targets) + Sound Alert Control */}
-      <div className="w-full bg-surface-container-high border-b border-outline-variant/30 px-4 sm:px-6 lg:px-8 py-2">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+      <div className="w-full bg-surface-container-low border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-2.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar min-w-0 flex-1">
             {[
               { id: 'dashboard', label: 'Dashboard & Stok', icon: 'space_dashboard' },
               {
@@ -609,17 +570,17 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => setSellerSubTab(tab.id as SellerSubTab)}
-                  className={`min-h-[42px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
+                  className={`min-h-[44px] px-3.5 py-2 rounded-xl font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
                     isActive
                       ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                      : 'bg-surface-container-lowest text-on-surface hover:bg-surface-container'
+                      : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[18px]">{tab.icon}</span>
+                  <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
                   <span>{tab.label}</span>
                   {isPesananWithActive && (
                     <span
-                      className={`w-2.5 h-2.5 rounded-full animate-ping ${
+                      className={`w-2 h-2 rounded-full ${
                         isActive ? 'bg-on-primary' : 'bg-secondary'
                       }`}
                     />
@@ -629,8 +590,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
             })}
           </div>
 
-          {/* Sound Notification Toggle & Test Chime Button for Busy Sellers */}
-          <div className="flex items-center gap-2 shrink-0 ml-auto">
+          <div className="flex items-center shrink-0 pl-2 border-l border-outline-variant/25">
             <button
               type="button"
               onClick={() => {
@@ -638,33 +598,26 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 setSoundAlertEnabled(next);
                 if (next) {
                   playTingTongSound();
-                  onShowToast('🔊 Suara pengingat pesanan masuk ("Ting-Tong!") DIAKTIFKAN.');
+                  onShowToast('Suara pengingat pesanan masuk ("Ting-Tong!") diaktifkan.');
                 } else {
                   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-                  onShowToast('🔇 Suara pengingat pesanan masuk DINONAKTIFKAN.');
+                  onShowToast('Suara pengingat pesanan masuk dinonaktifkan.');
                 }
               }}
-              className={`min-h-[38px] px-3 py-1.5 rounded-lg font-label-sm text-xs font-semibold flex items-center gap-1.5 border transition-colors cursor-pointer ${
+              className={`min-h-[44px] px-3.5 py-2 rounded-xl font-label-sm text-xs font-semibold flex items-center gap-1.5 border whitespace-nowrap transition-colors cursor-pointer active:scale-[0.98] ${
                 soundAlertEnabled
-                  ? 'bg-secondary-container text-on-secondary-container border-secondary/30'
-                  : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/30'
+                  ? 'bg-secondary-container text-on-secondary-container border-secondary/30 shadow-2xs'
+                  : 'bg-surface-container-lowest text-on-surface-variant border-outline-variant/25'
               }`}
               title="Aktifkan/Matikan suara dering otomatis saat ada pesanan baru"
             >
-              <span className="material-symbols-outlined text-[17px]">
+              <span className="material-symbols-outlined text-[16px]">
                 {soundAlertEnabled ? 'notifications_active' : 'notifications_off'}
               </span>
-              <span>{soundAlertEnabled ? 'Suara Dering: ON' : 'Suara Dering: OFF'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleTriggerDemoOrderAlert}
-              className="min-h-[38px] px-3 py-1.5 rounded-lg bg-surface-container-lowest hover:bg-primary-fixed text-primary border border-primary/30 font-label-sm text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
-              title="Simulasikan bunyi dering Ting-Tong & banner pesanan baru"
-            >
-              <span className="material-symbols-outlined text-[17px]">volume_up</span>
-              <span>Tes Bunyi &quot;Ting-Tong!&quot;</span>
+              <span className="hidden sm:inline">
+                {soundAlertEnabled ? 'Suara Dering: ON' : 'Suara Dering: OFF'}
+              </span>
+              <span className="sm:hidden">{soundAlertEnabled ? 'Dering ON' : 'Dering OFF'}</span>
             </button>
           </div>
         </div>
@@ -681,7 +634,6 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
           />
         )}
 
-        {/* HIGH-VISIBILITY LIVE INCOMING ORDER BANNER ALERT (FOR BUSY CANTEEN SELLERS) */}
         {liveOrderAlert && (
           <div
             role="alert"
@@ -689,14 +641,14 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
           >
             <div className="flex items-start gap-3.5 min-w-0">
               <div className="w-12 h-12 rounded-2xl bg-on-secondary text-secondary flex items-center justify-center shrink-0 shadow-xs">
-                <span className="material-symbols-outlined text-[28px] animate-bounce">
+                <span className="material-symbols-outlined text-[28px]">
                   notifications_active
                 </span>
               </div>
               <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="px-2.5 py-0.5 rounded-md bg-on-secondary text-secondary font-label-sm text-xs font-extrabold uppercase tracking-wider">
-                    🔔 TING-TONG! PESANAN BARU MASUK
+                    TING-TONG! PESANAN BARU MASUK
                   </span>
                   <span className="font-mono text-xs font-bold text-on-secondary/90">
                     {liveOrderAlert.id} • {liveOrderAlert.createdAt}
@@ -710,16 +662,16 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 </h3>
                 <div className="text-xs sm:text-sm text-on-secondary/95 font-medium flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span>
-                    🍛 <strong>Menu:</strong>{' '}
+                    <strong>Menu:</strong>{' '}
                     {liveOrderAlert.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}
                   </span>
                   <span>•</span>
                   <span>
-                    ⏰ <strong>Ambil:</strong> {liveOrderAlert.pickupTime}
+                    <strong>Ambil:</strong> {liveOrderAlert.pickupTime}
                   </span>
                   <span>•</span>
                   <span>
-                    💳 <strong>Bayar:</strong> {liveOrderAlert.paymentProviderLabel}
+                    <strong>Bayar:</strong> {liveOrderAlert.paymentProviderLabel}
                   </span>
                 </div>
               </div>
@@ -729,7 +681,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               <button
                 type="button"
                 onClick={() => playTingTongSound()}
-                className="min-h-[42px] px-3.5 py-2 rounded-xl bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary border border-on-secondary/30 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary border border-on-secondary/30 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[17px]">replay</span>
                 <span>Bunyikan Lagi</span>
@@ -741,7 +693,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   setLiveOrderAlert(null);
                   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                 }}
-                className="min-h-[42px] px-4 py-2 rounded-xl bg-on-secondary text-secondary hover:opacity-95 font-label-md text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-xl bg-on-secondary text-secondary hover:opacity-95 font-label-md text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">receipt_long</span>
                 <span>Lihat &amp; Proses Pesanan</span>
@@ -753,7 +705,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                 }}
                 aria-label="Tutup Pengingat Pesanan"
-                className="w-10 h-10 rounded-xl bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary flex items-center justify-center cursor-pointer"
+                className="w-11 h-11 rounded-xl bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary flex items-center justify-center cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -820,7 +772,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           stall.isOpen ? 'text-secondary' : 'text-error'
                         }`}
                       >
-                        {stall.isOpen ? '🟢 Stan Buka Sekarang' : '🔴 Stan Tutup Sementara'}
+                        {stall.isOpen ? 'Stan Buka Sekarang' : 'Stan Tutup Sementara'}
                       </span>
                     </div>
                     <div className="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
@@ -856,7 +808,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   {gatewayBalance === 0 && otherStallOrders.length > 0 && onSwitchSellerStall && (
                     <div className="p-2.5 rounded-lg bg-tertiary-fixed/50 border border-tertiary/30 text-[11px] text-on-surface flex flex-col gap-1.5">
                       <span>
-                        💡 Ada <strong>{otherStallOrders.length} pesanan masuk</strong> di{' '}
+                        Ada <strong>{otherStallOrders.length} pesanan masuk</strong> di{' '}
                         <strong>{otherStallOrders[0].stallName}</strong> (Rp{' '}
                         {(
                           otherStallOrders[0].subtotalAmount ?? otherStallOrders[0].totalAmount
@@ -866,7 +818,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => onSwitchSellerStall(otherStallOrders[0].stallId)}
-                        className="px-2.5 py-1 rounded bg-primary text-on-primary font-bold text-[11px] cursor-pointer self-start"
+                        className="min-h-[44px] px-3 py-1.5 rounded-lg bg-primary text-on-primary font-bold text-[11px] cursor-pointer self-start"
                       >
                         Buka Dashboard {otherStallOrders[0].stallName} →
                       </button>
@@ -875,7 +827,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setSellerSubTab('pembayaran')}
-                    className="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                    className="w-full min-h-[44px] px-3 py-2 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <span className="material-symbols-outlined text-[16px]">payments</span>
                     <span>Tarik Saldo ke Rekening / DANA</span>
@@ -896,7 +848,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   </div>
                   <div className="flex items-baseline gap-1 mt-1">
                     <span className="font-headline-lg-mobile text-headline-lg-mobile text-on-surface">
-                      {items.length + 5}
+                      {items.length}
                     </span>
                     <span className="font-label-sm text-label-sm text-on-surface-variant">
                       menu
@@ -996,7 +948,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   </div>
                   <button
                     onClick={() => setIsQrModalOpen(true)}
-                    className="min-h-[40px] px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-bold rounded-lg flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                    className="min-h-[44px] px-3.5 py-2 bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-bold rounded-lg flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
                     type="button"
                   >
                     <span className="material-symbols-outlined text-[16px]">print</span>
@@ -1006,7 +958,6 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               </div>
             </div>
 
-            {/* RIGHT COLUMN (Desktop 8 cols): Inventory & Price Management List */}
             <div className="lg:col-span-8 flex flex-col gap-4 min-w-0">
               <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
@@ -1020,7 +971,6 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   </div>
                 </div>
 
-                {/* Scrollable Horizontal Tabs (44px min-height) */}
                 <div
                   className="flex gap-2 overflow-x-auto pb-1 pt-0.5 no-scrollbar"
                   role="tablist"
@@ -1030,7 +980,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     { id: 'makanan', label: `Makanan (${makananCount})` },
                     { id: 'minuman', label: `Minuman (${minumanCount})` },
                     { id: 'snack', label: `Snack (${snackCount})` },
-                    { id: 'habis', label: `🔴 Habis (${habisCount})` },
+                    { id: 'habis', label: `Habis (${habisCount})` },
                   ].map((t) => (
                     <button
                       key={t.id}
@@ -1113,19 +1063,23 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                                 {item.lastUpdated}
                               </span>
                             </div>
-                            {/* 44px height Status Toggle */}
                             <button
                               aria-label="Ubah status ketersediaan"
                               onClick={() => onToggleMenuStatus(item.id)}
-                              className={`status-toggle-badge min-h-[40px] px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1 cursor-pointer shrink-0 active:scale-95 transition-transform ${
+                              className={`status-toggle-badge min-h-[44px] px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95 transition-transform ${
                                 isHabis
                                   ? 'bg-error-container text-on-error-container'
                                   : 'bg-secondary-container text-on-secondary-container'
                               }`}
                               type="button"
                             >
+                              <span
+                                className={`w-2 h-2 rounded-full ${
+                                  isHabis ? 'bg-error' : 'bg-secondary'
+                                }`}
+                              />
                               <span className="badge-text">
-                                {isHabis ? '🔴 Habis' : '🟢 Tersedia'}
+                                {isHabis ? 'Habis' : 'Tersedia'}
                               </span>
                             </button>
                           </div>
@@ -1294,18 +1248,17 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           }`}
                         >
                           {ord.status === 'waiting_payment_verification'
-                            ? '⏳ Pesanan Baru (Cek Bayar)'
+                            ? 'Pesanan Baru (Cek Bayar)'
                             : ord.status === 'cooking'
-                            ? '🥣 Sedang Disiapkan / Dibungkus'
+                            ? 'Sedang Disiapkan / Dibungkus'
                             : ord.status === 'ready_pickup'
-                            ? '🔔 Siap Diambil Mahasiswa'
+                            ? 'Siap Diambil Mahasiswa'
                             : ord.status === 'completed'
-                            ? '🎉 Selesai'
-                            : '❌ Ditolak'}
+                            ? 'Selesai'
+                            : 'Ditolak'}
                         </span>
                       </div>
 
-                      {/* Item List */}
                       <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/25 flex flex-col gap-1.5">
                         {ord.items.map((item, idx) => (
                           <div
@@ -1336,7 +1289,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                               </span>
                               {ord.paymentStatus === 'paid_gateway' && (
                                 <span className="text-[10px] px-2 py-0.5 rounded bg-secondary text-on-secondary font-bold">
-                                  ✅ LUNAS OTOMATIS (PAYMENT GATEWAY)
+                                  LUNAS OTOMATIS (PAYMENT GATEWAY)
                                 </span>
                               )}
                             </div>
@@ -1359,34 +1312,33 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                         </div>
                       </div>
 
-                      {/* Action Buttons for Seller */}
                       <div className="flex flex-wrap items-center gap-2">
                         {ord.status === 'waiting_payment_verification' && (
                           <>
                             <button
                               type="button"
                               onClick={() => onUpdateOrderStatus(ord.id, 'ready_pickup')}
-                              className="min-h-[42px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
+                              className="min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
                             >
                               <span className="material-symbols-outlined text-[18px]">
                                 bolt
                               </span>
-                              <span>⚡ Langsung Siap Diambil (Menu Etalase / Matang)</span>
+                              <span>Langsung Siap Diambil (Menu Etalase / Matang)</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => onUpdateOrderStatus(ord.id, 'cooking')}
-                              className="min-h-[42px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
+                              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
                             >
                               <span className="material-symbols-outlined text-[18px]">
                                 soup_kitchen
                               </span>
-                              <span>🥣 Sedang Disiapkan / Dibungkus</span>
+                              <span>Sedang Disiapkan / Dibungkus</span>
                             </button>
                             <button
                               type="button"
                               onClick={() => onUpdateOrderStatus(ord.id, 'rejected')}
-                              className="min-h-[42px] px-3.5 py-2 rounded-lg bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold cursor-pointer"
+                              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold cursor-pointer"
                             >
                               Tolak (Dana Belum Masuk)
                             </button>
@@ -1397,12 +1349,12 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => onUpdateOrderStatus(ord.id, 'ready_pickup')}
-                            className="min-h-[42px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
+                            className="min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
                           >
                             <span className="material-symbols-outlined text-[18px]">
                               notifications_active
                             </span>
-                            <span>🔔 Tandai Siap Diambil di Stan!</span>
+                            <span>Tandai Siap Diambil di Stan</span>
                           </button>
                         )}
 
@@ -1410,7 +1362,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
-                            className="min-h-[42px] px-4 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer"
+                            className="min-h-[44px] px-4 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[18px]">
                               task_alt
@@ -1427,14 +1379,13 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
           </section>
         )}
 
-        {/* TAB PENGATURAN REKENING BANK, DANA/E-WALLET & QRIS PENJUAL */}
         {sellerSubTab === 'pembayaran' && (
           <section className="max-w-3xl mx-auto w-full flex flex-col gap-4">
             {gatewayBalance === 0 && otherStallOrders.length > 0 && onSwitchSellerStall && (
               <div className="p-4 rounded-xl bg-tertiary-fixed/50 border-2 border-tertiary/40 flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-col gap-0.5">
                   <span className="font-label-md font-bold text-on-surface">
-                    💡 Pesanan Mahasiswa Tadi Masuk ke Kantin Lain ({otherStallOrders[0].stallName})
+                    Pesanan Mahasiswa Tadi Masuk ke Kantin Lain ({otherStallOrders[0].stallName})
                   </span>
                   <span className="text-xs text-on-surface-variant">
                     Saat ini Anda sedang membuka dashboard <strong>{stall.name}</strong>, sedangkan pesanan terakhir dibuat di <strong>{otherStallOrders[0].stallName}</strong>. Klik tombol di samping untuk langsung pindah ke kantin tersebut dan menarik saldonya:
@@ -1443,7 +1394,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => onSwitchSellerStall(otherStallOrders[0].stallId)}
-                  className="min-h-[40px] px-4 py-2 rounded-xl bg-primary text-on-primary font-label-sm text-xs font-bold cursor-pointer shrink-0 shadow-xs"
+                  className="min-h-[44px] px-4 py-2 rounded-xl bg-primary text-on-primary font-label-sm text-xs font-bold cursor-pointer shrink-0 shadow-xs"
                 >
                   Pindah ke {otherStallOrders[0].stallName} →
                 </button>
@@ -2017,8 +1968,9 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     Tanggapi masukan mahasiswa mengenai menu &amp; kesesuaian harga
                   </p>
                 </div>
-                <span className="font-headline-md text-tertiary font-bold shrink-0">
-                  ⭐ {stall.rating}
+                <span className="font-headline-md text-tertiary font-bold shrink-0 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[18px]">grade</span>
+                  <span>{stall.rating}</span>
                 </span>
               </div>
 
@@ -2037,8 +1989,8 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           ({rev.majorAndYear})
                         </span>
                       </div>
-                      <span className="text-label-sm text-tertiary">
-                        {'⭐'.repeat(rev.rating)} • {rev.date}
+                      <span className="text-label-sm text-tertiary font-semibold">
+                        Rating {rev.rating}/5 • {rev.date}
                       </span>
                     </div>
                     <p className="font-body-sm text-on-surface leading-relaxed">{rev.comment}</p>
@@ -2348,24 +2300,26 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setFormStatus('ready')}
-                    className={`min-h-[44px] px-3 rounded-lg font-label-sm text-label-sm cursor-pointer border ${
+                    className={`min-h-[44px] px-3 rounded-lg font-label-sm text-label-sm cursor-pointer border flex items-center justify-center gap-1.5 ${
                       formStatus === 'ready'
                         ? 'bg-secondary-container text-on-secondary-container border-secondary font-bold'
                         : 'bg-surface-container-low text-on-surface-variant border-transparent'
                     }`}
                   >
-                    🟢 Tersedia
+                    <span className="w-2 h-2 rounded-full bg-secondary" />
+                    <span>Tersedia</span>
                   </button>
                   <button
                     type="button"
                     onClick={() => setFormStatus('habis')}
-                    className={`min-h-[44px] px-3 rounded-lg font-label-sm text-label-sm cursor-pointer border ${
+                    className={`min-h-[44px] px-3 rounded-lg font-label-sm text-label-sm cursor-pointer border flex items-center justify-center gap-1.5 ${
                       formStatus === 'habis'
                         ? 'bg-error-container text-on-error-container border-error font-bold'
                         : 'bg-surface-container-low text-on-surface-variant border-transparent'
                     }`}
                   >
-                    🔴 Habis
+                    <span className="w-2 h-2 rounded-full bg-error" />
+                    <span>Habis</span>
                   </button>
                 </div>
               </div>

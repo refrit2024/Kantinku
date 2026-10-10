@@ -149,6 +149,14 @@
   .pt-safe {
     padding-top: env(safe-area-inset-top, 0px);
   }
+  button:focus-visible,
+  a:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
 }
 
 .fluid-headline-xl {

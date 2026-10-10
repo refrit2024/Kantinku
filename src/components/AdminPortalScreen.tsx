@@ -89,14 +89,16 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
     setConfirmAdminPassword('');
   };
 
-  // Modals inside Admin screen
-  const [detailModalTitle, setDetailModalTitle] = useState<string | null>(null);
   const [revisiTarget, setRevisiTarget] = useState<{ id: string; name: string } | null>(null);
   const [revisiNote, setRevisiNote] = useState(
     'Harap lengkapi sertifikat higienitas pangan dan denah outlet.'
   );
   const [receiptPreviewOpen, setReceiptPreviewOpen] = useState(false);
   const [qrPosterModalOpen, setQrPosterModalOpen] = useState(false);
+
+  const openStallsCount = stalls.filter((s) => s.isOpen).length;
+  const openStallsPercentage =
+    stalls.length > 0 ? Math.round((openStallsCount / stalls.length) * 100) : 0;
 
   const pendingVerifications = verifications.filter(
     (v) => !v.approved && !v.rejectedReason
@@ -147,7 +149,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
             <button
               type="button"
               onClick={() => setQrPosterModalOpen(true)}
-              className="min-h-[36px] px-3 py-1 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer hover:opacity-95"
+              className="min-h-[44px] px-3.5 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer hover:opacity-95"
             >
               <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
               <span>Cetak QR Stan</span>
@@ -179,7 +181,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                 Pilot Project Aktif
               </span>
               <div className="flex items-center gap-1.5 text-secondary">
-                <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                <span className="w-2 h-2 rounded-full bg-secondary"></span>
                 <span className="font-label-sm text-label-sm font-semibold">Live Sync</span>
               </div>
             </div>
@@ -207,9 +209,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
             </div>
           </div>
 
-          {/* Operational Metrics: 2x2 on mobile, 4 cols on sm+ and desktop */}
           <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3.5">
-            {/* Metric 1: Total Stan */}
             <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-outline-variant/25 flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="font-label-sm text-label-sm text-on-surface-variant">
@@ -230,7 +230,6 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               </div>
             </div>
 
-            {/* Metric 2: Stan Buka */}
             <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-outline-variant/25 flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="font-label-sm text-label-sm text-on-surface-variant">
@@ -242,12 +241,14 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               </div>
               <div className="mt-2">
                 <span className="font-headline-lg-mobile text-headline-lg-mobile text-secondary leading-none">
-                  12
-                  <span className="font-body-md text-body-md text-on-surface-variant">/14</span>
+                  {openStallsCount}
+                  <span className="font-body-md text-body-md text-on-surface-variant">
+                    /{stalls.length}
+                  </span>
                 </span>
               </div>
               <div className="mt-1 font-label-sm text-label-sm text-secondary font-semibold">
-                85.7% aktif melayani
+                {openStallsPercentage}% aktif melayani
               </div>
             </div>
 
@@ -633,13 +634,12 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
           </div>
         )}
 
-        {/* CONTENT SECTION 3: Kapasitas Gedung */}
         {activeTab === 'kapasitas' && (
           <div className="flex flex-col gap-4" id="section-kapasitas">
             <div className="flex items-center justify-between gap-2">
               <h3 className="fluid-headline-md text-on-surface">Kapasitas Stan per Gedung</h3>
               <span className="font-label-sm text-label-sm text-secondary font-semibold">
-                Tingkat Okupansi: 87.5%
+                Tingkat Okupansi: {Math.round((stalls.length / 6) * 100)}% ({stalls.length}/6 Slot)
               </span>
             </div>
 
@@ -853,7 +853,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                         setResetSellerTarget(acc);
                         setResetSellerNewPass('kantin123');
                       }}
-                      className="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"
+                      className="min-h-[44px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1.5 cursor-pointer shrink-0"
                     >
                       <span className="material-symbols-outlined text-[16px]">key</span>
                       <span>Ubah / Reset Sandi</span>
@@ -865,10 +865,8 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
           </div>
         )}
 
-        {/* CONTENT SECTION 5: Database Firebase (Live Inspector & Console Guide) */}
         {activeTab === 'database' && (
           <div className="flex flex-col gap-5" id="section-database">
-            {/* Card 1: Informasi Koneksi Cloud Firestore & Cara Buka di Google Console */}
             <div className="rounded-xl bg-surface-container-lowest p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/25 pb-4">
                 <div className="flex flex-col gap-1">
@@ -883,7 +881,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                   </p>
                 </div>
                 <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-bold shrink-0">
-                  <span className="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+                  <span className="w-2 h-2 rounded-full bg-secondary"></span>
                   Firestore Connected
                 </span>
               </div>
@@ -946,7 +944,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                       navigator.clipboard?.writeText(JSON.stringify(fullSnapshot, null, 2));
                       onShowToast('Seluruh JSON Database Firebase berhasil disalin ke Clipboard!');
                     }}
-                    className="min-h-[36px] px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="min-h-[44px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span className="material-symbols-outlined text-[16px]">content_copy</span>
                     <span>Salin JSON Database</span>
@@ -955,12 +953,11 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               </div>
             </div>
 
-            {/* Sub-tab Pilih Tabel Koleksi Data */}
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
               <button
                 type="button"
                 onClick={() => setDbSubView('orders')}
-                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   dbSubView === 'orders'
                     ? 'bg-secondary text-on-secondary shadow-xs'
                     : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
@@ -973,7 +970,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setDbSubView('sellers')}
-                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   dbSubView === 'sellers'
                     ? 'bg-secondary text-on-secondary shadow-xs'
                     : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
@@ -986,7 +983,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setDbSubView('stalls')}
-                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   dbSubView === 'stalls'
                     ? 'bg-secondary text-on-secondary shadow-xs'
                     : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
@@ -999,7 +996,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setDbSubView('verifications')}
-                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   dbSubView === 'verifications'
                     ? 'bg-secondary text-on-secondary shadow-xs'
                     : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
@@ -1012,7 +1009,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setDbSubView('raw_json')}
-                className={`min-h-[40px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                className={`min-h-[44px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   dbSubView === 'raw_json'
                     ? 'bg-secondary text-on-secondary shadow-xs'
                     : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
@@ -1180,10 +1177,10 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                           </td>
                           <td className="py-2.5 px-3">{st.building} • {st.locationDetail}</td>
                           <td className="py-2.5 px-3">
-                            {st.isOpen ? '🟢 Buka' : '🔴 Tutup'}
+                            {st.isOpen ? 'Buka' : 'Tutup'}
                           </td>
                           <td className="py-2.5 px-3 font-semibold">{st.menuItems?.length ?? 0} Menu</td>
-                          <td className="py-2.5 px-3">{st.reviews?.length ?? 0} Ulasan (⭐ {st.rating})</td>
+                          <td className="py-2.5 px-3">{st.reviews?.length ?? 0} Ulasan (Rating {st.rating})</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1192,7 +1189,6 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               </div>
             )}
 
-            {/* ISI TABEL 4: verificationsJson */}
             {dbSubView === 'verifications' && (
               <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
                 <h4 className="fluid-headline-md text-on-surface">
@@ -1218,10 +1214,10 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                           <td className="py-2.5 px-3">{vf.location}</td>
                           <td className="py-2.5 px-3">
                             {vf.approved
-                              ? '✅ Disetujui'
+                              ? 'Disetujui'
                               : vf.rejectedReason
-                              ? `❌ Ditolak (${vf.rejectedReason})`
-                              : '⏳ Menunggu'}
+                              ? `Ditolak (${vf.rejectedReason})`
+                              : 'Menunggu'}
                           </td>
                         </tr>
                       ))}
@@ -1264,49 +1260,6 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
           </div>
         )}
       </div>
-
-      {/* Interactive Modal Container: Detail Perubahan Menu */}
-      {detailModalTitle && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 w-full max-w-md shadow-xl flex flex-col gap-3">
-            <div className="flex items-center justify-between">
-              <h4 className="fluid-headline-md text-on-surface">{detailModalTitle}</h4>
-              <button
-                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
-                onClick={() => setDetailModalTitle(null)}
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-            <div className="font-body-sm text-body-sm text-on-surface-variant flex flex-col gap-2.5">
-              <div className="p-3 rounded-lg bg-surface-container-low flex flex-col gap-1.5">
-                <span className="font-label-md text-label-md text-on-surface">
-                  6 Menu Baru Terdaftar:
-                </span>
-                <ul className="list-disc pl-4 text-on-surface-variant text-body-sm space-y-1">
-                  <li>Kopi Susu Aren IBI KKG (Rp 12.000)</li>
-                  <li>Americano Dingin (Rp 10.000)</li>
-                  <li>Matcha Latte Kampus (Rp 14.000)</li>
-                  <li>Roti Bakar Cokelat Keju (Rp 12.000)</li>
-                  <li>Toast Sosis Telur (Rp 15.000)</li>
-                  <li>Air Mineral Botol 600ml (Rp 4.000)</li>
-                </ul>
-              </div>
-              <div className="p-2.5 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-label-sm">
-                QRIS NMID: ID2025118928310 (Validitas Resmi Bank DKI)
-              </div>
-            </div>
-            <button
-              className="w-full min-h-[44px] rounded-lg bg-surface-container text-on-surface font-label-md text-label-md font-semibold mt-1 cursor-pointer"
-              onClick={() => setDetailModalTitle(null)}
-              type="button"
-            >
-              Tutup Pratinjau
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Modal: Catatan Revisi / Penolakan Stan */}
       {revisiTarget && (
@@ -1447,7 +1400,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setResetSellerTarget(null)}
-                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
+                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>

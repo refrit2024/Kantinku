@@ -32,9 +32,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   const [distanceFilter, setDistanceFilter] = useState<string>('all');
   const [categoryFilter, setCategoryFilter] = useState<'all' | 'makanan' | 'minuman' | 'snack'>('all');
   const [onlyOpenFilter, setOnlyOpenFilter] = useState<boolean>(false);
-  const [mapBuildingTab, setMapBuildingTab] = useState<'A' | 'B'>('A');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-  const [mobileMapOpen, setMobileMapOpen] = useState(false);
   const [orderLookupQuery, setOrderLookupQuery] = useState('');
 
   const filteredStudentOrders = orders.filter((ord) => {
@@ -161,7 +159,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => onChangeSubTab(tab.id as StudentSubTab)}
-                  className={`min-h-[40px] px-4 py-1.5 rounded-xl font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors cursor-pointer active:scale-[0.98] ${
+                  className={`min-h-[44px] px-4 py-2 rounded-xl font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors cursor-pointer active:scale-[0.98] ${
                     isActive
                       ? 'bg-primary text-on-primary font-semibold shadow-xs'
                       : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
@@ -253,30 +251,30 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   const statusMeta =
                     ord.status === 'waiting_payment_verification'
                       ? {
-                          badge: '⏳ Menunggu Verifikasi Bayar Penjual',
+                          badge: 'Menunggu Verifikasi Bayar Penjual',
                           className: 'bg-tertiary-fixed text-tertiary',
                           step: 1,
                         }
                       : ord.status === 'cooking'
                       ? {
-                          badge: '🥣 Sedang Disiapkan / Dibungkus',
+                          badge: 'Sedang Disiapkan / Dibungkus',
                           className: 'bg-primary-fixed text-on-primary-fixed',
                           step: 2,
                         }
                       : ord.status === 'ready_pickup'
                       ? {
-                          badge: '🔔 Siap Diambil di Stan Sekarang!',
+                          badge: 'Siap Diambil di Stan Sekarang',
                           className: 'bg-secondary-container text-on-secondary-container',
                           step: 3,
                         }
                       : ord.status === 'completed'
                       ? {
-                          badge: '✅ Pesanan Selesai Diambil',
+                          badge: 'Pesanan Selesai Diambil',
                           className: 'bg-surface-container-high text-on-surface-variant',
                           step: 4,
                         }
                       : {
-                          badge: '❌ Ditolak / Dibatalkan',
+                          badge: 'Ditolak / Dibatalkan',
                           className: 'bg-error-container text-on-error-container',
                           step: 0,
                         };
@@ -301,8 +299,11 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                             <h3 className="fluid-headline-md text-on-surface mt-0.5">
                               {ord.stallName}
                             </h3>
-                            <span className="font-body-sm text-xs text-on-surface-variant">
-                              📍 {ord.stallLocation}
+                            <span className="font-body-sm text-xs text-on-surface-variant flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px] text-secondary">
+                                location_on
+                              </span>
+                              <span>{ord.stallLocation}</span>
                             </span>
                           </div>
                           <span
@@ -386,7 +387,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => onSelectStall(ord.stallId)}
-                        className="w-full min-h-[40px] px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                        className="w-full min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[16px]">storefront</span>
                         <span>Buka Halaman {ord.stallName}</span>
@@ -420,7 +421,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       onClick={resetAllFilters}
                       className="text-xs font-label-sm text-error hover:underline font-semibold cursor-pointer"
                     >
-                      ResetSemua
+                      Reset Semua
                     </button>
                   )}
                 </div>
@@ -567,8 +568,11 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
                   <div className="flex flex-col gap-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-label-sm text-xs text-secondary font-semibold">
-                        🟢 {stalls.filter((s) => s.isOpen).length}/{stalls.length} Kantin Buka Sekarang
+                      <span className="font-label-sm text-xs text-secondary font-semibold inline-flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-secondary"></span>
+                        <span>
+                          {stalls.filter((s) => s.isOpen).length}/{stalls.length} Kantin Buka Sekarang
+                        </span>
                       </span>
                       <span className="text-outline-variant">•</span>
                       <span className="font-label-sm text-xs text-on-surface-variant">
@@ -637,7 +641,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   </div>
                 </form>
 
-                {/* Mobile/Tablet Quick Filter Row (Scrolls on Mobile, wraps cleanly on Tablet md, hidden on Desktop lg+) */}
+                {/* Mobile/Tablet Quick Filter Row */}
                 <div className="flex lg:hidden items-center gap-2 overflow-x-auto md:overflow-visible md:flex-wrap no-scrollbar py-0.5">
                   {[
                     { id: 'all', label: 'Semua Budget' },
@@ -650,7 +654,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       key={p.id}
                       type="button"
                       onClick={() => setPriceFilter(p.id)}
-                      className={`min-h-[40px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
+                      className={`min-h-[44px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
                         priceFilter === p.id
                           ? 'bg-primary text-on-primary font-semibold shadow-xs'
                           : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
@@ -663,7 +667,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
-                    className={`min-h-[40px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
+                    className={`min-h-[44px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
                       onlyOpenFilter
                         ? 'bg-secondary text-on-secondary font-semibold shadow-xs'
                         : 'bg-surface-container-low text-secondary hover:bg-surface-container-high'
@@ -687,9 +691,9 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
                         { id: 'all', label: 'Semua Kategori' },
-                        { id: 'makanan', label: '🍛 Makanan' },
-                        { id: 'minuman', label: '🥤 Minuman' },
-                        { id: 'snack', label: '🍟 Snack' },
+                        { id: 'makanan', label: 'Makanan' },
+                        { id: 'minuman', label: 'Minuman' },
+                        { id: 'snack', label: 'Snack' },
                       ].map((cat) => (
                         <button
                           key={cat.id}
@@ -699,7 +703,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               cat.id as 'all' | 'makanan' | 'minuman' | 'snack'
                             )
                           }
-                          className={`min-h-[40px] px-3 py-2 rounded-xl font-label-sm text-xs transition-colors cursor-pointer ${
+                          className={`min-h-[44px] px-3 py-2 rounded-xl font-label-sm text-xs transition-colors cursor-pointer ${
                             categoryFilter === cat.id
                               ? 'bg-primary text-on-primary font-semibold shadow-xs'
                               : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high border border-outline-variant/20'
@@ -742,11 +746,11 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                           />
                           <div className="flex flex-col min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-label-sm text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant">
+                              <span className="font-label-sm text-[11px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant">
                                 {item.category}
                               </span>
                               <span className="font-label-sm text-label-sm text-secondary truncate">
-                                📍 {stall.distanceMeters} m • {stall.name}
+                                {stall.distanceMeters} m • {stall.name}
                               </span>
                             </div>
                             <h3
@@ -756,7 +760,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                             >
                               {item.name}
                             </h3>
-                            <span className="font-body-sm text-[11px] text-on-surface-variant">
+                            <span className="font-body-sm text-xs text-on-surface-variant">
                               Diperbarui: <strong>{item.lastUpdated}</strong>
                             </span>
                           </div>
@@ -766,13 +770,18 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                             Rp{item.price.toLocaleString('id-ID')}
                           </span>
                           <span
-                            className={`font-label-sm text-[11px] px-2 py-0.5 rounded mt-1 ${
+                            className={`font-label-sm text-xs px-2 py-0.5 rounded mt-1 inline-flex items-center gap-1 ${
                               item.status === 'ready'
                                 ? 'bg-secondary-container text-on-secondary-container'
                                 : 'bg-error-container text-on-error-container'
                             }`}
                           >
-                            {item.status === 'ready' ? '🟢 Tersedia' : '🔴 Habis'}
+                            <span
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                item.status === 'ready' ? 'bg-secondary' : 'bg-error'
+                              }`}
+                            />
+                            {item.status === 'ready' ? 'Tersedia' : 'Habis'}
                           </span>
                         </div>
                       </div>
@@ -857,16 +866,20 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                   <span
                                     className={`px-2.5 py-1 rounded-md bg-surface-container-lowest/95 backdrop-blur-sm ${
                                       stall.isOpen ? 'text-secondary' : 'text-error'
-                                    } font-label-sm text-label-sm flex items-center gap-1 shadow-xs`}
+                                    } font-label-sm text-label-sm flex items-center gap-1.5 shadow-xs`}
                                   >
-                                    <span>{stall.isOpen ? '🟢 Buka' : '🔴 Tutup'}</span>
+                                    <span
+                                      className={`w-2 h-2 rounded-full ${
+                                        stall.isOpen ? 'bg-secondary' : 'bg-error'
+                                      }`}
+                                    />
+                                    <span>{stall.isOpen ? 'Buka' : 'Tutup'}</span>
                                     <span>• {stall.hours}</span>
                                   </span>
                                   <span className="px-2.5 py-1 rounded-md bg-surface-container-lowest/95 backdrop-blur-sm text-on-surface font-label-sm text-label-sm shadow-xs">
-                                    📍 {stall.distanceMeters} m
+                                    {stall.distanceMeters} m
                                   </span>
                                 </div>
-                                {/* 44x44px Favorite Hitbox */}
                                 <button
                                   type="button"
                                   aria-label="Simpan Favorit"
@@ -890,8 +903,13 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                     <h3 className="fluid-headline-md text-on-surface min-w-0">
                                       {stall.name}
                                     </h3>
-                                    <span className="font-label-sm text-label-sm px-2 py-1 rounded bg-surface-container-high text-on-surface font-semibold shrink-0">
-                                      ⭐ {stall.rating} ({stall.reviewCount})
+                                    <span className="font-label-sm text-label-sm px-2 py-1 rounded bg-surface-container-high text-on-surface font-semibold shrink-0 inline-flex items-center gap-1">
+                                      <span className="material-symbols-outlined text-[14px] text-tertiary">
+                                        star
+                                      </span>
+                                      <span>
+                                        {stall.rating} ({stall.reviewCount})
+                                      </span>
                                     </span>
                                   </div>
                                   <div className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">

@@ -434,11 +434,11 @@ export default function App() {
     if (target) {
       if (nextStatus === 'cooking') {
         showToast(
-          `Pembayaran ${target.studentName} diterima! Pesanan ditandai 🥣 Sedang Disiapkan / Dibungkus.`
+          `Pembayaran ${target.studentName} diterima! Pesanan ditandai Sedang Disiapkan / Dibungkus.`
         );
       } else if (nextStatus === 'ready_pickup') {
         showToast(
-          `Notifikasi dikirim ke ${target.studentName}: Pesanan sudah 🔔 SIAP DIAMBIL di stan!`
+          `Notifikasi dikirim ke ${target.studentName}: Pesanan sudah SIAP DIAMBIL di stan!`
         );
       } else if (nextStatus === 'completed') {
         showToast(`Transaksi pesanan ${target.studentName} selesai!`);
@@ -696,7 +696,7 @@ export default function App() {
                 item.status === 'habis' ? 'ready' : 'habis';
               showToast(
                 `${item.name} ${
-                  nextStatus === 'ready' ? 'sekarang 🟢 Tersedia' : 'ditandai 🔴 Habis'
+                  nextStatus === 'ready' ? 'sekarang Tersedia' : 'ditandai Habis'
                 }`
               );
               return {
@@ -1174,6 +1174,7 @@ export default function App() {
             isFavorite={favoriteStallIds.includes(activeStall.id)}
             onToggleFavorite={() => toggleFavoriteStall(activeStall.id)}
             onPlaceOrder={handlePlaceOrder}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
             onAddReview={handleAddStudentReview}
             onBackToKatalog={() => navigateTo('katalog')}
             onOpenReportModal={() => {
@@ -1445,7 +1446,7 @@ export default function App() {
                     setNavDrawerOpen(false);
                     handleLogoutSession();
                   }}
-                  className="min-h-[36px] px-3 py-1.5 rounded-lg bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold cursor-pointer shrink-0 hover:bg-error hover:text-on-primary transition-colors"
+                  className="min-h-[44px] px-3.5 py-2 rounded-lg bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold cursor-pointer shrink-0 hover:bg-error hover:text-on-primary transition-colors"
                 >
                   Keluar
                 </button>

@@ -193,12 +193,12 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
     if (lastKnownStatus && lastKnownStatus !== pendingAccountAlert.status) {
       if (pendingAccountAlert.status === 'approved') {
         const msg = `Pendaftaran "${pendingAccountAlert.stallName}" telah DISETUJUI oleh Admin Kampus IBI KKG!`;
-        onShowToast(`🎉 Selamat! ${msg}`, false);
+        onShowToast(`Selamat! ${msg}`, false);
         fireSystemNotification('KantinKu IBI KKG — Akun Disetujui!', msg);
         setUnreadDecisionModal(pendingAccountAlert);
       } else if (pendingAccountAlert.status === 'rejected') {
         const msg = `Pengajuan "${pendingAccountAlert.stallName}" ditolak/perlu revisi: "${pendingAccountAlert.rejectedNote}"`;
-        onShowToast(`⚠️ ${msg}`, true);
+        onShowToast(msg, true);
         fireSystemNotification('KantinKu IBI KKG — Perlu Revisi', msg);
         setUnreadDecisionModal(pendingAccountAlert);
       }
@@ -526,12 +526,11 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 </div>
               )}
 
-              {/* Sub-toggle: Login Penjual vs Daftar Stan Baru */}
               <div className="flex bg-surface-container p-1 rounded-xl">
                 <button
                   type="button"
                   onClick={() => setSellerAuthMode('login')}
-                  className={`flex-1 min-h-[42px] rounded-lg font-label-md text-label-md transition-colors cursor-pointer ${
+                  className={`flex-1 min-h-[44px] rounded-lg font-label-md text-label-md transition-colors cursor-pointer ${
                     sellerAuthMode === 'login'
                       ? 'bg-surface-container-lowest text-on-surface font-semibold shadow-xs'
                       : 'text-on-surface-variant hover:text-on-surface'
@@ -542,7 +541,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setSellerAuthMode('register')}
-                  className={`flex-1 min-h-[42px] rounded-lg font-label-md text-label-md transition-colors cursor-pointer ${
+                  className={`flex-1 min-h-[44px] rounded-lg font-label-md text-label-md transition-colors cursor-pointer ${
                     sellerAuthMode === 'register'
                       ? 'bg-surface-container-lowest text-primary font-semibold shadow-xs'
                       : 'text-on-surface-variant hover:text-on-surface'
@@ -621,7 +620,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                             <button
                               type="button"
                               onClick={requestBrowserNotificationPermission}
-                              className="min-h-[38px] px-3 py-1.5 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm font-semibold flex items-center justify-center gap-1.5 border border-outline-variant/40 cursor-pointer w-fit"
+                              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm font-semibold flex items-center justify-center gap-1.5 border border-outline-variant/40 cursor-pointer w-fit"
                             >
                               <span className="material-symbols-outlined text-[16px] text-primary">
                                 notifications_active
@@ -698,7 +697,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => setShowSellerPassword((p) => !p)}
-                        className="absolute right-2.5 text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center"
+                        className="absolute right-1 w-10 h-10 text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center"
                         title={showSellerPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
                       >
                         <span className="material-symbols-outlined text-[18px]">
@@ -981,7 +980,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                       setAdminEmail(adminCredentials.email);
                       setAdminPassword(adminCredentials.password);
                     }}
-                    className="min-h-[38px] px-3 py-1.5 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold shadow-xs cursor-pointer shrink-0"
+                    className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold shadow-xs cursor-pointer shrink-0"
                   >
                     Isi Otomatis
                   </button>
@@ -1001,7 +1000,6 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
         </div>
       </div>
 
-      {/* POP-UP MODAL NOTIFIKASI HASIL VERIFIKASI (Muncul otomatis walau penjual baru buka web lagi setelah beberapa jam) */}
       {unreadDecisionModal && (
         <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-surface-container-lowest rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-outline-variant/30">
@@ -1034,7 +1032,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setUnreadDecisionModal(null)}
-                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -1107,7 +1105,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setForgotModalOpen(false)}
-                className="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
