@@ -7,6 +7,7 @@ import {
   Stall,
   VerificationRequest,
 } from '../data/kantinData';
+import { StallQrModal } from './StallQrModal';
 
 interface AdminPortalScreenProps {
   stalls: Stall[];
@@ -95,6 +96,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
     'Harap lengkapi sertifikat higienitas pangan dan denah outlet.'
   );
   const [receiptPreviewOpen, setReceiptPreviewOpen] = useState(false);
+  const [qrPosterModalOpen, setQrPosterModalOpen] = useState(false);
 
   const pendingVerifications = verifications.filter(
     (v) => !v.approved && !v.rejectedReason
@@ -141,11 +143,30 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               Portal Admin Sarpras &amp; BAAK IBI KKG
             </span>
           </div>
-          <span className="font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md shrink-0">
-            Otorisasi Aktif
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={() => setQrPosterModalOpen(true)}
+              className="min-h-[36px] px-3 py-1 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer hover:opacity-95"
+            >
+              <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
+              <span>Cetak QR Stan</span>
+            </button>
+            <span className="hidden sm:inline-flex font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md shrink-0">
+              Otorisasi Aktif
+            </span>
+          </div>
         </div>
       </div>
+
+      {qrPosterModalOpen && stalls.length > 0 && (
+        <StallQrModal
+          stall={stalls[0]}
+          allStalls={stalls}
+          onClose={() => setQrPosterModalOpen(false)}
+          onShowToast={(msg) => onShowToast(msg, false)}
+        />
+      )}
 
       {/* Main Responsive Container */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-6">
@@ -186,8 +207,8 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
             </div>
           </div>
 
-          {/* Operational Metrics 2x2 on mobile, 4 cols on sm+ (7 cols on lg) */}
-          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-3">
+          {/* Operational Metrics: 2x2 on mobile, 4 cols on sm+ and desktop */}
+          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 xl:grid-cols-4 gap-3.5">
             {/* Metric 1: Total Stan */}
             <div className="rounded-xl bg-surface-container-lowest p-4 shadow-sm border border-outline-variant/25 flex flex-col justify-between">
               <div className="flex items-center justify-between">

@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 import {
   getStallPaymentDetails,
   MenuItem,
@@ -10,6 +11,7 @@ import {
   Stall,
   WithdrawalRecord,
 } from '../data/kantinData';
+import { StallQrModal } from './StallQrModal';
 
 export type SellerSubTab =
   | 'dashboard'
@@ -92,6 +94,54 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   >('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [stallQrDataUrl, setStallQrDataUrl] = useState<string>('');
+  const [qrisPreviewDataUrl, setQrisPreviewDataUrl] = useState<string>('');
+
+  useEffect(() => {
+    let mounted = true;
+    const baseUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}`
+        : 'https://kantinku-ibikkg.web.app';
+    const stallUrl = `${baseUrl}?stan=${encodeURIComponent(stall.id)}`;
+
+    QRCode.toDataURL(stallUrl, {
+      width: 320,
+      margin: 2,
+      color: { dark: '#131B2E', light: '#FFFFFF' },
+      errorCorrectionLevel: 'H',
+    })
+      .then((url) => {
+        if (mounted) setStallQrDataUrl(url);
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, [stall.id]);
+
+  useEffect(() => {
+    let mounted = true;
+    const nmid = stall.paymentDetails?.qrisNmid || 'ID2026001018829';
+    const merchant = stall.paymentDetails?.qrisMerchantName || stall.name;
+    const payload = `00020101021226660016ID.CO.QRIS.WWW011893600914${nmid}5204581253033605802ID5925${merchant.slice(0, 24)}6013JAKARTA UTARA6304A1B2`;
+    QRCode.toDataURL(payload, {
+      width: 320,
+      margin: 2,
+      color: { dark: '#181C22', light: '#FFFFFF' },
+      errorCorrectionLevel: 'M',
+    })
+      .then((url) => {
+        if (mounted) setQrisPreviewDataUrl(url);
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, [stall.name, stall.paymentDetails?.qrisNmid, stall.paymentDetails?.qrisMerchantName]);
 
   // Direct-to-Merchant Payment Settings State (QRIS, DANA/GoPay/OVO, Bank, Tunai)
   const initialPay = getStallPaymentDetails(stall);
@@ -422,71 +472,134 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
 
       {/* Main Responsive Container */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-6">
+        {isQrModalOpen && (
+          <StallQrModal
+            stall={stall}
+            allStalls={allStalls}
+            onClose={() => setIsQrModalOpen(false)}
+            onShowToast={onShowToast}
+          />
+        )}
+
         {/* TAB 1 & 2: DASHBOARD & MENU HARGA */}
         {(sellerSubTab === 'dashboard' || sellerSubTab === 'menu') && (
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* LEFT COLUMN (Desktop 4 cols): Welcome Card & Quick Stats */}
+            {/* LEFT COLUMN (Desktop 4 cols, Tablet 2-col balanced): Welcome Card, Quick Stats & QR Etalase */}
             <div className="lg:col-span-4 flex flex-col gap-4 min-w-0">
-              <div className="bg-surface-container rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-label-sm text-label-sm text-primary font-semibold">
-                      Dashboard Penjual Kantin IBI KKG
-                    </span>
-                    <h2 className="fluid-headline-md text-on-surface mt-0.5 break-words">
-                      Selamat datang, {stall.name}
-                    </h2>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
-                      <span className="material-symbols-outlined text-[16px] text-tertiary shrink-0">
-                        location_on
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 gap-4 items-stretch">
+                <div className="bg-surface-container rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col justify-between gap-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-label-sm text-label-sm text-primary font-semibold">
+                        Dashboard Penjual Kantin IBI KKG
                       </span>
-                      <span className="truncate">
-                        {stall.fullLocation} • {stall.daysOpen} ({stall.hours})
-                      </span>
-                    </p>
-                  </div>
-                  {/* Master Store Toggle Switch wrapped in 44x44px hitbox */}
-                  <button
-                    aria-checked={stall.isOpen}
-                    aria-label="Status Buka Toko"
-                    onClick={onToggleStoreOpen}
-                    className="min-h-[44px] min-w-[56px] flex items-center justify-center cursor-pointer shrink-0"
-                    role="switch"
-                    type="button"
-                  >
-                    <span
-                      className={`relative inline-flex h-8 w-14 rounded-full transition-colors duration-200 ease-in-out ${
-                        stall.isOpen ? 'bg-secondary' : 'bg-surface-variant'
-                      }`}
+                      <h2 className="fluid-headline-md text-on-surface mt-0.5 break-words">
+                        Selamat datang, {stall.name}
+                      </h2>
+                      <p className="font-body-sm text-body-sm text-on-surface-variant flex items-center gap-1 mt-1">
+                        <span className="material-symbols-outlined text-[16px] text-tertiary shrink-0">
+                          location_on
+                        </span>
+                        <span className="truncate">
+                          {stall.fullLocation} • {stall.daysOpen} ({stall.hours})
+                        </span>
+                      </p>
+                    </div>
+                    {/* Master Store Toggle Switch wrapped in 44x44px hitbox */}
+                    <button
+                      aria-checked={stall.isOpen}
+                      aria-label="Status Buka Toko"
+                      onClick={onToggleStoreOpen}
+                      className="min-h-[44px] min-w-[56px] flex items-center justify-center cursor-pointer shrink-0"
+                      role="switch"
+                      type="button"
                     >
                       <span
-                        className={`${
-                          stall.isOpen ? 'translate-x-7' : 'translate-x-0'
-                        } pointer-events-none inline-block h-6 w-6 transform rounded-full bg-surface shadow-md ring-0 transition duration-200 ease-in-out my-1 ml-1`}
+                        className={`relative inline-flex h-8 w-14 rounded-full transition-colors duration-200 ease-in-out ${
+                          stall.isOpen ? 'bg-secondary' : 'bg-surface-variant'
+                        }`}
+                      >
+                        <span
+                          className={`${
+                            stall.isOpen ? 'translate-x-7' : 'translate-x-0'
+                          } pointer-events-none inline-block h-6 w-6 transform rounded-full bg-surface shadow-md ring-0 transition duration-200 ease-in-out my-1 ml-1`}
+                        ></span>
+                      </span>
+                    </button>
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/25">
+                    <div className="flex items-center gap-1.5">
+                      <span
+                        className={`w-2.5 h-2.5 rounded-full ${
+                          stall.isOpen ? 'bg-secondary' : 'bg-error'
+                        }`}
                       ></span>
-                    </span>
-                  </button>
+                      <span
+                        className={`font-label-md text-label-md font-semibold ${
+                          stall.isOpen ? 'text-secondary' : 'text-error'
+                        }`}
+                      >
+                        {stall.isOpen ? '🟢 Stan Buka Sekarang' : '🔴 Stan Tutup Sementara'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
+                      <span className="material-symbols-outlined text-[14px]">sync</span>
+                      <span>Diperbarui: {stall.lastUpdatedDate}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/25">
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className={`w-2.5 h-2.5 rounded-full ${
-                        stall.isOpen ? 'bg-secondary' : 'bg-error'
-                      }`}
-                    ></span>
-                    <span
-                      className={`font-label-md text-label-md font-semibold ${
-                        stall.isOpen ? 'text-secondary' : 'text-error'
-                      }`}
-                    >
-                      {stall.isOpen ? '🟢 Stan Buka Sekarang' : '🔴 Stan Tutup Sementara'}
+                {/* DOMPET PENJUALAN (ALA SHOPEE SELLER BALANCE) */}
+                <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border-2 border-secondary/35 flex flex-col justify-between gap-2.5">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-secondary text-[18px]">
+                        account_balance_wallet
+                      </span>
+                      <span className="font-label-sm text-xs font-bold text-on-surface">
+                        Saldo Penjualan (Siap Tarik)
+                      </span>
+                    </div>
+                    <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-bold">
+                      Bebas Potongan 100%
                     </span>
                   </div>
-                  <div className="flex items-center gap-1 text-on-surface-variant font-label-sm text-label-sm">
-                    <span className="material-symbols-outlined text-[14px]">sync</span>
-                    <span>Diperbarui: {stall.lastUpdatedDate}</span>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-headline-md text-[22px] font-bold text-secondary leading-none">
+                      Rp {gatewayBalance.toLocaleString('id-ID')}
+                    </span>
+                    <span className="text-[11px] text-on-surface-variant">
+                      Total dicairkan: Rp {totalWithdrawn.toLocaleString('id-ID')}
+                    </span>
                   </div>
+                  {gatewayBalance === 0 && otherStallOrders.length > 0 && onSwitchSellerStall && (
+                    <div className="p-2.5 rounded-lg bg-tertiary-fixed/50 border border-tertiary/30 text-[11px] text-on-surface flex flex-col gap-1.5">
+                      <span>
+                        💡 Ada <strong>{otherStallOrders.length} pesanan masuk</strong> di{' '}
+                        <strong>{otherStallOrders[0].stallName}</strong> (Rp{' '}
+                        {(
+                          otherStallOrders[0].subtotalAmount ?? otherStallOrders[0].totalAmount
+                        ).toLocaleString('id-ID')}
+                        ), sedangkan Anda sedang membuka dashboard <strong>{stall.name}</strong>.
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => onSwitchSellerStall(otherStallOrders[0].stallId)}
+                        className="px-2.5 py-1 rounded bg-primary text-on-primary font-bold text-[11px] cursor-pointer self-start"
+                      >
+                        Buka Dashboard {otherStallOrders[0].stallName} →
+                      </button>
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setSellerSubTab('pembayaran')}
+                    className="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">payments</span>
+                    <span>Tarik Saldo ke Rekening / DANA</span>
+                  </button>
                 </div>
               </div>
 
@@ -565,67 +678,52 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 </div>
               </div>
 
-              {/* DOMPET PENJUALAN (ALA SHOPEE SELLER BALANCE) DI SIDEBAR DASHBOARD */}
-              <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border-2 border-secondary/35 flex flex-col gap-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-secondary text-[18px]">
-                      account_balance_wallet
-                    </span>
-                    <span className="font-label-sm text-xs font-bold text-on-surface">
-                      Saldo Penjualan (Siap Tarik)
-                    </span>
-                  </div>
-                  <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-bold">
-                    Bebas Potongan 100%
-                  </span>
-                </div>
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-headline-md text-[22px] font-bold text-secondary leading-none">
-                    Rp {gatewayBalance.toLocaleString('id-ID')}
-                  </span>
-                  <span className="text-[11px] text-on-surface-variant">
-                    Total dicairkan: Rp {totalWithdrawn.toLocaleString('id-ID')}
-                  </span>
-                </div>
-                {gatewayBalance === 0 && otherStallOrders.length > 0 && onSwitchSellerStall && (
-                  <div className="p-2.5 rounded-lg bg-tertiary-fixed/50 border border-tertiary/30 text-[11px] text-on-surface flex flex-col gap-1.5">
-                    <span>
-                      💡 Ada <strong>{otherStallOrders.length} pesanan masuk</strong> di{' '}
-                      <strong>{otherStallOrders[0].stallName}</strong> (Rp{' '}
-                      {(
-                        otherStallOrders[0].subtotalAmount ?? otherStallOrders[0].totalAmount
-                      ).toLocaleString('id-ID')}
-                      ), sedangkan Anda sedang membuka dashboard <strong>{stall.name}</strong>.
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => onSwitchSellerStall(otherStallOrders[0].stallId)}
-                      className="px-2.5 py-1 rounded bg-primary text-on-primary font-bold text-[11px] cursor-pointer self-start"
-                    >
-                      Buka Dashboard {otherStallOrders[0].stallName} →
-                    </button>
-                  </div>
-                )}
+              {/* Quick Actions: + Tambah Menu & Kartu Preview QR Code Stan */}
+              <div className="flex flex-col gap-3">
                 <button
+                  onClick={openAddModal}
+                  className="w-full min-h-[46px] bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
                   type="button"
-                  onClick={() => setSellerSubTab('pembayaran')}
-                  className="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/25 text-secondary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  <span className="material-symbols-outlined text-[16px]">payments</span>
-                  <span>Tarik Saldo ke Rekening / DANA</span>
+                  <span className="material-symbols-outlined text-[20px]">add_circle</span>
+                  <span>+ Tambah Menu Baru</span>
                 </button>
-              </div>
 
-              {/* Quick Action: + Tambah Menu */}
-              <button
-                onClick={openAddModal}
-                className="w-full min-h-[48px] bg-primary-container hover:bg-primary text-on-primary font-label-lg text-label-lg rounded-xl flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] cursor-pointer"
-                type="button"
-              >
-                <span className="material-symbols-outlined text-[20px]">add_circle</span>
-                <span>+ Tambah Menu Baru</span>
-              </button>
+                <div className="bg-surface-container-lowest p-3.5 rounded-xl border-2 border-primary/30 shadow-xs flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {stallQrDataUrl && (
+                      <button
+                        type="button"
+                        onClick={() => setIsQrModalOpen(true)}
+                        title="Klik untuk perbesar & unduh Poster QR Code"
+                        className="w-16 h-16 rounded-lg bg-white p-1 border border-primary/30 shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                      >
+                        <img
+                          src={stallQrDataUrl}
+                          alt={`QR Code ${stall.name}`}
+                          className="w-full h-full object-contain"
+                        />
+                      </button>
+                    )}
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-label-sm text-xs font-bold text-on-surface">
+                        QR Etalase {stall.name}
+                      </span>
+                      <span className="text-[11px] text-on-surface-variant leading-snug">
+                        Tempel di gerobak agar mahasiswa scan langsung ke menu {stall.code}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setIsQrModalOpen(true)}
+                    className="min-h-[40px] px-3 py-1.5 bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-bold rounded-lg flex items-center gap-1.5 shrink-0 shadow-xs cursor-pointer"
+                    type="button"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">print</span>
+                    <span>Cetak QR</span>
+                  </button>
+                </div>
+              </div>
             </div>
 
             {/* RIGHT COLUMN (Desktop 8 cols): Inventory & Price Management List */}
@@ -822,8 +920,8 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
 
         {/* TAB PESANAN MASUK & TRANSAKSI MAHASISWA (REAL-TIME) */}
         {sellerSubTab === 'pesanan' && (
-          <section className="max-w-4xl mx-auto w-full flex flex-col gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <section className="w-full flex flex-col gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-1">
                 <span className="font-label-sm text-on-surface-variant">
                   Pesanan Aktif Perlu Diproses
@@ -1285,24 +1383,31 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           className="h-11 px-3 rounded-lg bg-surface-container-lowest text-on-surface font-body-sm focus:outline-none"
                         />
                       </div>
-                      <div className="sm:col-span-2 flex flex-wrap items-center gap-3">
-                        {payQrisImage && (
+                      <div className="sm:col-span-2 flex flex-wrap items-center gap-3 p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/30">
+                        {(payQrisImage || qrisPreviewDataUrl) && (
                           <img
-                            src={payQrisImage}
-                            alt="QRIS"
-                            className="w-16 h-16 object-contain rounded bg-surface-container-lowest p-1 border"
+                            src={payQrisImage || qrisPreviewDataUrl}
+                            alt="QRIS Kantin"
+                            className="w-20 h-20 object-contain rounded-lg bg-white p-1.5 border border-primary/30 shrink-0"
                           />
                         )}
-                        <label className="min-h-[40px] px-3.5 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-semibold inline-flex items-center gap-2 cursor-pointer">
-                          <span className="material-symbols-outlined text-[18px]">upload</span>
-                          <span>Upload Foto Barcode QRIS Kantin Anda (Opsional)</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleQrisImageUpload}
-                            className="hidden"
-                          />
-                        </label>
+                        <div className="flex flex-col gap-1.5">
+                          <span className="text-xs font-bold text-on-surface">
+                            {payQrisImage
+                              ? 'Barcode QRIS Kustom Aktif'
+                              : 'Barcode QRIS Standar Aktif Otomatis'}
+                          </span>
+                          <label className="min-h-[38px] px-3.5 py-1.5 rounded-lg bg-surface-container-highest text-on-surface font-label-sm text-label-sm font-semibold inline-flex items-center gap-2 cursor-pointer self-start">
+                            <span className="material-symbols-outlined text-[18px]">upload</span>
+                            <span>Ganti / Upload Foto QRIS Kantin Anda (Opsional)</span>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleQrisImageUpload}
+                              className="hidden"
+                            />
+                          </label>
+                        </div>
                       </div>
                     </div>
                   )}

@@ -80,6 +80,7 @@ export default function App() {
   });
 
   // Default to 'katalog' (Katalog Kantin) immediately for visitors/students,
+  // or auto-open DetailStanScreen if scanned from a Stall QR Code (?stan=...),
   // or auto-open Dashboard Penjual / Admin Portal if an active session exists.
   const [currentScreen, setCurrentScreen] = useState<ScreenType>(() => {
     try {
@@ -88,6 +89,9 @@ export default function App() {
         const hash = window.location.hash.toLowerCase();
         if (params.has('admin') || params.get('portal') === 'admin' || hash.includes('admin')) {
           return 'auth-portal';
+        }
+        if (params.get('stan') || params.get('stall') || hash.startsWith('#stan-')) {
+          return 'detail-stan';
         }
       }
       const savedSeller = localStorage.getItem(STORAGE_KEYS.SELLER_SESSION);
@@ -102,7 +106,20 @@ export default function App() {
 
   const [studentSubTab, setStudentSubTab] = useState<StudentSubTab>('kantin');
   const [historyStack, setHistoryStack] = useState<ScreenType[]>([]);
-  const [selectedStallId, setSelectedStallId] = useState<string>('stan-bu-sari');
+  const [selectedStallId, setSelectedStallId] = useState<string>(() => {
+    try {
+      if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const qrStall = params.get('stan') || params.get('stall');
+        if (qrStall) return qrStall;
+        const hash = window.location.hash;
+        if (hash.startsWith('#stan-')) return hash.slice(1);
+      }
+    } catch {
+      // ignore
+    }
+    return 'stan-bu-sari';
+  });
   const [favoriteStallIds, setFavoriteStallIds] = useState<string[]>(['stan-bu-sari']);
   const [footerSecretTap, setFooterSecretTap] = useState(0);
 
@@ -954,56 +971,62 @@ export default function App() {
     <div className="bg-surface font-body-md text-on-surface flex flex-col min-h-screen w-full antialiased relative">
       {/* SINGLE COMPACT STICKY HEADER */}
       <header className="sticky top-0 left-0 right-0 w-full z-40 bg-surface/95 backdrop-blur-xl border-b border-outline-variant/30 pt-safe">
-        <div className="max-w-7xl mx-auto h-14 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto h-14 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 lg:gap-4">
           {/* Left Zone: Brand Identity */}
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2.5 min-w-0">
             <button
               type="button"
               onClick={() => setCurrentScreen('katalog')}
-              className="flex items-center gap-2.5 text-left cursor-pointer min-w-0"
+              className="flex items-center gap-2.5 text-left cursor-pointer min-w-0 group"
             >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary-container text-on-primary flex items-center justify-center font-headline-md text-headline-md font-bold shrink-0 shadow-xs">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md text-headline-md font-bold shrink-0 shadow-xs group-hover:opacity-95 transition-opacity">
                 K
               </div>
               <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-headline-md text-[17px] sm:text-headline-md text-on-surface leading-none tracking-tight truncate">
+                <div className="flex items-center gap-2">
+                  <span className="font-headline-md text-[17px] sm:text-headline-md text-on-surface leading-none tracking-tight whitespace-nowrap">
                     KantinKu IBI KKG
+                  </span>
+                  <span className="hidden sm:inline-flex lg:hidden xl:inline-flex items-center gap-1 text-[11px] font-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">
+                    <span className="material-symbols-outlined text-[13px] text-primary">
+                      location_on
+                    </span>
+                    Dekat Hall D
                   </span>
                 </div>
               </div>
             </button>
           </div>
 
-          {/* Center Zone: Navigation on Desktop (lg+) */}
+          {/* Center Zone: Horizontal Navigation ONLY on Desktop (lg: >= 1024px) */}
           <nav
             aria-label="Pilih Halaman & Peran"
-            className="hidden lg:flex items-center gap-1.5 bg-surface-container p-1 rounded-xl"
+            className="hidden lg:flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant/25 shrink-0"
           >
             <button
               type="button"
               onClick={() => navigateTo('katalog')}
-              className={`min-h-[38px] px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-label-sm text-xs flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
                 currentScreen === 'katalog' || currentScreen === 'detail-stan'
                   ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                  : 'text-on-surface-variant hover:text-on-surface'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
               }`}
             >
-              <span className="material-symbols-outlined text-[16px]">map</span>
-              <span>Katalog &amp; Peta Kantin</span>
+              <span className="material-symbols-outlined text-[16px]">storefront</span>
+              <span>Direktori Kantin</span>
             </button>
 
             {loggedInSeller && (
               <button
                 type="button"
                 onClick={() => navigateTo('kelola-menu')}
-                className={`min-h-[38px] px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-label-sm text-xs flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
                   currentScreen === 'kelola-menu'
                     ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                    : 'text-on-surface-variant hover:text-on-surface'
+                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
               >
-                <span className="material-symbols-outlined text-[16px]">storefront</span>
+                <span className="material-symbols-outlined text-[16px]">space_dashboard</span>
                 <span>Dashboard Penjual ({loggedInSeller.stallName})</span>
               </button>
             )}
@@ -1012,10 +1035,10 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => navigateTo('admin-portal')}
-                className={`min-h-[38px] px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-label-sm text-xs flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
                   currentScreen === 'admin-portal'
                     ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                    : 'text-on-surface-variant hover:text-on-surface'
+                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px]">
@@ -1028,57 +1051,56 @@ export default function App() {
             <button
               type="button"
               onClick={() => setCurrentScreen('auth-portal')}
-              className={`min-h-[38px] px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-label-sm text-xs flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
                 currentScreen === 'auth-portal'
                   ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                  : 'text-on-surface-variant hover:text-on-surface'
+                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">login</span>
               <span>
-                {loggedInSeller || isAdminLoggedIn ? 'Pindah Peran / Akun' : 'Portal Login Mitra'}
+                {loggedInSeller || isAdminLoggedIn ? 'Pindah Peran / Akun' : 'Portal Mitra Kantin'}
               </span>
             </button>
           </nav>
 
-          {/* Right Zone: Active Session Badge / Login Button + Compact Icon Menu Button */}
+          {/* Right Zone: Tablet & Desktop Action Buttons + Hamburger on Mobile & Tablet (< 1024px) */}
           <div className="flex items-center gap-2 shrink-0">
             {loggedInSeller || isAdminLoggedIn ? (
-              <div className="hidden sm:flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1.5 rounded-lg border border-outline-variant/25">
+              <div className="hidden md:flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-xl border border-outline-variant/30">
                 <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                <span className="font-label-sm text-label-sm text-on-surface max-w-[140px] truncate">
+                <span className="font-label-sm text-label-sm text-on-surface font-semibold max-w-[140px] truncate">
                   {loggedInSeller ? loggedInSeller.stallName : 'Admin Sarpras'}
                 </span>
+                <span className="text-outline-variant">|</span>
                 <button
                   type="button"
                   onClick={handleLogoutSession}
-                  className="ml-1 text-error hover:underline font-label-sm text-[11px] font-semibold cursor-pointer"
+                  className="text-error hover:underline font-label-sm text-[11px] font-semibold cursor-pointer"
                 >
                   Keluar
                 </button>
               </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => setCurrentScreen('auth-portal')}
-                className={`hidden sm:inline-flex min-h-[40px] px-3 rounded-lg font-label-sm text-label-sm items-center gap-1.5 transition-colors cursor-pointer ${
-                  currentScreen === 'auth-portal'
-                    ? 'bg-primary text-on-primary font-semibold'
-                    : 'bg-surface-container-low text-primary hover:bg-surface-container-high font-semibold'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">login</span>
-                <span>Login / Daftar</span>
-              </button>
-            )}
+            ) : null}
 
+            <button
+              type="button"
+              onClick={() => setReportModalOpen(true)}
+              className="hidden sm:inline-flex min-h-[38px] px-3.5 py-1.5 rounded-xl bg-surface-container-low hover:bg-error-container/30 text-error border border-error/25 font-label-sm text-xs font-semibold items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px]">gavel</span>
+              <span>Lapor Harga</span>
+            </button>
+
+            {/* Hamburger Menu Button for Mobile & Tablet (< 1024px / lg:hidden) */}
             <button
               aria-label="Buka Menu Navigasi & Peran"
               onClick={() => setNavDrawerOpen(true)}
-              className="w-11 h-11 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center transition-colors cursor-pointer active:scale-95"
+              className="lg:hidden h-10 sm:h-11 px-3 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95"
               type="button"
             >
               <span className="material-symbols-outlined text-[22px]">menu</span>
+              <span className="hidden sm:inline font-label-sm text-xs font-semibold">Menu</span>
             </button>
           </div>
         </div>
@@ -1197,98 +1219,126 @@ export default function App() {
 
       {/* FOOTER */}
       <footer className="w-full bg-surface-container-low border-t border-outline-variant/25 text-on-surface-variant pb-safe mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col gap-6">
-          {/* Top Section: Brand Info, Quick Features & Action Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start justify-between">
-            {/* Left Column: Brand & Mission */}
-            <div className="lg:col-span-7 flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md font-bold shadow-sm shrink-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex flex-col gap-8">
+          {/* Top Section: 1 Col Mobile, 2 Cols Tablet (md), 3 Cols Desktop (lg:grid-cols-12) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+            {/* Column 1 (md:col-span-2 lg:col-span-5): Brand & Mission */}
+            <div className="md:col-span-2 lg:col-span-5 flex flex-col gap-3">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md font-bold shadow-xs shrink-0">
                   K
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-headline-sm text-base sm:text-lg text-on-surface font-bold tracking-tight">
-                    KantinKu IBI KKG
-                  </span>
-                  <span className="text-outline-variant">•</span>
-                  <span className="font-label-sm text-xs text-primary font-semibold">
-                    Pilot Project Tahap 1
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const next = footerSecretTap + 1;
-                      if (next >= 5) {
-                        setFooterSecretTap(0);
-                        window.location.hash = 'admin';
-                        setCurrentScreen('auth-portal');
-                        showToast('Gerbang Internal Admin Kampus dibuka.');
-                      } else {
-                        setFooterSecretTap(next);
-                      }
-                    }}
-                    className="inline-flex items-center gap-1.5 font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2.5 py-0.5 rounded-md font-semibold select-none cursor-default"
-                  >
-                    <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-                    Sistem Aktif
-                  </button>
+                <div className="flex flex-col">
+                  <div className="flex items-center gap-2">
+                    <span className="font-headline-sm text-base sm:text-lg text-on-surface font-bold tracking-tight leading-none">
+                      KantinKu IBI KKG
+                    </span>
+                    <span className="text-outline-variant">·</span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = footerSecretTap + 1;
+                        if (next >= 5) {
+                          setFooterSecretTap(0);
+                          window.location.hash = 'admin';
+                          setCurrentScreen('auth-portal');
+                          showToast('Gerbang Internal Admin Kampus dibuka.');
+                        } else {
+                          setFooterSecretTap(next);
+                        }
+                      }}
+                      className="font-label-sm text-xs text-secondary font-semibold select-none cursor-default"
+                    >
+                      Pilot Tahap 1
+                    </button>
+                  </div>
                 </div>
               </div>
 
-              <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed max-w-2xl">
+              <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
                 Platform direktori &amp; pemesanan digital khusus kantin{' '}
                 <strong className="text-on-surface font-semibold">
                   Institut Bisnis dan Informatika Kwik Kian Gie (Kampus Sunter)
                 </strong>{' '}
-                untuk transparansi harga mahasiswa, navigasi denah stan, serta pencairan saldo penjualan langsung oleh mitra kantin.
+                untuk transparansi harga mahasiswa serta pengelolaan menu &amp; pencairan saldo langsung oleh mitra kantin.
               </p>
 
-              {/* Campus Info Highlights */}
-              <div className="flex flex-wrap items-center gap-2 pt-1">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-[11px]">
-                  <span className="material-symbols-outlined text-[15px] text-primary">
-                    location_on
-                  </span>
-                  Jl. Yos Sudarso Kav. 87, Sunter, Jakarta Utara
-                </div>
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant font-label-sm text-[11px]">
-                  <span className="material-symbols-outlined text-[15px] text-secondary">
-                    verified
-                  </span>
-                  100% Transparansi Harga Mahasiswa
-                </div>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-on-surface-variant pt-0.5">
+                <span>Area Kantin Dekat Hall D</span>
+                <span aria-hidden="true">·</span>
+                <span>Jl. Yos Sudarso Kav. 87, Sunter, Jakarta Utara</span>
               </div>
             </div>
 
-            {/* Right Column: Quick Access Action Buttons */}
-            <div className="lg:col-span-5 flex flex-col sm:flex-row lg:flex-col xl:flex-row items-stretch sm:items-center lg:items-end xl:items-center justify-end gap-2.5 w-full">
-              <button
-                type="button"
-                onClick={() => setCurrentScreen('auth-portal')}
-                className="min-h-[42px] px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:opacity-95 transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px]">storefront</span>
-                <span>Portal Mitra Kantin</span>
-              </button>
-
-              <div className="flex items-center gap-2">
+            {/* Column 2 (md:col-span-1 lg:col-span-3): Navigasi Cepat */}
+            <div className="md:col-span-1 lg:col-span-3 flex flex-col gap-2.5">
+              <span className="font-label-md text-xs text-on-surface font-bold uppercase tracking-wider">
+                Navigasi Cepat
+              </span>
+              <div className="flex flex-col gap-2 items-start text-body-sm">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigateTo('katalog');
+                    setStudentSubTab('kantin');
+                  }}
+                  className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                >
+                  Direktori Stan Kantin
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigateTo('katalog');
+                    setStudentSubTab('kategori');
+                  }}
+                  className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                >
+                  Eksplorasi Menu &amp; Harga
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigateTo('katalog');
+                    setStudentSubTab('pesanan');
+                  }}
+                  className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+                >
+                  Lacak Status Pesanan Saya
+                </button>
                 <button
                   type="button"
                   onClick={openPilotConceptModal}
-                  className="flex-1 sm:flex-initial min-h-[42px] px-3.5 py-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/40 text-on-surface hover:bg-surface-container font-label-sm text-label-sm font-medium transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[17px] text-primary">
-                    info
-                  </span>
-                  <span>Konsep Tahap 1</span>
+                  Tentang Konsep Pilot Tahap 1
                 </button>
+              </div>
+            </div>
 
+            {/* Column 3 (md:col-span-1 lg:col-span-4): Akses Mitra & Pengawasan Harga */}
+            <div className="md:col-span-1 lg:col-span-4 flex flex-col gap-3">
+              <span className="font-label-md text-xs text-on-surface font-bold uppercase tracking-wider">
+                Mitra Kantin &amp; Transparansi
+              </span>
+              <p className="font-body-sm text-xs text-on-surface-variant leading-relaxed">
+                Pemilik stan dapat memperbarui harga menu &amp; menarik saldo penjualan kapan saja. Mahasiswa dapat melaporkan jika ada selisih harga di kasir.
+              </p>
+              <div className="grid grid-cols-2 gap-2 pt-0.5">
+                <button
+                  type="button"
+                  onClick={() => setCurrentScreen('auth-portal')}
+                  className="min-h-[40px] px-3 py-2 rounded-xl bg-primary text-on-primary font-label-sm text-xs font-semibold hover:opacity-95 transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap"
+                >
+                  <span className="material-symbols-outlined text-[16px]">storefront</span>
+                  <span>Portal Mitra</span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setReportModalOpen(true)}
-                  className="flex-1 sm:flex-initial min-h-[42px] px-3.5 py-2.5 rounded-xl bg-surface-container-lowest border border-error/30 text-error hover:bg-error-container/30 font-label-sm text-label-sm font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="min-h-[40px] px-3 py-2 rounded-xl bg-surface-container-lowest border border-error/30 text-error hover:bg-error-container/30 font-label-sm text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
                 >
-                  <span className="material-symbols-outlined text-[17px]">gavel</span>
+                  <span className="material-symbols-outlined text-[16px]">gavel</span>
                   <span>Lapor Harga</span>
                 </button>
               </div>
@@ -1296,14 +1346,11 @@ export default function App() {
           </div>
 
           {/* Bottom Bar: Copyright & Operational Hours */}
-          <div className="pt-4 border-t border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-on-surface-variant/80">
+          <div className="pt-5 border-t border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-on-surface-variant/85">
             <span>
-              © {new Date().getFullYear()} KantinKu IBI KKG • Inovasi Kampus IBI Kwik Kian Gie
+              © {new Date().getFullYear()} KantinKu IBI KKG · Inovasi Kampus IBI Kwik Kian Gie
             </span>
-            <span className="flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[15px] text-secondary">
-                schedule
-              </span>
+            <span>
               Jam Operasional Kantin: Senin – Jumat (07.30 – 17.00 WIB)
             </span>
           </div>

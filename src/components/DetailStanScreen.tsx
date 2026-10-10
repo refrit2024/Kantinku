@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 import {
   getStallPaymentDetails,
   MenuItem,
@@ -8,6 +9,7 @@ import {
   PaymentMethodType,
   Stall,
 } from '../data/kantinData';
+import { StallQrModal } from './StallQrModal';
 
 interface DetailStanScreenProps {
   stall: Stall;
@@ -46,6 +48,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   >('all');
   const [checkedItemIds, setCheckedItemIds] = useState<string[]>([]);
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   // Shopping Cart & Direct-to-Merchant Checkout State
   const [cartQuantities, setCartQuantities] = useState<Record<string, number>>({});
@@ -83,6 +86,51 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
   const PLATFORM_SERVICE_FEE = 1000;
   const paymentConfig = getStallPaymentDetails(stall);
+  const [stallQrDataUrl, setStallQrDataUrl] = useState<string>('');
+  const [paymentQrisDataUrl, setPaymentQrisDataUrl] = useState<string>('');
+
+  useEffect(() => {
+    let mounted = true;
+    const baseUrl =
+      typeof window !== 'undefined'
+        ? `${window.location.origin}${window.location.pathname}`
+        : 'https://kantinku-ibikkg.web.app';
+    const stallUrl = `${baseUrl}?stan=${encodeURIComponent(stall.id)}`;
+
+    QRCode.toDataURL(stallUrl, {
+      width: 360,
+      margin: 2,
+      color: { dark: '#131B2E', light: '#FFFFFF' },
+      errorCorrectionLevel: 'H',
+    })
+      .then((url) => {
+        if (mounted) setStallQrDataUrl(url);
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, [stall.id]);
+
+  useEffect(() => {
+    let mounted = true;
+    const qrisPayload = `00020101021226660016ID.CO.QRIS.WWW011893600914${paymentConfig.qrisNmid}520458125303360540${cartTotalAmount || 15000}5802ID5925${paymentConfig.qrisMerchantName.slice(0, 24)}6013JAKARTA UTARA6304A1B2`;
+    QRCode.toDataURL(qrisPayload, {
+      width: 360,
+      margin: 2,
+      color: { dark: '#181C22', light: '#FFFFFF' },
+      errorCorrectionLevel: 'M',
+    })
+      .then((url) => {
+        if (mounted) setPaymentQrisDataUrl(url);
+      })
+      .catch(() => {});
+
+    return () => {
+      mounted = false;
+    };
+  }, [paymentConfig.qrisNmid, paymentConfig.qrisMerchantName, cartTotalAmount]);
 
   const updateCartQty = (item: MenuItem, delta: number) => {
     if (item.status !== 'ready' && delta > 0) return;
@@ -286,21 +334,41 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Kembali ke Direktori Kantin • Dekat Hall D ({stall.code})</span>
           </button>
-          <button
-            type="button"
-            onClick={onToggleFavorite}
-            className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm shadow-xs cursor-pointer active:scale-95 transition-transform"
-          >
-            <span
-              className="material-symbols-outlined text-[18px]"
-              style={{ fontVariationSettings: isFavorite ? "'FILL' 1" : "'FILL' 0" }}
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsQrModalOpen(true)}
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest text-on-surface hover:text-primary border border-outline-variant/30 font-label-sm text-label-sm shadow-xs cursor-pointer active:scale-95 transition-all"
             >
-              favorite
-            </span>
-            <span>{isFavorite ? 'Tersimpan di Favorit' : 'Simpan Favorit'}</span>
-          </button>
+              <span className="material-symbols-outlined text-[18px] text-primary">
+                qr_code_2
+              </span>
+              <span>QR Stan</span>
+            </button>
+            <button
+              type="button"
+              onClick={onToggleFavorite}
+              className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm shadow-xs cursor-pointer active:scale-95 transition-transform"
+            >
+              <span
+                className="material-symbols-outlined text-[18px]"
+                style={{ fontVariationSettings: isFavorite ? "'FILL' 1" : "'FILL' 0" }}
+              >
+                favorite
+              </span>
+              <span>{isFavorite ? 'Tersimpan di Favorit' : 'Simpan Favorit'}</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {isQrModalOpen && (
+        <StallQrModal
+          stall={stall}
+          onClose={() => setIsQrModalOpen(false)}
+          onShowToast={onShowToast}
+        />
+      )}
 
       {/* Main Responsive Container */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-6">
@@ -361,37 +429,37 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
         {/* 3-State Responsive Content Split:
             - Mobile (<1024px): Stacked cleanly
-            - Desktop (>=1024px): Left 7 cols Menu & Reviews, Right 5 cols Info, Location & Budget Calculator
+            - Desktop (>=1024px): Left 8 cols Menu (2-col grid) & Reviews, Right 4 cols sticky Info, Location & Budget Calculator
         */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* LEFT / MAIN COLUMN (7 cols on Desktop) */}
-          <div className="lg:col-span-7 flex flex-col gap-5 min-w-0">
+          {/* LEFT / MAIN COLUMN (8 cols on Desktop) */}
+          <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
             {/* Banner "Harga terakhir diperbarui: 8 Oktober 2026" */}
-            <div className="bg-secondary-container/45 border border-secondary/25 rounded-xl p-4 shadow-xs flex flex-col gap-2">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-1.5 text-secondary">
-                  <span className="material-symbols-outlined text-[20px] shrink-0">update</span>
-                  <span className="font-label-lg text-label-lg font-bold">
-                    Harga terakhir diperbarui: {stall.lastUpdatedDate}
+            <div className="bg-secondary-container/45 border border-secondary/25 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex flex-col gap-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex items-center gap-1.5 text-secondary">
+                    <span className="material-symbols-outlined text-[20px] shrink-0">update</span>
+                    <span className="font-label-lg text-label-lg font-bold">
+                      Harga terakhir diperbarui: {stall.lastUpdatedDate}
+                    </span>
+                  </div>
+                  <span className="font-label-sm text-label-sm bg-surface-container-lowest text-secondary px-2.5 py-0.5 rounded font-semibold">
+                    Pukul {stall.lastUpdatedTime}
                   </span>
                 </div>
-                <span className="font-label-sm text-label-sm bg-surface-container-lowest text-secondary px-2.5 py-1 rounded font-semibold">
-                  Pukul {stall.lastUpdatedTime}
-                </span>
+                <p className="font-body-sm text-body-sm text-on-surface leading-relaxed">
+                  Informasi menu, ketersediaan, dan harga diinput langsung oleh <strong>{stall.name}</strong> tanpa biaya mark-up.
+                </p>
               </div>
-              <p className="font-body-sm text-body-sm text-on-surface leading-relaxed">
-                Informasi menu, ketersediaan, dan harga di halaman ini diinput dan diperbarui langsung oleh <strong>{stall.name}</strong> melalui Dashboard Penjual KantinKu IBI KKG.
-              </p>
-              <div>
-                <button
-                  type="button"
-                  onClick={onOpenReportModal}
-                  className="min-h-[40px] inline-flex items-center gap-1 font-label-sm text-label-sm text-primary font-semibold hover:underline cursor-pointer"
-                >
-                  <span>Temukan selisih harga di kasir? Laporkan ke Admin</span>
-                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={onOpenReportModal}
+                className="min-h-[40px] px-3.5 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold hover:bg-surface shadow-xs inline-flex items-center gap-1.5 shrink-0 cursor-pointer self-start sm:self-center"
+              >
+                <span>Lapor Selisih Harga</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </button>
             </div>
 
             {/* Menu Section Header & Controls */}
@@ -424,7 +492,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 </div>
               </div>
 
-              {/* Category Filter Buttons (min-h 44px) */}
+              {/* Category Filter Buttons */}
               <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
                 {[
                   { id: 'all', label: `Semua (${stall.menuItems.length})` },
@@ -438,10 +506,10 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     onClick={() =>
                       setSelectedCategory(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
                     }
-                    className={`min-h-[44px] px-4 py-2 rounded-lg font-label-md text-label-md whitespace-nowrap shadow-xs cursor-pointer transition-colors shrink-0 ${
+                    className={`min-h-[42px] px-4 py-2 rounded-xl font-label-md text-label-md whitespace-nowrap shadow-xs cursor-pointer transition-colors shrink-0 ${
                       selectedCategory === cat.id
                         ? 'bg-primary text-on-primary font-semibold'
-                        : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface'
+                        : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
                     }`}
                   >
                     {cat.label}
@@ -450,7 +518,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
             </div>
 
-            {/* Menu List / Table (Zero horizontal overflow guaranteed) */}
+            {/* Menu List / Table (2 columns on Desktop & Tablet, 1 column on Mobile) */}
             <div className="flex flex-col gap-3" id="menu-container">
               {viewMode === 'table' ? (
                 <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto border border-outline-variant/30">
@@ -497,7 +565,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   </table>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                   {visibleMenu.map((item) => {
                     const isAvailable = item.status === 'ready';
                     return (
@@ -537,21 +605,21 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                               {item.description}
                             </p>
                           </div>
-                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2">
-                            <div className="flex flex-col">
+                          <div className="flex items-end justify-between gap-2 pt-2.5 mt-1 border-t border-outline-variant/15">
+                            <div className="flex flex-col min-w-0">
                               <span
-                                className={`font-headline-md text-[16px] sm:text-[17px] font-bold ${
+                                className={`font-headline-md text-[15px] sm:text-[16px] font-bold whitespace-nowrap ${
                                   isAvailable ? 'text-primary' : 'text-on-surface-variant'
                                 }`}
                               >
                                 Rp {item.price.toLocaleString('id-ID')}
                               </span>
-                              <span className="text-[10px] text-on-surface-variant">
-                                Diperbarui: {item.lastUpdated}
+                              <span className="text-[10px] text-on-surface-variant truncate">
+                                Update: {item.lastUpdated}
                               </span>
                             </div>
                             {isAvailable ? (
-                              <div className="flex items-center gap-2 shrink-0">
+                              <div className="flex items-center shrink-0">
                                 {(cartQuantities[item.id] || 0) > 0 ? (
                                   <div className="flex items-center gap-1.5 bg-primary-fixed text-on-primary-fixed px-2 py-1 rounded-lg border border-primary/30">
                                     <button
@@ -576,9 +644,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => updateCartQty(item, 1)}
-                                    className="min-h-[38px] px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95"
+                                    className="min-h-[36px] px-3 py-1.5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
                                   >
-                                    <span className="material-symbols-outlined text-[16px]">
+                                    <span className="material-symbols-outlined text-[15px]">
                                       add_shopping_cart
                                     </span>
                                     <span>+ Pesan</span>
@@ -586,7 +654,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                                 )}
                               </div>
                             ) : (
-                              <span className="font-label-sm text-label-sm bg-error-container text-on-error-container px-2.5 py-1 rounded-lg shrink-0">
+                              <span className="font-label-sm text-xs bg-error-container text-on-error-container px-2.5 py-1 rounded-lg shrink-0 whitespace-nowrap">
                                 🔴 Habis
                               </span>
                             )}
@@ -692,8 +760,8 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             </div>
           </div>
 
-          {/* RIGHT SIDEBAR COLUMN (5 cols on Desktop) */}
-          <div className="lg:col-span-5 flex flex-col gap-5 min-w-0">
+          {/* RIGHT SIDEBAR COLUMN (2-col side-by-side on Tablet md, 4 cols vertical on Desktop lg) */}
+          <div className="lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-5 min-w-0 items-start">
             {/* Profil Informasi Kantin Lengkap */}
             <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-xl shadow-sm border border-outline-variant/25 flex flex-col gap-3.5">
               <h3 className="fluid-headline-md text-on-surface">Informasi &amp; Lokasi Kantin</h3>
@@ -776,11 +844,47 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   {stall.walkingGuide}
                 </p>
               </div>
+
+              {/* QR Code Etalase Stan Langsung Terlihat */}
+              <div className="p-3.5 rounded-xl bg-primary-fixed/35 border border-primary/25 flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3 min-w-0">
+                  {stallQrDataUrl && (
+                    <button
+                      type="button"
+                      onClick={() => setIsQrModalOpen(true)}
+                      title="Klik untuk perbesar Poster QR Code Stan"
+                      className="w-16 h-16 rounded-lg bg-white p-1 border border-primary/30 shadow-xs shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                    >
+                      <img
+                        src={stallQrDataUrl}
+                        alt={`QR Code ${stall.name}`}
+                        className="w-full h-full object-contain"
+                      />
+                    </button>
+                  )}
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-label-sm text-xs font-bold text-on-surface">
+                      QR Code Etalase {stall.name}
+                    </span>
+                    <span className="text-[11px] text-on-surface-variant leading-snug">
+                      Scan atau bagikan QR ini agar teman langsung membuka menu {stall.code}
+                    </span>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsQrModalOpen(true)}
+                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
+                >
+                  <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
+                  <span>Perbesar</span>
+                </button>
+              </div>
             </div>
 
             {/* LIVE TRACKER PESANAN MAHASISWA DI KANTIN INI */}
             {stallOrders.length > 0 && (
-              <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border-2 border-primary/35 flex flex-col gap-3">
+              <div className="md:col-span-2 lg:col-span-1 bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border-2 border-primary/35 flex flex-col gap-3 w-full">
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2 text-primary">
                     <span className="material-symbols-outlined text-[20px]">receipt_long</span>
@@ -1224,15 +1328,15 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 </div>
 
                 {/* Visual QRIS Box */}
-                <div className="bg-surface-container-lowest p-3 rounded-xl border border-outline-variant/40 flex flex-col items-center gap-1.5 shadow-xs">
-                  {paymentConfig.qrisImage ? (
+                <div className="bg-white p-3.5 rounded-xl border-2 border-primary/30 flex flex-col items-center gap-1.5 shadow-xs">
+                  {paymentConfig.qrisImage || paymentQrisDataUrl ? (
                     <img
-                      src={paymentConfig.qrisImage}
+                      src={paymentConfig.qrisImage || paymentQrisDataUrl}
                       alt="QRIS Kantin"
-                      className="w-40 h-40 object-contain rounded"
+                      className="w-44 h-44 object-contain rounded"
                     />
                   ) : (
-                    <div className="w-36 h-36 rounded-lg bg-surface-container flex flex-col items-center justify-center p-2 border-2 border-dashed border-on-surface/30">
+                    <div className="w-40 h-40 rounded-lg bg-surface-container flex flex-col items-center justify-center p-2 border-2 border-dashed border-on-surface/30">
                       <span className="material-symbols-outlined text-[64px] text-on-surface">
                         qr_code_2
                       </span>
@@ -1241,6 +1345,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                       </span>
                     </div>
                   )}
+                  <span className="text-[10px] font-mono font-bold text-slate-600">
+                    QRIS STANDAR NASIONAL • {paymentConfig.qrisNmid}
+                  </span>
                   <span className="font-label-md text-primary font-bold">
                     Nominal: Rp {cartTotalAmount.toLocaleString('id-ID')}
                   </span>
@@ -1506,10 +1613,18 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   {/* Visual Preview inside Snap */}
                   {snapChannel === 'qris_snap' && (
                     <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col items-center text-center gap-2">
-                      <div className="w-36 h-36 rounded-xl bg-surface-container-lowest border-2 border-primary/30 flex flex-col items-center justify-center p-2 shadow-xs">
-                        <span className="material-symbols-outlined text-[72px] text-on-surface">
-                          qr_code_2
-                        </span>
+                      <div className="rounded-xl bg-white border-2 border-primary/30 flex flex-col items-center justify-center p-3 shadow-xs gap-1">
+                        {paymentQrisDataUrl ? (
+                          <img
+                            src={paymentQrisDataUrl}
+                            alt="QRIS Dinamis"
+                            className="w-40 h-40 object-contain"
+                          />
+                        ) : (
+                          <span className="material-symbols-outlined text-[72px] text-on-surface">
+                            qr_code_2
+                          </span>
+                        )}
                         <span className="text-[9px] font-mono font-bold text-primary">
                           QRIS DINAMIS • {snapTxId}
                         </span>

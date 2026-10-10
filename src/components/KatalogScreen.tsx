@@ -139,48 +139,60 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   return (
     <div className="flex flex-col w-full pb-12">
       {/* Clean Horizontal Sub-Nav Bar for Student Web Application */}
-      <div className="w-full bg-surface-container-low border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-2">
-        <div className="max-w-7xl mx-auto flex items-center gap-2 overflow-x-auto no-scrollbar">
-          {[
-            { id: 'kantin', label: 'Semua Kantin', icon: 'storefront' },
-            { id: 'kategori', label: 'Kategori Menu', icon: 'restaurant_menu' },
-            { id: 'favorit', label: `Favorit (${favoriteStallIds.length})`, icon: 'favorite' },
-            {
-              id: 'pesanan',
-              label:
-                activeOrdersCount > 0
-                  ? `Pesanan Saya (${activeOrdersCount} Aktif)`
-                  : `Pesanan Saya (${orders.length})`,
-              icon: 'receipt_long',
-            },
-          ].map((tab) => {
-            const isActive = activeSubTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => onChangeSubTab(tab.id as StudentSubTab)}
-                className={`min-h-[40px] px-3.5 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors cursor-pointer active:scale-[0.98] ${
-                  isActive
-                    ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                    : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
-                <span>{tab.label}</span>
-              </button>
-            );
-          })}
+      <div className="w-full bg-surface-container-low border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-2.5">
+        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
+          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+            {[
+              { id: 'kantin', label: 'Semua Kantin', icon: 'storefront' },
+              { id: 'kategori', label: 'Eksplorasi Menu', icon: 'restaurant_menu' },
+              { id: 'favorit', label: `Favorit (${favoriteStallIds.length})`, icon: 'favorite' },
+              {
+                id: 'pesanan',
+                label:
+                  activeOrdersCount > 0
+                    ? `Pesanan Saya (${activeOrdersCount} Aktif)`
+                    : `Pesanan Saya (${orders.length})`,
+                icon: 'receipt_long',
+              },
+            ].map((tab) => {
+              const isActive = activeSubTab === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => onChangeSubTab(tab.id as StudentSubTab)}
+                  className={`min-h-[40px] px-4 py-1.5 rounded-xl font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors cursor-pointer active:scale-[0.98] ${
+                    isActive
+                      ? 'bg-primary text-on-primary font-semibold shadow-xs'
+                      : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Desktop Quick Status Summary on the Right of Sub-Nav */}
+          <div className="hidden lg:flex items-center gap-3 text-xs text-on-surface-variant">
+            <span className="inline-flex items-center gap-1.5 font-semibold text-secondary bg-secondary-container/50 px-2.5 py-1 rounded-lg">
+              <span className="w-2 h-2 rounded-full bg-secondary"></span>
+              {stalls.filter((s) => s.isOpen).length} dari {stalls.length} Stan Buka Hari Ini
+            </span>
+            <span>•</span>
+            <span>Area Kantin Dekat Hall D — Kampus IBI KKG</span>
+          </div>
         </div>
       </div>
 
-      {/* Main Content Container with 3-State Responsive Width */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-5">
+      {/* Main Content Container with Responsive Desktop vs Mobile Layout */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 flex flex-col gap-6">
         {/* SUB-TAB PESANAN SAYA (LACAK STATUS PESANAN TANPA LOGIN) */}
         {activeSubTab === 'pesanan' ? (
           <div className="flex flex-col gap-4">
             {/* Header & Pencarian NIM / Kode Order */}
-            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2 text-primary">
                   <span className="material-symbols-outlined text-[22px]">receipt_long</span>
@@ -188,7 +200,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     Lacak Status Pesanan Saya (Real-Time)
                   </h2>
                 </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                <p className="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
                   Pantau status masakan Anda langsung dari kantin IBI KKG tanpa perlu login. Ketik <strong>NIM</strong>, <strong>Nama</strong>, atau <strong>Kode Order</strong> Anda untuk menyaring pesanan.
                 </p>
               </div>
@@ -236,7 +248,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {filteredStudentOrders.map((ord) => {
                   const statusMeta =
                     ord.status === 'waiting_payment_verification'
@@ -386,86 +398,204 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
             )}
           </div>
         ) : (
-          /* THREE-STATE RESPONSIVE LAYOUT:
-             - Mobile (<768px): Stacked single column
-             - Tablet (768px-1023px): 2-column stall grid + full-width map banner
-             - Desktop (>=1024px): 12-column split (Left 4 cols sticky Map & Filters, Right 8 cols 2-column Stall Grid)
+          /* DESKTOP vs MOBILE DISTINCT LAYOUT:
+             - On Mobile (<1024px): Compact Hero Header + Search Bar + Horizontal Quick Filter Pills + Stacked Cards
+             - On Desktop (>=1024px): Clean 12-Col Architecture:
+               - Left Sidebar (lg:col-span-3): Structured Filter Panel (Budget, Kategori, Status Buka) + Daftar Pintasan Stan
+               - Right Main Content (lg:col-span-9): Desktop Hero Search Header + 2-Column Spacious Stall Directory Grid
           */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-            {/* LEFT RAIL (Desktop 4 cols sticky, Mobile/Tablet compact collapsible accordion) */}
-            <div className="lg:col-span-4 lg:sticky lg:top-20 flex flex-col gap-3 min-w-0">
-              <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
-                {/* Compact Header */}
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex flex-col gap-0.5 min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="font-label-sm text-[11px] text-secondary font-semibold">
-                        🟢 {stalls.filter((s) => s.isOpen).length}/{stalls.length} Kantin Buka
-                      </span>
-                      <span className="text-outline-variant">•</span>
-                      <span className="font-label-sm text-[11px] text-on-surface-variant">
-                        Kampus IBI KKG
-                      </span>
-                    </div>
-                    <h1 className="fluid-headline-md text-on-surface">
-                      Mau Makan di Mana Hari Ini?
-                    </h1>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            {/* LEFT SIDEBAR ON DESKTOP (3 cols sticky) — Structured Filters & Quick Stall Jump */}
+            <aside className="lg:col-span-3 lg:sticky lg:top-20 flex flex-col gap-4 min-w-0 order-2 lg:order-1">
+              {/* Desktop Vertical Filter Sidebar (Hidden on Mobile because Mobile uses horizontal filter bar) */}
+              <div className="hidden lg:flex bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/25 flex-col gap-4">
+                <div className="flex items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
+                  <div className="flex items-center gap-2 text-on-surface">
+                    <span className="material-symbols-outlined text-[19px] text-primary">tune</span>
+                    <h2 className="font-headline-sm text-base font-bold">Filter Katalog</h2>
                   </div>
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={resetAllFilters}
+                      className="text-xs font-label-sm text-error hover:underline font-semibold cursor-pointer"
+                    >
+                      ResetSemua
+                    </button>
+                  )}
+                </div>
 
-                  {/* Badge Info Lokasi Kampus IBI KKG */}
-                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-surface-container-high text-primary font-label-sm text-[11px] font-semibold shrink-0">
-                    <span className="material-symbols-outlined text-[15px]">storefront</span>
-                    <span>Area Kantin Hall D</span>
+                {/* Status Buka Toggle */}
+                <div className="flex flex-col gap-2">
+                  <span className="font-label-sm text-xs text-on-surface-variant font-semibold">
+                    Status Operasional
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
+                    className={`w-full min-h-[40px] px-3 py-2 rounded-xl font-label-sm text-xs flex items-center justify-between transition-colors cursor-pointer border ${
+                      onlyOpenFilter
+                        ? 'bg-secondary text-on-secondary border-secondary font-semibold shadow-xs'
+                        : 'bg-surface-container-low text-on-surface border-outline-variant/25 hover:bg-surface-container'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          onlyOpenFilter ? 'bg-on-secondary' : 'bg-secondary'
+                        }`}
+                      ></span>
+                      <span>Hanya yang Buka Sekarang</span>
+                    </span>
+                    <span className="material-symbols-outlined text-[16px]">
+                      {onlyOpenFilter ? 'check_box' : 'check_box_outline_blank'}
+                    </span>
+                  </button>
+                </div>
+
+                {/* Filter Budget Mahasiswa */}
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-outline-variant/20">
+                  <span className="font-label-sm text-xs text-on-surface-variant font-semibold">
+                    Batas Budget Mahasiswa
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    {[
+                      { id: 'all', label: 'Semua Budget Harga' },
+                      { id: '<=10000', label: 'Hemat ≤ Rp 10.000' },
+                      { id: '<=15000', label: 'Populer ≤ Rp 15.000' },
+                      { id: '10000-15000', label: 'Rp 10.000 – Rp 15.000' },
+                      { id: '15000-20000', label: 'Rp 15.000 – Rp 20.000' },
+                    ].map((p) => (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPriceFilter(p.id)}
+                        className={`w-full min-h-[36px] px-3 py-1.5 rounded-lg font-label-sm text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                          priceFilter === p.id
+                            ? 'bg-primary text-on-primary font-semibold'
+                            : 'text-on-surface hover:bg-surface-container-low'
+                        }`}
+                      >
+                        <span>{p.label}</span>
+                        {priceFilter === p.id && (
+                          <span className="material-symbols-outlined text-[15px]">check</span>
+                        )}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
-                {/* Daftar Pintasan Stan Kantin IBI KKG (Tanpa Peta karena terpusat di 1 area kantin IBI KKG) */}
-                <div className="bg-surface-container-low rounded-xl p-3 flex flex-col gap-2.5 border border-outline-variant/30">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="font-label-sm text-label-sm text-on-surface font-bold">
-                      Pilih Cepat Stan Kantin IBI KKG
-                    </span>
-                    <span className="font-body-sm text-[11px] text-on-surface-variant">
-                      {stalls.length} Stan Terdaftar
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-1.5">
-                    {stalls.map((stall, idx) => (
+                {/* Filter Kategori Menu */}
+                <div className="flex flex-col gap-1.5 pt-2 border-t border-outline-variant/20">
+                  <span className="font-label-sm text-xs text-on-surface-variant font-semibold">
+                    Kategori Hidangan
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {[
+                      { id: 'all', label: 'Semua' },
+                      { id: 'makanan', label: 'Makanan' },
+                      { id: 'minuman', label: 'Minuman' },
+                      { id: 'snack', label: 'Snack' },
+                    ].map((cat) => (
                       <button
-                        key={stall.id}
+                        key={cat.id}
                         type="button"
-                        onClick={() => onSelectStall(stall.id)}
-                        className="min-h-[48px] p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high active:scale-[0.99] transition-all flex items-center justify-between gap-2 text-left border border-outline-variant/20 cursor-pointer"
+                        onClick={() =>
+                          setCategoryFilter(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
+                        }
+                        className={`min-h-[36px] px-2.5 py-1.5 rounded-lg font-label-sm text-xs transition-colors cursor-pointer ${
+                          categoryFilter === cat.id
+                            ? 'bg-primary text-on-primary font-semibold'
+                            : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
+                        }`}
                       >
-                        <div className="flex flex-col min-w-0">
-                          <span className="font-label-sm text-[11px] text-primary font-bold truncate">
-                            Stan 0{idx + 1} • {stall.name}
-                          </span>
-                          <span className="font-body-sm text-[11px] text-on-surface-variant truncate">
-                            {stall.specialty} •{' '}
-                            <strong className={stall.isOpen ? 'text-secondary' : 'text-error'}>
-                              {stall.isOpen ? 'Buka' : 'Tutup'}
-                            </strong>
-                          </span>
-                        </div>
-                        <span className="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0">
-                          arrow_forward
-                        </span>
+                        {cat.label}
                       </button>
                     ))}
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* RIGHT RAIL (Desktop 8 cols, Mobile/Tablet Full Width): Search, Filter Controls, & Stall Grid */}
-            <div className="lg:col-span-8 flex flex-col gap-4 min-w-0">
-              {/* Search & Filter Panel */}
-              <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
-                {/* Search Input */}
+              {/* Daftar Pintasan Stan Kantin IBI KKG */}
+              <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex flex-col">
+                    <span className="font-label-sm text-xs text-primary font-bold uppercase tracking-wider">
+                      Area Kantin Hall D
+                    </span>
+                    <h3 className="font-headline-sm text-sm sm:text-base text-on-surface font-bold">
+                      Pintasan Stan Kantin
+                    </h3>
+                  </div>
+                  <span className="font-label-sm text-[11px] bg-surface-container px-2 py-0.5 rounded-md text-on-surface-variant">
+                    {stalls.length} Stan
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1 gap-2">
+                  {stalls.map((stall, idx) => (
+                    <button
+                      key={stall.id}
+                      type="button"
+                      onClick={() => onSelectStall(stall.id)}
+                      className="min-h-[48px] p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high active:scale-[0.99] transition-all flex items-center justify-between gap-2 text-left border border-outline-variant/20 cursor-pointer group"
+                    >
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-label-sm text-xs text-on-surface group-hover:text-primary font-bold truncate transition-colors">
+                          Stan 0{idx + 1} • {stall.name}
+                        </span>
+                        <span className="font-body-sm text-[11px] text-on-surface-variant truncate">
+                          {stall.specialty} •{' '}
+                          <strong className={stall.isOpen ? 'text-secondary' : 'text-error'}>
+                            {stall.isOpen ? 'Buka' : 'Tutup'}
+                          </strong>
+                        </span>
+                      </div>
+                      <span className="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0">
+                        arrow_forward
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            {/* RIGHT MAIN CONTENT (9 cols on Desktop, Full Width on Mobile/Tablet) */}
+            <div className="lg:col-span-9 flex flex-col gap-5 min-w-0 order-1 lg:order-2">
+              {/* Hero Welcome + Search Bar Banner */}
+              <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-label-sm text-xs text-secondary font-semibold">
+                        🟢 {stalls.filter((s) => s.isOpen).length}/{stalls.length} Kantin Buka Sekarang
+                      </span>
+                      <span className="text-outline-variant">•</span>
+                      <span className="font-label-sm text-xs text-on-surface-variant">
+                        Gedung Kampus IBI KKG (Dekat Hall D)
+                      </span>
+                    </div>
+                    <h1 className="fluid-headline-md sm:text-2xl text-on-surface font-bold tracking-tight">
+                      Mau Makan di Mana Hari Ini?
+                    </h1>
+                  </div>
+
+                  {/* Quick Filter Reset / Info on Desktop */}
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={resetAllFilters}
+                      className="hidden lg:inline-flex min-h-[38px] px-3.5 py-1.5 rounded-xl bg-error-container/60 text-on-error-container font-label-sm text-xs font-semibold items-center gap-1.5 cursor-pointer self-start"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                      <span>Reset Filter ({activeFilterCount})</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Search Input Bar */}
                 <form
-                  className="flex flex-wrap sm:flex-nowrap gap-2 w-full"
+                  className="flex flex-wrap sm:flex-nowrap gap-2.5 w-full"
                   onSubmit={(e) => e.preventDefault()}
                 >
                   <div className="relative flex-grow min-w-0 w-full">
@@ -473,19 +603,20 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       search
                     </span>
                     <input
-                      className="w-full h-11 pl-10 pr-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="w-full h-11 sm:h-12 pl-11 pr-4 rounded-xl bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/20"
                       id="menuSearchInput"
-                      placeholder="Cari 'Nasi goreng', 'Ayam', 'Es teh', atau nama kantin..."
+                      placeholder="Cari 'Nasi goreng', 'Ayam geprek', 'Es teh', atau nama kantin..."
                       type="search"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
                   </div>
-                  <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                  {/* Mobile/Tablet Filter Drawer Button (Hidden on Desktop lg+ since Desktop has Left Sidebar) */}
+                  <div className="flex lg:hidden items-center gap-2 w-full sm:w-auto shrink-0">
                     <button
                       type="button"
                       onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                      className={`min-h-[44px] flex-1 sm:flex-initial px-3.5 rounded-lg font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
+                      className={`min-h-[44px] flex-1 sm:flex-initial px-3.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
                         showAdvancedFilters || activeFilterCount > 0
                           ? 'bg-primary-fixed text-on-primary-fixed font-semibold'
                           : 'bg-surface-container-high text-on-surface'
@@ -498,7 +629,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       <button
                         type="button"
                         onClick={resetAllFilters}
-                        className="min-h-[44px] px-3.5 rounded-lg bg-surface-container text-error font-label-md text-label-md flex items-center justify-center cursor-pointer"
+                        className="min-h-[44px] px-3.5 rounded-xl bg-surface-container text-error font-label-md text-label-md flex items-center justify-center cursor-pointer"
                       >
                         Reset
                       </button>
@@ -506,8 +637,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   </div>
                 </form>
 
-                {/* Primary Quick Filter Buttons (44px min-height for mobile thumb ergonomics) */}
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+                {/* Mobile/Tablet Quick Filter Row (Scrolls on Mobile, wraps cleanly on Tablet md, hidden on Desktop lg+) */}
+                <div className="flex lg:hidden items-center gap-2 overflow-x-auto md:overflow-visible md:flex-wrap no-scrollbar py-0.5">
                   {[
                     { id: 'all', label: 'Semua Budget' },
                     { id: '<=10000', label: '≤ Rp10.000' },
@@ -519,7 +650,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       key={p.id}
                       type="button"
                       onClick={() => setPriceFilter(p.id)}
-                      className={`min-h-[44px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
+                      className={`min-h-[40px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
                         priceFilter === p.id
                           ? 'bg-primary text-on-primary font-semibold shadow-xs'
                           : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
@@ -532,7 +663,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
-                    className={`min-h-[44px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
+                    className={`min-h-[40px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
                       onlyOpenFilter
                         ? 'bg-secondary text-on-secondary font-semibold shadow-xs'
                         : 'bg-surface-container-low text-secondary hover:bg-surface-container-high'
@@ -547,65 +678,36 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   </button>
                 </div>
 
-                {/* Collapsible Distance & Category Filter Drawer (Prevents vertical crowding on mobile) */}
+                {/* Mobile/Tablet Collapsible Category Drawer */}
                 {(showAdvancedFilters || distanceFilter !== 'all' || categoryFilter !== 'all') && (
-                  <div className="pt-2 border-t border-outline-variant/25 grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">
-                        Filter Jarak dari Lokasi Anda:
-                      </span>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                        {[
-                          { id: 'all', label: 'Semua' },
-                          { id: '<100m', label: '<100 m' },
-                          { id: '<500m', label: '<500 m' },
-                          { id: '<1km', label: '<1 km' },
-                        ].map((d) => (
-                          <button
-                            key={d.id}
-                            type="button"
-                            onClick={() => setDistanceFilter(d.id)}
-                            className={`min-h-[44px] px-2.5 rounded-lg font-label-sm text-label-sm transition-colors cursor-pointer ${
-                              distanceFilter === d.id
-                                ? 'bg-primary text-on-primary font-semibold'
-                                : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
-                            }`}
-                          >
-                            {d.label}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">
-                        Filter Kategori Menu:
-                      </span>
-                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
-                        {[
-                          { id: 'all', label: 'Semua' },
-                          { id: 'makanan', label: 'Makanan' },
-                          { id: 'minuman', label: 'Minuman' },
-                          { id: 'snack', label: 'Snack' },
-                        ].map((cat) => (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() =>
-                              setCategoryFilter(
-                                cat.id as 'all' | 'makanan' | 'minuman' | 'snack'
-                              )
-                            }
-                            className={`min-h-[44px] px-2.5 rounded-lg font-label-sm text-label-sm transition-colors cursor-pointer ${
-                              categoryFilter === cat.id
-                                ? 'bg-primary text-on-primary font-semibold'
-                                : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
-                            }`}
-                          >
-                            {cat.label}
-                          </button>
-                        ))}
-                      </div>
+                  <div className="lg:hidden pt-3 border-t border-outline-variant/25 flex flex-col gap-2">
+                    <span className="font-label-sm text-xs text-on-surface-variant font-semibold">
+                      Filter Kategori Hidangan:
+                    </span>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { id: 'all', label: 'Semua Kategori' },
+                        { id: 'makanan', label: '🍛 Makanan' },
+                        { id: 'minuman', label: '🥤 Minuman' },
+                        { id: 'snack', label: '🍟 Snack' },
+                      ].map((cat) => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() =>
+                            setCategoryFilter(
+                              cat.id as 'all' | 'makanan' | 'minuman' | 'snack'
+                            )
+                          }
+                          className={`min-h-[40px] px-3 py-2 rounded-xl font-label-sm text-xs transition-colors cursor-pointer ${
+                            categoryFilter === cat.id
+                              ? 'bg-primary text-on-primary font-semibold shadow-xs'
+                              : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high border border-outline-variant/20'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
                     </div>
                   </div>
                 )}
