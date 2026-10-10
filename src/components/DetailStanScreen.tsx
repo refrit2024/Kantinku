@@ -95,6 +95,36 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     return Boolean(params.get('stan') || params.get('stall'));
   });
 
+  const updateCartQty = (item: MenuItem, delta: number) => {
+    if (item.status !== 'ready' && delta > 0) return;
+    setCartQuantities((prev) => {
+      const nextQty = Math.max(0, (prev[item.id] || 0) + delta);
+      const copy = { ...prev };
+      if (nextQty === 0) {
+        delete copy[item.id];
+      } else {
+        copy[item.id] = nextQty;
+      }
+      return copy;
+    });
+  };
+
+  const safeMenuItems = Array.isArray(stall.menuItems) ? stall.menuItems : [];
+
+  const cartItems: OrderItem[] = safeMenuItems
+    .filter((m) => (cartQuantities[m.id] || 0) > 0)
+    .map((m) => ({
+      menuItemId: m.id,
+      name: m.name,
+      price: m.price,
+      quantity: cartQuantities[m.id],
+    }));
+
+  const cartTotalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
+  const cartSubtotalAmount = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const activeServiceFee = selectedPaymentMethod === 'gateway' ? PLATFORM_SERVICE_FEE : 0;
+  const cartTotalAmount = cartSubtotalAmount + activeServiceFee;
+
   useEffect(() => {
     let mounted = true;
     const stallUrl = getPublicStallUrl(stall.id);
@@ -117,7 +147,12 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
   useEffect(() => {
     let mounted = true;
-    const qrisPayload = `00020101021226660016ID.CO.QRIS.WWW011893600914${paymentConfig.qrisNmid}520458125303360540${cartTotalAmount || 15000}5802ID5925${paymentConfig.qrisMerchantName.slice(0, 24)}6013JAKARTA UTARA6304A1B2`;
+    const safeMerchant = (paymentConfig.qrisMerchantName || stall.name || 'KANTINKU').slice(
+      0,
+      24
+    );
+    const safeNmid = paymentConfig.qrisNmid || 'ID2026001018829';
+    const qrisPayload = `00020101021226660016ID.CO.QRIS.WWW011893600914${safeNmid}520458125303360540${cartTotalAmount || 15000}5802ID5925${safeMerchant}6013JAKARTA UTARA6304A1B2`;
     QRCode.toDataURL(qrisPayload, {
       width: 360,
       margin: 2,
@@ -132,35 +167,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     return () => {
       mounted = false;
     };
-  }, [paymentConfig.qrisNmid, paymentConfig.qrisMerchantName, cartTotalAmount]);
-
-  const updateCartQty = (item: MenuItem, delta: number) => {
-    if (item.status !== 'ready' && delta > 0) return;
-    setCartQuantities((prev) => {
-      const nextQty = Math.max(0, (prev[item.id] || 0) + delta);
-      const copy = { ...prev };
-      if (nextQty === 0) {
-        delete copy[item.id];
-      } else {
-        copy[item.id] = nextQty;
-      }
-      return copy;
-    });
-  };
-
-  const cartItems: OrderItem[] = stall.menuItems
-    .filter((m) => (cartQuantities[m.id] || 0) > 0)
-    .map((m) => ({
-      menuItemId: m.id,
-      name: m.name,
-      price: m.price,
-      quantity: cartQuantities[m.id],
-    }));
-
-  const cartTotalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
-  const cartSubtotalAmount = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const activeServiceFee = selectedPaymentMethod === 'gateway' ? PLATFORM_SERVICE_FEE : 0;
-  const cartTotalAmount = cartSubtotalAmount + activeServiceFee;
+  }, [paymentConfig.qrisNmid, paymentConfig.qrisMerchantName, stall.name, cartTotalAmount]);
 
   // Student's orders for this stall (or recent orders matching student NIM)
   const stallOrders = orders.filter((o) => o.stallId === stall.id);
@@ -275,11 +282,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const [revRating, setRevRating] = useState(5);
   const [revComment, setRevComment] = useState('');
 
-  const makananCount = stall.menuItems.filter((m) => m.category === 'makanan').length;
-  const minumanCount = stall.menuItems.filter((m) => m.category === 'minuman').length;
-  const snackCount = stall.menuItems.filter((m) => m.category === 'snack').length;
+  const makananCount = safeMenuItems.filter((m) => m.category === 'makanan').length;
+  const minumanCount = safeMenuItems.filter((m) => m.category === 'minuman').length;
+  const snackCount = safeMenuItems.filter((m) => m.category === 'snack').length;
 
-  const visibleMenu = stall.menuItems.filter((item) => {
+  const visibleMenu = safeMenuItems.filter((item) => {
     if (selectedCategory === 'all') return true;
     return item.category === selectedCategory;
   });
@@ -290,7 +297,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     );
   };
 
-  const totalCost = stall.menuItems
+  const totalCost = safeMenuItems
     .filter((item) => checkedItemIds.includes(item.id))
     .reduce((acc, item) => acc + item.price, 0);
 
@@ -313,7 +320,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     barColorClass = 'h-full bg-error transition-all duration-300';
   }
 
-  const calcItems = stall.menuItems.filter((m) => m.status === 'ready').slice(0, 5);
+  const calcItems = safeMenuItems.filter((m) => m.status === 'ready').slice(0, 5);
 
   const handleReviewSubmit = (e: React.FormEvent) => {
     e.preventDefault();
