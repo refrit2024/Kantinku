@@ -256,7 +256,10 @@ export function getPublicStallUrl(stallId: string, customBaseUrl?: string): stri
       : '';
 
   if (savedCustom && savedCustom.trim().length > 0) {
-    const cleaned = savedCustom.trim().replace(/\/$/, '');
+    const cleaned = savedCustom
+      .trim()
+      .replace(/\/index\.html$/i, '')
+      .replace(/\/+$/, '');
     const withProtocol = /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
     return `${withProtocol}/?stan=${encodeURIComponent(stallId)}`;
   }
@@ -264,7 +267,10 @@ export function getPublicStallUrl(stallId: string, customBaseUrl?: string): stri
   if (typeof window !== 'undefined') {
     // Replace private AI Studio dev iframe origin (ais-dev-) with Shared App origin (ais-pre-)
     const publicOrigin = window.location.origin.replace('//ais-dev-', '//ais-pre-');
-    const cleanPath = window.location.pathname.replace(/\/$/, '');
+    // Strip /index.html and trailing slashes so GitHub Pages (/repo-name/) always resolves ./assets/ properly
+    const cleanPath = window.location.pathname
+      .replace(/\/index\.html$/i, '')
+      .replace(/\/+$/, '');
     return `${publicOrigin}${cleanPath}/?stan=${encodeURIComponent(stallId)}`;
   }
 

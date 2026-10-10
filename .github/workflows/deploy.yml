@@ -32,7 +32,9 @@ jobs:
         run: npm install --legacy-peer-deps
 
       - name: Build static site with Vite
-        run: npm run build
+        run: |
+          npm run build
+          cp dist/index.html dist/404.html
 
       - name: Setup GitHub Pages
         uses: actions/configure-pages@v5

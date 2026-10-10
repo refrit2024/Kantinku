@@ -244,8 +244,17 @@ export default function App() {
           try {
             if (typeof data.stallsJson === 'string') {
               const parsedStalls = JSON.parse(data.stallsJson);
-              if (Array.isArray(parsedStalls)) {
-                setStalls(parsedStalls.map((s: Stall, idx: number) => normalizeStallLocation(s, idx)));
+              if (Array.isArray(parsedStalls) && parsedStalls.length > 0) {
+                setStalls(
+                  parsedStalls.map((s: Stall, idx: number) => ({
+                    ...normalizeStallLocation(s, idx),
+                    menuItems: Array.isArray(s.menuItems) ? s.menuItems : [],
+                    reviews: Array.isArray(s.reviews) ? s.reviews : [],
+                    paymentMethods: Array.isArray(s.paymentMethods)
+                      ? s.paymentMethods
+                      : ['QRIS tersedia (Semua Bank & E-Wallet)', 'Tunai di Kasir'],
+                  }))
+                );
               }
             }
             if (typeof data.verificationsJson === 'string') {
