@@ -106,6 +106,8 @@ export interface Stall {
   reviewCount: number;
   visitorsCount: number;
   isOpen: boolean;
+  isFrozen?: boolean;
+  frozenReason?: string;
   lastUpdatedDate: string;
   lastUpdatedTime: string;
   verifiedAt: string;
@@ -164,6 +166,24 @@ export interface AdminCredentials {
   email: string;
   password: string;
   updatedAt?: string;
+}
+
+export interface PriceDiscrepancyReport {
+  id: string;
+  stallId: string;
+  stallName: string;
+  stallLocation: string;
+  menuName: string;
+  catalogPrice: number;
+  chargedPrice: number;
+  reporterName: string;
+  reporterNim: string;
+  description: string;
+  receiptImageUrl?: string;
+  createdAt: string;
+  status: 'pending' | 'sp_sent' | 'resolved' | 'dismissed';
+  adminNote?: string;
+  adminActionAt?: string;
 }
 
 export const INITIAL_ADMIN_CREDENTIALS: AdminCredentials = {
@@ -793,3 +813,23 @@ export const INITIAL_VERIFICATIONS: VerificationRequest[] = [
 
 export const RECEIPT_PROOF_IMAGE =
   'https://lh3.googleusercontent.com/aida-public/AB6AXuCPz0-Py7HEeBYGyr3yOfdWxbWM0CKe_NfFK4hC6rT1qJxqdUKJGEKNCZ6bV9JNlgi6J_iLcWhj-JdJxN7YRaUZdkIGp-kt-PRUBu9q_vqvlxRFGjBJr0s-m7g715_a_Mz0f8TmzN_wluiJZibpVOAEtXE9rmgRgRVpNdR6NJKqzxS0Z9PxN8hm9XfbvxXfkxyhkAlKnoLZ3xIiwxtN2ta0icZy0EhdH5Mxn8AJNRJi';
+
+export const INITIAL_PRICE_REPORTS: PriceDiscrepancyReport[] = [
+  {
+    id: 'LP-049',
+    stallId: 'stan-berkah',
+    stallName: 'Kantin Berkah Barokah',
+    stallLocation: 'Stan 03 • Dekat Hall D',
+    menuName: 'Es Jeruk Peras',
+    catalogPrice: 5000,
+    chargedPrice: 6000,
+    reporterName: 'Mahasiswa Akuntansi 2023 (NIM Terverifikasi)',
+    reporterNim: '32230104',
+    description:
+      'Kasir stan menyatakan harga jeruk peras naik per kemarin, tetapi di portal IBI KKG belum diperbarui.',
+    receiptImageUrl: RECEIPT_PROOF_IMAGE,
+    createdAt: 'Hari ini, 12:18 WIB',
+    status: 'pending',
+  },
+];
+

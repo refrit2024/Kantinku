@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { normalizeStallLocation, OrderTransaction, Stall } from '../data/kantinData';
+import { OrderReceiptModal } from './OrderReceiptModal';
 
 export type StudentSubTab = 'kantin' | 'kategori' | 'favorit' | 'pesanan';
 
@@ -15,6 +16,7 @@ interface KatalogScreenProps {
   onNavigateAdmin: () => void;
   onOpenReportModal: () => void;
   onOpenInfoModal: (title: string, content: React.ReactNode) => void;
+  onShowToast?: (message: string, isError?: boolean) => void;
 }
 
 export const KatalogScreen: React.FC<KatalogScreenProps> = ({
@@ -26,6 +28,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   onToggleFavoriteStall,
   onSelectStall,
   onOpenReportModal,
+  onShowToast,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [priceFilter, setPriceFilter] = useState<string>('all');
@@ -34,6 +37,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   const [onlyOpenFilter, setOnlyOpenFilter] = useState<boolean>(false);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [orderLookupQuery, setOrderLookupQuery] = useState('');
+  const [selectedReceiptOrder, setSelectedReceiptOrder] =
+    useState<OrderTransaction | null>(null);
 
   const filteredStudentOrders = orders.filter((ord) => {
     const q = orderLookupQuery.trim().toLowerCase();
@@ -384,14 +389,26 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         )}
                       </div>
 
-                      <button
-                        type="button"
-                        onClick={() => onSelectStall(ord.stallId)}
-                        className="w-full min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">storefront</span>
-                        <span>Buka Halaman {ord.stallName}</span>
-                      </button>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedReceiptOrder(ord)}
+                          className="w-full min-h-[44px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">
+                            receipt_long
+                          </span>
+                          <span>Lihat &amp; Unduh Nota</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => onSelectStall(ord.stallId)}
+                          className="w-full min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">storefront</span>
+                          <span>Buka Stan</span>
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
@@ -1020,6 +1037,15 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
           </div>
         )}
       </div>
+
+      {/* MODAL NOTA PESANAN MAHASISWA */}
+      {selectedReceiptOrder && (
+        <OrderReceiptModal
+          order={selectedReceiptOrder}
+          onClose={() => setSelectedReceiptOrder(null)}
+          onShowToast={onShowToast}
+        />
+      )}
     </div>
   );
 };

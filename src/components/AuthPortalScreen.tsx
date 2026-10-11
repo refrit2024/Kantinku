@@ -1,5 +1,10 @@
 import React, { useState } from 'react';
 import { AdminCredentials, SellerAccount } from '../data/kantinData';
+import {
+  checkLoginBruteForce,
+  clearLoginBruteForce,
+  recordFailedLoginAttempt,
+} from '../utils/securityGuard';
 
 interface AuthPortalScreenProps {
   sellerAccounts: SellerAccount[];
@@ -251,11 +256,22 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   const handleSellerLogin = (e: React.FormEvent) => {
     e.preventDefault();
 
+    const bf = checkLoginBruteForce('seller');
+    if (bf.locked) {
+      onShowToast(
+        `Proteksi Keamanan Aktif: Terlalu banyak percobaan gagal. Silakan tunggu ${bf.remainingSeconds} detik lagi.`,
+        true
+      );
+      return;
+    }
+
     // Hidden Admin Direct Login: If Admin types their current Admin email & password in the regular login form, route straight to Admin Portal!
     if (
       sellerEmail.trim().toLowerCase() === adminCredentials.email.trim().toLowerCase() &&
       sellerPassword === adminCredentials.password
     ) {
+      clearLoginBruteForce('seller');
+      clearLoginBruteForce('admin');
       setAdminPortalUnlocked(true);
       onLoginAdminSuccess();
       return;
@@ -266,10 +282,22 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
     );
 
     if (!found || found.password !== sellerPassword) {
-      onShowToast('Email atau kata sandi penjual tidak sesuai.', true);
+      const attempt = recordFailedLoginAttempt('seller');
+      if (attempt.locked) {
+        onShowToast(
+          `Akun dikunci sementara selama 3 menit karena 5x salah kata sandi (Proteksi Brute-Force).`,
+          true
+        );
+      } else {
+        onShowToast(
+          `Email atau kata sandi penjual tidak sesuai (Sisa percobaan: ${attempt.attemptsLeft}x).`,
+          true
+        );
+      }
       return;
     }
 
+    clearLoginBruteForce('seller');
     trackSellerAccount(found);
 
     if (found.status === 'pending') {
@@ -325,13 +353,34 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
 
   const handleAdminLogin = (e: React.FormEvent) => {
     e.preventDefault();
+    const bf = checkLoginBruteForce('admin');
+    if (bf.locked) {
+      onShowToast(
+        `Proteksi Brute-Force Admin Aktif: Tunggu ${bf.remainingSeconds} detik sebelum mencoba login kembali.`,
+        true
+      );
+      return;
+    }
+
     if (
       adminEmail.trim().toLowerCase() === adminCredentials.email.trim().toLowerCase() &&
       adminPassword === adminCredentials.password
     ) {
+      clearLoginBruteForce('admin');
       onLoginAdminSuccess();
     } else {
-      onShowToast('Email atau kata sandi Admin tidak sesuai.', true);
+      const attempt = recordFailedLoginAttempt('admin');
+      if (attempt.locked) {
+        onShowToast(
+          'Akses Login Admin dikunci sementara selama 3 menit karena 5x gagal.',
+          true
+        );
+      } else {
+        onShowToast(
+          `Email atau kata sandi Admin tidak sesuai (Sisa percobaan: ${attempt.attemptsLeft}x).`,
+          true
+        );
+      }
     }
   };
 

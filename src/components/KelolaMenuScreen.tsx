@@ -8,11 +8,18 @@ import {
   OrderStatusType,
   OrderTransaction,
   PaymentDetails,
+  PriceDiscrepancyReport,
   SellerAccount,
   Stall,
   WithdrawalRecord,
 } from '../data/kantinData';
 import { StallQrModal } from './StallQrModal';
+import {
+  compressUploadedImage,
+  generateReceiptSecurityCode,
+  PRICE_BOUNDS,
+  sanitizeMenuPrice,
+} from '../utils/securityGuard';
 
 export type SellerSubTab =
   | 'dashboard'
@@ -27,6 +34,13 @@ interface KelolaMenuScreenProps {
   stall: Stall;
   allStalls?: Stall[];
   orders: OrderTransaction[];
+  priceReports?: PriceDiscrepancyReport[];
+  onResolvePriceReport?: (
+    reportId: string,
+    nextStatus: 'sp_sent' | 'resolved' | 'dismissed',
+    adminNote?: string,
+    syncCatalogPrice?: boolean
+  ) => void;
   sellerEmail?: string;
   loggedInSeller?: SellerAccount | null;
   onUpdateSellerPassword?: (accountId: string, newPassword: string) => void;
@@ -71,6 +85,8 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   stall: rawStall,
   allStalls = [],
   orders,
+  priceReports = [],
+  onResolvePriceReport,
   sellerEmail,
   loggedInSeller,
   onUpdateSellerPassword,
@@ -88,6 +104,12 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   onShowToast,
 }) => {
   const stall = normalizeStallLocation(rawStall);
+  const stallPriceReports = priceReports.filter(
+    (r) =>
+      (r.stallId === stall.id || r.stallName.toLowerCase() === stall.name.toLowerCase()) &&
+      (r.status === 'sp_sent' || r.status === 'pending')
+  );
+  const activeSpReports = stallPriceReports.filter((r) => r.status === 'sp_sent');
   const [sellerSubTab, setSellerSubTab] = useState<SellerSubTab>('dashboard');
   const [newSellerPassInput, setNewSellerPassInput] = useState('');
   const [activeCategory, setActiveCategory] = useState<
@@ -95,6 +117,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   >('all');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [confirmDeleteItem, setConfirmDeleteItem] = useState<MenuItem | null>(null);
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
   const [stallQrDataUrl, setStallQrDataUrl] = useState<string>('');
   const [qrisPreviewDataUrl, setQrisPreviewDataUrl] = useState<string>('');
@@ -348,14 +371,14 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   const handleQrisImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
-        setPayQrisImage(reader.result);
-        onShowToast('Gambar Barcode QRIS berhasil dipilih!');
-      }
-    };
-    reader.readAsDataURL(file);
+    compressUploadedImage(file, 640, 0.72)
+      .then((compressed) => {
+        setPayQrisImage(compressed);
+        onShowToast('Gambar Barcode QRIS berhasil dikompresi & dipilih!');
+      })
+      .catch(() => {
+        onShowToast('Gagal memproses gambar QRIS.');
+      });
   };
 
   const handleSavePaymentSettings = (e: React.FormEvent) => {
@@ -460,31 +483,39 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   const handlePhotoFileChange = (e: React.ChangeEvent<HTMLInputElement>, isProfile = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === 'string') {
+    compressUploadedImage(file, 720, 0.7)
+      .then((compressed) => {
         if (isProfile) {
-          setProfHeroImg(reader.result);
-          onShowToast('Foto profil kantin berhasil dipilih');
+          setProfHeroImg(compressed);
+          onShowToast('Foto profil kantin berhasil dikompresi & dipilih');
         } else {
-          setFormImage(reader.result);
-          onShowToast('Foto makanan berhasil diunggah');
+          setFormImage(compressed);
+          onShowToast('Foto makanan berhasil dikompresi & diunggah');
         }
-      }
-    };
-    reader.readAsDataURL(file);
+      })
+      .catch(() => {
+        onShowToast('Gagal memproses file foto');
+      });
   };
 
   const handleSaveModal = (e: React.FormEvent) => {
     e.preventDefault();
-    const numericPrice = Math.max(1000, parseInt(formPrice, 10) || 10000);
+    const priceCheck = sanitizeMenuPrice(formPrice);
+    if (!priceCheck.valid) {
+      onShowToast(
+        priceCheck.reason ||
+          `Harga menu harus di antara Rp ${PRICE_BOUNDS.MIN_PRICE.toLocaleString('id-ID')} – Rp ${PRICE_BOUNDS.MAX_PRICE.toLocaleString('id-ID')}.`
+      );
+      return;
+    }
+    const numericPrice = priceCheck.price;
     if (!formName.trim()) return;
 
     if (editingItem) {
       onEditMenuItem({
         ...editingItem,
-        name: formName.trim(),
-        description: formDesc.trim() || 'Hidangan segar kantin kampus IBI KKG',
+        name: formName.trim().slice(0, 80),
+        description: (formDesc.trim() || 'Hidangan segar kantin kampus IBI KKG').slice(0, 220),
         price: numericPrice,
         category: formCategory,
         status: formStatus,
@@ -709,6 +740,150 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
+            </div>
+          </div>
+        )}
+
+        {/* BANNER PEMBEKUAN OPERASIONAL STAN OLEH ADMIN SARPRAS */}
+        {stall.isFrozen && (
+          <div
+            role="alert"
+            className="w-full rounded-2xl bg-error text-on-error p-4 sm:p-5 shadow-md flex flex-col gap-2"
+          >
+            <div className="flex items-center gap-2.5">
+              <span className="material-symbols-outlined text-[24px]">gpp_bad</span>
+              <span className="font-label-lg text-sm font-extrabold uppercase tracking-wider">
+                OPERASIONAL STAN DIBEKUKAN SEMENTARA OLEH ADMIN SARPRAS &amp; BAAK
+              </span>
+            </div>
+            <p className="font-body-sm text-xs sm:text-sm text-on-error/95 leading-relaxed">
+              {stall.frozenReason ||
+                'Operasional stan Anda ditutup sementara hingga seluruh laporan harga diselesaikan dan diverifikasi oleh Admin Kampus.'}
+            </p>
+          </div>
+        )}
+
+        {/* BANNER PERINGATAN RESMI (SP-1) & LAPORAN HARGA DARI PORTAL ADMIN */}
+        {stallPriceReports.length > 0 && (
+          <div
+            role="alert"
+            className="w-full rounded-2xl bg-error-container/85 text-on-error-container p-4 sm:p-5 shadow-md border-2 border-error/40 flex flex-col gap-3.5"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3 min-w-0">
+                <div className="w-11 h-11 rounded-xl bg-error text-on-error flex items-center justify-center shrink-0 shadow-xs">
+                  <span className="material-symbols-outlined text-[24px]">gavel</span>
+                </div>
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="px-2.5 py-0.5 rounded-md bg-error text-on-error font-label-sm text-[11px] font-bold uppercase tracking-wider">
+                      {activeSpReports.length > 0
+                        ? `SURAT PERINGATAN RESMI (SP-1) • ${activeSpReports.length} KASUS`
+                        : `LAPORAN SELISIH HARGA MAHASISWA • ${stallPriceReports.length} TIKET`}
+                    </span>
+                    <span className="font-label-sm text-xs font-semibold text-on-error-container/90">
+                      Biro Sarpras &amp; BAAK IBI KKG
+                    </span>
+                  </div>
+                  <h3 className="fluid-headline-md text-on-error-container mt-0.5">
+                    Harap Sesuaikan Harga Menu Katalog dengan Harga Kasir
+                  </h3>
+                  <p className="font-body-sm text-xs sm:text-sm text-on-error-container/90">
+                    Mahasiswa melaporkan adanya perbedaan harga antara katalog digital dan kasir stan{' '}
+                    <strong>{stall.name}</strong>. Silakan perbarui harga di bawah ini agar tiket peringatan ditutup otomatis:
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {stallPriceReports.map((rep) => (
+                <div
+                  key={rep.id}
+                  className="rounded-xl bg-surface-container-lowest text-on-surface p-3.5 border border-error/30 flex flex-col justify-between gap-3 shadow-2xs"
+                >
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-mono text-xs font-bold text-error">
+                        Tiket #{rep.id} • {rep.createdAt}
+                      </span>
+                      <span
+                        className={`px-2 py-0.5 rounded text-[11px] font-semibold ${
+                          rep.status === 'sp_sent'
+                            ? 'bg-error text-on-error'
+                            : 'bg-tertiary-fixed text-tertiary'
+                        }`}
+                      >
+                        {rep.status === 'sp_sent'
+                          ? 'SP-1 Diterbitkan Admin'
+                          : 'Dilaporkan Mahasiswa'}
+                      </span>
+                    </div>
+                    <div className="font-label-lg text-sm font-bold text-on-surface">
+                      Menu: {rep.menuName}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 text-xs bg-surface-container-low p-2.5 rounded-lg">
+                      <div>
+                        <span className="text-on-surface-variant block text-[11px]">
+                          Harga di Katalog:
+                        </span>
+                        <strong className="text-secondary font-bold">
+                          Rp {rep.catalogPrice.toLocaleString('id-ID')}
+                        </strong>
+                      </div>
+                      <div>
+                        <span className="text-on-surface-variant block text-[11px]">
+                          Ditagih di Kasir:
+                        </span>
+                        <strong className="text-error font-bold">
+                          Rp {rep.chargedPrice.toLocaleString('id-ID')}
+                        </strong>
+                      </div>
+                    </div>
+                    <p className="text-xs text-on-surface-variant italic">
+                      &ldquo;{rep.description}&rdquo;
+                    </p>
+                  </div>
+
+                  {onResolvePriceReport && (
+                    <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-outline-variant/25">
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onResolvePriceReport(
+                            rep.id,
+                            'resolved',
+                            `Penjual (${stall.name}) telah menyamakan harga katalog "${rep.menuName}" menjadi Rp ${rep.chargedPrice.toLocaleString('id-ID')}.`,
+                            true
+                          )
+                        }
+                        className="flex-1 min-h-[44px] px-3 py-2 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">
+                          price_check
+                        </span>
+                        <span>
+                          Ubah Katalog Jadi Rp {rep.chargedPrice.toLocaleString('id-ID')}
+                        </span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onResolvePriceReport(
+                            rep.id,
+                            'resolved',
+                            `Penjual (${stall.name}) menyatakan tetap mengikuti harga katalog Rp ${rep.catalogPrice.toLocaleString('id-ID')} di kasir.`,
+                            false
+                          )
+                        }
+                        className="min-h-[44px] px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs font-semibold cursor-pointer transition-colors"
+                      >
+                        Tetap Rp {rep.catalogPrice.toLocaleString('id-ID')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           </div>
         )}
@@ -1114,10 +1289,18 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                               }
                             }}
                             onBlur={(e) => {
-                              const val = parseInt(e.target.value, 10) || 0;
-                              onShowToast(
-                                `Harga ${item.name} diperbarui: Rp${val.toLocaleString('id-ID')} (Tanggal update: 8 Oktober 2026)`
-                              );
+                              const check = sanitizeMenuPrice(e.target.value);
+                              if (!check.valid) {
+                                onUpdateMenuPrice(item.id, check.price);
+                                onShowToast(
+                                  check.reason ||
+                                    `Harga disesuaikan ke batas aman Rp${check.price.toLocaleString('id-ID')}`
+                                );
+                              } else {
+                                onShowToast(
+                                  `Harga ${item.name} diperbarui: Rp${check.price.toLocaleString('id-ID')} (Tanggal update: 8 Oktober 2026)`
+                                );
+                              }
                             }}
                           />
                           <span className="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0">
@@ -1134,7 +1317,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                             <span>Edit</span>
                           </button>
                           <button
-                            onClick={() => onDeleteMenuItem(item.id)}
+                            onClick={() => setConfirmDeleteItem(item)}
                             className="min-h-[44px] px-3.5 flex items-center justify-center gap-1 rounded-lg bg-error-container/70 text-error hover:bg-error-container font-label-sm text-label-sm transition-colors cursor-pointer active:scale-95"
                             type="button"
                           >
@@ -1225,12 +1408,26 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                             <span className="text-[11px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface font-semibold">
                               NIM: {ord.studentNim}
                             </span>
+                            <span
+                              title="Token Verifikasi Nota Anti-Palsu (Cocokkan dengan struk mahasiswa)"
+                              className="text-[11px] px-2 py-0.5 rounded bg-secondary-container/70 text-on-secondary-container font-mono font-bold flex items-center gap-1"
+                            >
+                              <span className="material-symbols-outlined text-[13px]">
+                                verified_user
+                              </span>
+                              {generateReceiptSecurityCode({
+                                id: ord.id,
+                                stallId: ord.stallId,
+                                studentNim: ord.studentNim,
+                                totalAmount: ord.totalAmount,
+                              })}
+                            </span>
                             <span className="text-[11px] text-on-surface-variant">
                               • {ord.createdAt}
                             </span>
                           </div>
                           <div className="text-[12px] text-primary font-semibold mt-0.5">
-                            Jadwal Ambil: {ord.pickupTime}
+                            Kode Order: <span className="font-mono">{ord.id}</span> • Jadwal Ambil: {ord.pickupTime}
                           </div>
                         </div>
 
@@ -2340,6 +2537,44 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KONFIRMASI KEAMANAN HAPUS MENU */}
+      {confirmDeleteItem && (
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-surface-container-lowest rounded-xl p-5 w-full max-w-sm shadow-xl border border-error/30 flex flex-col gap-3.5">
+            <div className="flex items-center gap-2.5 text-error">
+              <span className="material-symbols-outlined text-[24px]">warning</span>
+              <h4 className="fluid-headline-md text-on-surface">
+                Konfirmasi Hapus Menu
+              </h4>
+            </div>
+            <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              Apakah Anda yakin ingin menghapus menu{' '}
+              <strong className="text-on-surface">&ldquo;{confirmDeleteItem.name}&rdquo;</strong>{' '}
+              (Rp {confirmDeleteItem.price.toLocaleString('id-ID')}) dari katalog mahasiswa?
+            </p>
+            <div className="flex items-center gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setConfirmDeleteItem(null)}
+                className="flex-1 min-h-[44px] rounded-lg bg-surface-container text-on-surface font-label-md text-label-md font-semibold cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onDeleteMenuItem(confirmDeleteItem.id);
+                  setConfirmDeleteItem(null);
+                }}
+                className="flex-1 min-h-[44px] rounded-lg bg-error text-on-error font-label-md text-label-md font-semibold cursor-pointer"
+              >
+                Ya, Hapus Menu
+              </button>
+            </div>
           </div>
         </div>
       )}

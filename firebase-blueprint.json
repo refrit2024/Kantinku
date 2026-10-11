@@ -35,6 +35,12 @@
           "minLength": 2,
           "maxLength": 250000
         },
+        "priceReportsJson": {
+          "type": "string",
+          "description": "Serialized JSON of student price discrepancy reports and admin actions.",
+          "minLength": 2,
+          "maxLength": 200000
+        },
         "updatedAtIso": {
           "type": "string",
           "description": "ISO timestamp of last state update.",

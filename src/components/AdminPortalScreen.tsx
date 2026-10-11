@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import {
   AdminCredentials,
   OrderTransaction,
+  PriceDiscrepancyReport,
   RECEIPT_PROOF_IMAGE,
   SellerAccount,
   Stall,
@@ -14,11 +15,19 @@ interface AdminPortalScreenProps {
   sellerAccounts: SellerAccount[];
   orders: OrderTransaction[];
   verifications: VerificationRequest[];
+  priceReports: PriceDiscrepancyReport[];
   adminCredentials: AdminCredentials;
   onUpdateAdminCredentials: (newEmail: string, newPassword: string) => void;
   onUpdateSellerPassword: (accountId: string, newPassword: string) => void;
   onApproveVerification: (id: string, name: string) => void;
   onRejectVerification: (id: string, name: string, note: string) => void;
+  onResolvePriceReport: (
+    reportId: string,
+    nextStatus: 'sp_sent' | 'resolved' | 'dismissed',
+    adminNote?: string,
+    syncCatalogPrice?: boolean
+  ) => void;
+  onToggleFreezeStall?: (stallId: string, freeze: boolean, reason?: string) => void;
   onShowToast: (message: string, isError?: boolean) => void;
   onOpenNavDrawer: () => void;
 }
@@ -28,11 +37,14 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
   sellerAccounts,
   orders,
   verifications,
+  priceReports,
   adminCredentials,
   onUpdateAdminCredentials,
   onUpdateSellerPassword,
   onApproveVerification,
   onRejectVerification,
+  onResolvePriceReport,
+  onToggleFreezeStall,
   onShowToast,
   onOpenNavDrawer,
 }) => {
@@ -40,10 +52,10 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
     'verifikasi' | 'laporan' | 'kapasitas' | 'keamanan' | 'database'
   >('verifikasi');
   const [dbSubView, setDbSubView] = useState<
-    'orders' | 'sellers' | 'stalls' | 'verifications' | 'raw_json'
+    'orders' | 'sellers' | 'stalls' | 'verifications' | 'price_reports' | 'raw_json'
   >('orders');
-  const [spSending, setSpSending] = useState(false);
-  const [spSent, setSpSent] = useState(false);
+  const [sendingReportId, setSendingReportId] = useState<string | null>(null);
+  const [reportFilter, setReportFilter] = useState<'all' | 'pending' | 'handled'>('all');
 
   // Admin Credential Change State
   const [currentPasswordInput, setCurrentPasswordInput] = useState('');
@@ -55,6 +67,10 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
   // Admin Reset Seller Password Modal State
   const [resetSellerTarget, setResetSellerTarget] = useState<SellerAccount | null>(null);
   const [resetSellerNewPass, setResetSellerNewPass] = useState('');
+  const [freezeStallTarget, setFreezeStallTarget] = useState<Stall | null>(null);
+  const [freezeStallReason, setFreezeStallReason] = useState(
+    'Dibekukan sementara oleh Biro Sarpras & BAAK karena pelanggaran transparansi harga katalog (SP-1 belum ditindaklanjuti).'
+  );
 
   React.useEffect(() => {
     setNewAdminEmail(adminCredentials.email);
@@ -93,7 +109,8 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
   const [revisiNote, setRevisiNote] = useState(
     'Harap lengkapi sertifikat higienitas pangan dan denah outlet.'
   );
-  const [receiptPreviewOpen, setReceiptPreviewOpen] = useState(false);
+  const [previewReceiptReport, setPreviewReceiptReport] =
+    useState<PriceDiscrepancyReport | null>(null);
   const [qrPosterModalOpen, setQrPosterModalOpen] = useState(false);
 
   const openStallsCount = stalls.filter((s) => s.isOpen).length;
@@ -104,6 +121,14 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
     (v) => !v.approved && !v.rejectedReason
   );
   const pendingVerificationsCount = pendingVerifications.length;
+  const pendingPriceReports = priceReports.filter((r) => r.status === 'pending');
+  const pendingPriceReportsCount = pendingPriceReports.length;
+  const filteredPriceReports = priceReports.filter((r) => {
+    if (reportFilter === 'pending') return r.status === 'pending';
+    if (reportFilter === 'handled') return r.status !== 'pending';
+    return true;
+  });
+
   const totalPlatformFeeRevenue = orders
     .filter((o) => o.status !== 'rejected')
     .reduce((sum, o) => sum + (o.serviceFee || 0), 0);
@@ -111,17 +136,18 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
     .filter((o) => o.status !== 'rejected')
     .reduce((sum, o) => sum + (o.totalAmount || 0), 0);
 
-  const handleSendSP = () => {
-    if (spSending || spSent) return;
-    setSpSending(true);
+  const handleIssueSpForReport = (report: PriceDiscrepancyReport) => {
+    if (sendingReportId) return;
+    setSendingReportId(report.id);
     setTimeout(() => {
-      setSpSending(false);
-      setSpSent(true);
-      onShowToast(
-        'Surat Peringatan Resmi #LP-049 berhasil disampaikan ke Stan Kantin Berkah!',
+      setSendingReportId(null);
+      onResolvePriceReport(
+        report.id,
+        'sp_sent',
+        'Surat Peringatan Resmi (SP-1) diterbitkan ke Mitra Stan oleh Admin BAAK/Sarpras.',
         false
       );
-    }, 800);
+    }, 500);
   };
 
   const submitRevisi = (e: React.FormEvent) => {
@@ -285,12 +311,16 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               </div>
               <div className="mt-2">
                 <span className="font-headline-lg-mobile text-headline-lg-mobile text-error leading-none">
-                  {spSent ? 0 : 1}
+                  {pendingPriceReportsCount}
                 </span>
-                <span className="font-label-sm text-label-sm text-error ml-1">Kasus</span>
+                <span className="font-label-sm text-label-sm text-error ml-1">
+                  Kasus Aktif
+                </span>
               </div>
               <div className="mt-1 font-label-sm text-label-sm text-error font-semibold">
-                {spSent ? 'SP-1 Telah Diterbitkan' : 'Tenggat investigasi 16:00'}
+                {pendingPriceReportsCount === 0
+                  ? `Semua (${priceReports.length}) laporan tertangani`
+                  : `${priceReports.length} total laporan mahasiswa`}
               </div>
             </div>
           </div>
@@ -326,7 +356,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
             <span className="material-symbols-outlined text-[18px]">price_change</span>
             <span>Laporan Harga</span>
             <span className="w-5 h-5 rounded-full bg-error-container text-on-error-container text-center leading-5 text-label-sm font-bold">
-              {spSent ? 0 : 1}
+              {pendingPriceReportsCount}
             </span>
           </button>
 
@@ -498,139 +528,290 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
           </div>
         )}
 
-        {/* CONTENT SECTION 2: Moderasi Laporan Ketidaksesuaian Harga */}
+        {/* CONTENT SECTION 2: Moderasi Laporan Ketidaksesuaian Harga (Real-Time) */}
         {(activeTab === 'laporan' || activeTab === 'verifikasi') && (
-          <div
-            className={`flex flex-col gap-3 ${activeTab === 'kapasitas' ? 'hidden' : ''}`}
-            id="section-laporan"
-          >
-            <div className="flex items-center justify-between gap-2">
+          <div className="flex flex-col gap-3.5" id="section-laporan">
+            <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-error">
                   notification_important
                 </span>
-                <h3 className="fluid-headline-md text-on-surface">Laporan Mahasiswa Aktif</h3>
+                <h3 className="fluid-headline-md text-on-surface">
+                  Laporan Ketidaksesuaian Harga Mahasiswa
+                </h3>
               </div>
-              <span className="font-label-sm text-label-sm bg-error-container text-on-error-container px-2.5 py-1 rounded-md font-semibold shrink-0">
-                {spSent ? 'Selesai Ditindak' : '1 Menunggu Tindakan'}
-              </span>
-            </div>
-
-            {/* Ticket Card LP-049 */}
-            <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <span className="font-label-sm text-label-sm text-error font-semibold uppercase tracking-wider">
-                    Tiket #LP-049
-                  </span>
-                  <h4 className="fluid-headline-md text-on-surface mt-0.5">
-                    Stan Kantin Berkah (Stan 03 • Dekat Hall D)
-                  </h4>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">
-                    Pelapor: Mahasiswa Akuntansi 2023 (NIM Terverifikasi)
-                  </span>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-error-container flex items-center justify-center text-error shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">warning</span>
-                </div>
-              </div>
-
-              {/* Discrepancy Highlight Panel */}
-              <div className="rounded-lg bg-surface-container p-3.5 flex flex-col gap-2">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">
-                    Ketidaksesuaian Harga: Es Jeruk Peras
-                  </span>
-                  <span className="font-label-sm text-label-sm text-error font-bold">
-                    Selisih +Rp 1.000
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-body-sm font-body-sm pt-1">
-                  <div className="p-2.5 rounded bg-surface-container-lowest">
-                    <span className="font-label-sm text-label-sm text-on-surface-variant block">
-                      Tertera di Katalog:
-                    </span>
-                    <span className="font-label-lg text-label-lg text-secondary font-bold">
-                      Rp 5.000
-                    </span>
-                  </div>
-                  <div className="p-2.5 rounded bg-surface-container-lowest">
-                    <span className="font-label-sm text-label-sm text-on-surface-variant block">
-                      Ditagih ke Mahasiswa:
-                    </span>
-                    <span className="font-label-lg text-label-lg text-error font-bold">
-                      Rp 6.000
-                    </span>
-                  </div>
-                </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant italic pt-1">
-                  &ldquo;Kasir stan menyatakan harga jeruk peras naik per kemarin, tetapi di portal IBI KKG belum diperbarui.&rdquo;
-                </p>
-              </div>
-
-              {/* Bukti Struk Photo Attachment */}
-              <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 rounded-lg bg-surface-container-low">
-                <img
-                  className="w-16 h-16 rounded-md object-cover shrink-0"
-                  alt="Bukti struk transaksi"
-                  src={RECEIPT_PROOF_IMAGE}
-                  referrerPolicy="no-referrer"
-                />
-                <div className="flex flex-col justify-between gap-1 min-w-0">
-                  <span className="font-label-md text-label-md text-on-surface font-semibold">
-                    Bukti Struk &amp; Nota Pembayaran
-                  </span>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">
-                    Foto diunggah pukul 12:18 WIB • Resolusi Jelas
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setReceiptPreviewOpen(true)}
-                    className="min-h-[36px] font-label-sm text-label-sm text-primary font-semibold hover:underline text-left cursor-pointer w-fit"
-                  >
-                    Lihat Struk Resolusi Penuh →
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <span className="flex items-center gap-1 text-tertiary font-label-sm text-label-sm font-semibold">
-                  <span className="material-symbols-outlined text-[16px]">hourglass_top</span>
-                  Tenggat Klarifikasi: Hari Ini 16:00 WIB
-                </span>
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <button
-                  disabled={spSending || spSent}
-                  onClick={handleSendSP}
-                  className={
-                    spSent
-                      ? 'w-full sm:w-auto min-h-[44px] py-2.5 px-5 rounded-lg bg-surface-container text-on-surface-variant font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-xs'
-                      : 'w-full sm:w-auto min-h-[44px] py-2.5 px-5 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer'
-                  }
                   type="button"
+                  onClick={() => setReportFilter('all')}
+                  className={`min-h-[44px] px-3 py-1.5 rounded-lg font-label-sm text-xs font-semibold cursor-pointer transition-colors ${
+                    reportFilter === 'all'
+                      ? 'bg-primary text-on-primary'
+                      : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                  }`}
                 >
-                  {spSending ? (
-                    <>
-                      <span className="material-symbols-outlined text-[20px] animate-spin">
-                        sync
-                      </span>
-                      <span>Mengirim Surat Peringatan...</span>
-                    </>
-                  ) : spSent ? (
-                    <>
-                      <span className="material-symbols-outlined text-[20px]">check_circle</span>
-                      <span>SP-1 Terkirim ke WhatsApp Mitra</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="material-symbols-outlined text-[20px]">
-                        send_and_archive
-                      </span>
-                      <span>Kirim Notifikasi Peringatan Resmi (SP-1)</span>
-                    </>
-                  )}
+                  Semua ({priceReports.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportFilter('pending')}
+                  className={`min-h-[44px] px-3 py-1.5 rounded-lg font-label-sm text-xs font-semibold cursor-pointer transition-colors ${
+                    reportFilter === 'pending'
+                      ? 'bg-error text-on-error'
+                      : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                  }`}
+                >
+                  Menunggu ({pendingPriceReportsCount})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportFilter('handled')}
+                  className={`min-h-[44px] px-3 py-1.5 rounded-lg font-label-sm text-xs font-semibold cursor-pointer transition-colors ${
+                    reportFilter === 'handled'
+                      ? 'bg-secondary text-on-secondary'
+                      : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                  }`}
+                >
+                  Ditindak ({priceReports.length - pendingPriceReportsCount})
                 </button>
               </div>
             </div>
+
+            {filteredPriceReports.length === 0 ? (
+              <div className="rounded-xl bg-surface-container-lowest p-6 sm:p-8 shadow-sm border border-outline-variant/25 flex flex-col items-center text-center gap-2">
+                <div className="w-12 h-12 rounded-full bg-secondary-container text-on-secondary-container flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[24px]">verified</span>
+                </div>
+                <h4 className="fluid-headline-md text-on-surface">
+                  Tidak Ada Tiket Laporan pada Filter Ini
+                </h4>
+                <p className="font-body-sm text-body-sm text-on-surface-variant max-w-md">
+                  Laporan harga yang dikirim mahasiswa dari halaman Detail Stan akan langsung muncul secara real-time di daftar ini.
+                </p>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {filteredPriceReports.map((report) => {
+                  const diffAmount = report.chargedPrice - report.catalogPrice;
+                  const isPending = report.status === 'pending';
+                  const isSending = sendingReportId === report.id;
+
+                  return (
+                    <div
+                      key={report.id}
+                      className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-4"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-label-sm text-label-sm text-error font-semibold uppercase tracking-wider">
+                              Tiket #{report.id}
+                            </span>
+                            <span
+                              className={`font-label-sm text-[11px] px-2 py-0.5 rounded-md font-semibold ${
+                                report.status === 'pending'
+                                  ? 'bg-error-container text-on-error-container'
+                                  : report.status === 'sp_sent'
+                                  ? 'bg-tertiary-fixed text-tertiary'
+                                  : report.status === 'resolved'
+                                  ? 'bg-secondary-container text-on-secondary-container'
+                                  : 'bg-surface-container-high text-on-surface-variant'
+                              }`}
+                            >
+                              {report.status === 'pending'
+                                ? 'Menunggu Investigasi'
+                                : report.status === 'sp_sent'
+                                ? 'SP-1 Diterbitkan'
+                                : report.status === 'resolved'
+                                ? 'Harga Katalog Disinkronkan'
+                                : 'Laporan Ditolak'}
+                            </span>
+                            <span className="text-[11px] text-on-surface-variant">
+                              • {report.createdAt}
+                            </span>
+                          </div>
+                          <h4 className="fluid-headline-md text-on-surface mt-0.5">
+                            {report.stallName} ({report.stallLocation})
+                          </h4>
+                          <span className="font-label-sm text-label-sm text-on-surface-variant">
+                            Pelapor: {report.reporterName} (NIM: {report.reporterNim})
+                          </span>
+                        </div>
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                            isPending
+                              ? 'bg-error-container text-error'
+                              : 'bg-secondary-container text-secondary'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[20px]">
+                            {isPending ? 'warning' : 'task_alt'}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Discrepancy Highlight Panel */}
+                      <div className="rounded-lg bg-surface-container p-3.5 flex flex-col gap-2">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <span className="font-label-md text-label-md text-on-surface font-semibold">
+                            Ketidaksesuaian Harga: {report.menuName}
+                          </span>
+                          <span className="font-label-sm text-label-sm text-error font-bold">
+                            Selisih {diffAmount >= 0 ? '+' : ''}Rp{' '}
+                            {diffAmount.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-body-sm font-body-sm pt-1">
+                          <div className="p-2.5 rounded bg-surface-container-lowest">
+                            <span className="font-label-sm text-label-sm text-on-surface-variant block">
+                              Tertera di Katalog:
+                            </span>
+                            <span className="font-label-lg text-label-lg text-secondary font-bold">
+                              Rp {report.catalogPrice.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                          <div className="p-2.5 rounded bg-surface-container-lowest">
+                            <span className="font-label-sm text-label-sm text-on-surface-variant block">
+                              Ditagih ke Mahasiswa:
+                            </span>
+                            <span className="font-label-lg text-label-lg text-error font-bold">
+                              Rp {report.chargedPrice.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        </div>
+                        {report.description && (
+                          <p className="font-body-sm text-body-sm text-on-surface-variant italic pt-1">
+                            &ldquo;{report.description}&rdquo;
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Bukti Struk Photo Attachment */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 p-3 rounded-lg bg-surface-container-low">
+                        <img
+                          className="w-16 h-16 rounded-md object-cover shrink-0"
+                          alt={`Bukti struk ${report.id}`}
+                          src={report.receiptImageUrl || RECEIPT_PROOF_IMAGE}
+                          referrerPolicy="no-referrer"
+                        />
+                        <div className="flex flex-col justify-between gap-1 min-w-0">
+                          <span className="font-label-md text-label-md text-on-surface font-semibold">
+                            Bukti Struk &amp; Nota Pembayaran
+                          </span>
+                          <span className="font-body-sm text-body-sm text-on-surface-variant">
+                            Diunggah {report.createdAt} • Terlampir oleh {report.reporterName}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setPreviewReceiptReport(report)}
+                            className="min-h-[44px] px-2 -ml-2 font-label-sm text-label-sm text-primary font-semibold hover:underline text-left cursor-pointer w-fit flex items-center gap-1"
+                          >
+                            <span>Lihat Struk Resolusi Penuh</span>
+                            <span className="material-symbols-outlined text-[16px]">
+                              open_in_full
+                            </span>
+                          </button>
+                        </div>
+                      </div>
+
+                      {report.adminNote && (
+                        <div className="p-3 rounded-lg bg-secondary-container/40 border border-secondary/30 text-xs text-on-surface flex items-start gap-2">
+                          <span className="material-symbols-outlined text-[16px] text-secondary shrink-0 mt-0.5">
+                            verified_user
+                          </span>
+                          <div>
+                            <strong className="font-semibold">Tindakan Admin: </strong>
+                            <span>{report.adminNote}</span>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+                        <span className="flex items-center gap-1 text-tertiary font-label-sm text-label-sm font-semibold">
+                          <span className="material-symbols-outlined text-[16px]">
+                            {isPending ? 'hourglass_top' : 'check_circle'}
+                          </span>
+                          {isPending
+                            ? 'Menunggu Verifikasi & Tindak Lanjut Admin'
+                            : 'Tiket Laporan Telah Ditindaklanjuti'}
+                        </span>
+
+                        <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+                          {isPending && (
+                            <>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onResolvePriceReport(
+                                    report.id,
+                                    'dismissed',
+                                    'Bukti struk tidak sesuai atau selisih berasal dari tambahan topping.',
+                                    false
+                                  )
+                                }
+                                className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface-variant font-label-sm text-xs font-semibold cursor-pointer transition-colors"
+                              >
+                                Tolak Laporan
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  onResolvePriceReport(
+                                    report.id,
+                                    'resolved',
+                                    `Harga katalog "${report.menuName}" telah disesuaikan ke Rp ${report.chargedPrice.toLocaleString('id-ID')} sesuai klarifikasi mitra.`,
+                                    true
+                                  )
+                                }
+                                className="min-h-[44px] px-3.5 py-2 rounded-lg bg-secondary text-on-secondary font-label-sm text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-colors"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">
+                                  sync_saved_locally
+                                </span>
+                                <span>Sinkronkan Harga Katalog</span>
+                              </button>
+                            </>
+                          )}
+                          <button
+                            disabled={isSending || report.status === 'sp_sent'}
+                            onClick={() => handleIssueSpForReport(report)}
+                            className={
+                              report.status === 'sp_sent'
+                                ? 'w-full sm:w-auto min-h-[44px] py-2.5 px-4 rounded-lg bg-surface-container text-on-surface-variant font-label-md text-xs font-semibold flex items-center justify-center gap-2 shadow-xs'
+                                : 'w-full sm:w-auto min-h-[44px] py-2.5 px-4 rounded-lg bg-primary hover:bg-primary-container text-on-primary font-label-md text-xs font-semibold flex items-center justify-center gap-2 shadow-sm transition-colors cursor-pointer'
+                            }
+                            type="button"
+                          >
+                            {isSending ? (
+                              <>
+                                <span className="material-symbols-outlined text-[18px] animate-spin">
+                                  sync
+                                </span>
+                                <span>Mengirim Surat Peringatan...</span>
+                              </>
+                            ) : report.status === 'sp_sent' ? (
+                              <>
+                                <span className="material-symbols-outlined text-[18px]">
+                                  check_circle
+                                </span>
+                                <span>SP-1 Terkirim ke Mitra</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="material-symbols-outlined text-[18px]">
+                                  send_and_archive
+                                </span>
+                                <span>Kirim Surat Peringatan (SP-1)</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
@@ -684,6 +865,105 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                 <span className="font-label-sm text-label-sm text-secondary font-semibold mt-1">
                   Kapasitas Terkendali &amp; Nyaman saat Jam Istirahat Siang.
                 </span>
+              </div>
+            </div>
+
+            {/* Kontrol Operasional & Pembekuan Stan (Suspend / Freeze oleh Admin) */}
+            <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3.5 mt-2">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant/25 pb-3">
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-center gap-2 text-primary">
+                    <span className="material-symbols-outlined text-[20px]">gpp_maybe</span>
+                    <h4 className="fluid-headline-md text-on-surface">
+                      Kontrol Operasional &amp; Pembekuan Stan Mitra (Real-Time)
+                    </h4>
+                  </div>
+                  <p className="font-body-sm text-xs text-on-surface-variant">
+                    Admin Sarpras &amp; BAAK dapat membekukan sementara operasional stan yang melanggar aturan harga/higienitas atau mengaktifkannya kembali.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                {stalls.map((st) => (
+                  <div
+                    key={st.id}
+                    className={`p-4 rounded-xl border flex flex-col justify-between gap-3 ${
+                      st.isFrozen
+                        ? 'bg-error-container/25 border-error/40'
+                        : 'bg-surface-container-low border-outline-variant/30'
+                    }`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex flex-col gap-0.5 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-label-lg text-sm font-bold text-on-surface">
+                            {st.name}
+                          </span>
+                          <span className="text-[11px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface font-semibold">
+                            {st.code}
+                          </span>
+                        </div>
+                        <span className="text-xs text-on-surface-variant">
+                          {st.locationDetail} • {st.menuItems?.length ?? 0} Menu
+                        </span>
+                      </div>
+
+                      <span
+                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold shrink-0 ${
+                          st.isFrozen
+                            ? 'bg-error text-on-error'
+                            : st.isOpen
+                            ? 'bg-secondary-container text-on-secondary-container'
+                            : 'bg-surface-container-highest text-on-surface-variant'
+                        }`}
+                      >
+                        {st.isFrozen
+                          ? 'DIBEKUKAN ADMIN'
+                          : st.isOpen
+                          ? 'BUKA AKTIF'
+                          : 'TUTUP'}
+                      </span>
+                    </div>
+
+                    {st.isFrozen && st.frozenReason && (
+                      <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-error/30 text-xs text-error">
+                        <strong>Alasan Pembekuan:</strong> {st.frozenReason}
+                      </div>
+                    )}
+
+                    {onToggleFreezeStall && (
+                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/25">
+                        {st.isFrozen ? (
+                          <button
+                            type="button"
+                            onClick={() => onToggleFreezeStall(st.id, false)}
+                            className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">
+                              lock_open
+                            </span>
+                            <span>Cabut Pembekuan &amp; Aktifkan Stan</span>
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setFreezeStallTarget(st);
+                              setFreezeStallReason(
+                                'Dibekukan sementara oleh Biro Sarpras & BAAK karena pelanggaran transparansi harga katalog (SP-1 belum ditindaklanjuti).'
+                              );
+                            }}
+                            className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg bg-error-container text-on-error-container hover:bg-error hover:text-on-error font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">block</span>
+                            <span>Bekukan Operasional Stan</span>
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -1008,6 +1288,19 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
 
               <button
                 type="button"
+                onClick={() => setDbSubView('price_reports')}
+                className={`min-h-[44px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
+                  dbSubView === 'price_reports'
+                    ? 'bg-secondary text-on-secondary shadow-xs'
+                    : 'bg-surface-container text-on-surface hover:bg-surface-container-high'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">price_change</span>
+                <span>Tabel Laporan Harga ({priceReports.length})</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => setDbSubView('raw_json')}
                 className={`min-h-[44px] px-3.5 py-2 rounded-lg font-label-sm text-label-sm font-semibold flex items-center gap-1.5 whitespace-nowrap cursor-pointer ${
                   dbSubView === 'raw_json'
@@ -1227,6 +1520,57 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               </div>
             )}
 
+            {dbSubView === 'price_reports' && (
+              <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
+                <h4 className="fluid-headline-md text-on-surface">
+                  Field: <code className="text-primary font-mono text-sm">priceReportsJson</code> ({priceReports.length} Tiket)
+                </h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-outline-variant/30 text-[11px] font-label-sm text-on-surface-variant uppercase">
+                        <th className="py-2.5 px-3">ID Tiket</th>
+                        <th className="py-2.5 px-3">Stan Kantin</th>
+                        <th className="py-2.5 px-3">Menu &amp; Selisih</th>
+                        <th className="py-2.5 px-3">Pelapor</th>
+                        <th className="py-2.5 px-3">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/20 text-xs">
+                      {priceReports.map((pr) => (
+                        <tr key={pr.id} className="hover:bg-surface-container-low/60">
+                          <td className="py-2.5 px-3 font-mono font-bold text-error">
+                            {pr.id}
+                            <div className="text-[10px] font-normal text-on-surface-variant">
+                              {pr.createdAt}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3 font-semibold text-on-surface">
+                            {pr.stallName}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <div className="font-semibold text-on-surface">{pr.menuName}</div>
+                            <div className="text-[11px] text-on-surface-variant">
+                              Katalog Rp {pr.catalogPrice.toLocaleString('id-ID')} → Ditagih Rp{' '}
+                              {pr.chargedPrice.toLocaleString('id-ID')}
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-3">
+                            {pr.reporterName} ({pr.reporterNim})
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className="px-2 py-0.5 rounded-md bg-surface-container-high font-semibold text-[11px]">
+                              {pr.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {/* ISI TABEL 5: Raw JSON Document */}
             {dbSubView === 'raw_json' && (
               <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
@@ -1240,6 +1584,8 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                     {
                       adminCredentials,
                       ordersCount: orders.length,
+                      priceReportsCount: priceReports.length,
+                      priceReports,
                       orders,
                       sellerAccounts,
                       verifications,
@@ -1345,31 +1691,43 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
       )}
 
       {/* Modal: Bukti Struk Resolusi Penuh */}
-      {receiptPreviewOpen && (
+      {previewReceiptReport && (
         <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 w-full max-w-md shadow-xl flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <h4 className="fluid-headline-md text-on-surface">Bukti Struk #LP-049</h4>
+              <h4 className="fluid-headline-md text-on-surface">
+                Bukti Struk #{previewReceiptReport.id}
+              </h4>
               <button
                 type="button"
-                onClick={() => setReceiptPreviewOpen(false)}
+                onClick={() => setPreviewReceiptReport(null)}
                 className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
             <img
-              src={RECEIPT_PROOF_IMAGE}
-              alt="Bukti Struk Transaksi"
+              src={previewReceiptReport.receiptImageUrl || RECEIPT_PROOF_IMAGE}
+              alt={`Bukti Struk ${previewReceiptReport.id}`}
               className="w-full h-64 object-cover rounded-lg"
               referrerPolicy="no-referrer"
             />
-            <div className="p-3 rounded-lg bg-surface-container-low text-body-sm text-on-surface-variant">
-              Diunggah oleh Mahasiswa Akuntansi 2023 pada pukul 12:18 WIB. Terlihat item Es Jeruk Peras ditagih Rp 6.000 (katalog Rp 5.000).
+            <div className="p-3 rounded-lg bg-surface-container-low text-body-sm text-on-surface-variant flex flex-col gap-1">
+              <span className="font-semibold text-on-surface">
+                {previewReceiptReport.stallName} • Menu: {previewReceiptReport.menuName}
+              </span>
+              <span>
+                Katalog: Rp {previewReceiptReport.catalogPrice.toLocaleString('id-ID')} | Ditagih: Rp{' '}
+                {previewReceiptReport.chargedPrice.toLocaleString('id-ID')}
+              </span>
+              <span>
+                Pelapor: {previewReceiptReport.reporterName} (NIM: {previewReceiptReport.reporterNim}) •{' '}
+                {previewReceiptReport.createdAt}
+              </span>
             </div>
             <button
               type="button"
-              onClick={() => setReceiptPreviewOpen(false)}
+              onClick={() => setPreviewReceiptReport(null)}
               className="w-full min-h-[44px] rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer"
             >
               Tutup Pratinjau
@@ -1443,6 +1801,69 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                 className="w-1/2 min-h-[44px] rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer"
               >
                 Simpan Sandi Baru
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Modal: Konfirmasi Pembekuan Operasional Stan oleh Admin */}
+      {freezeStallTarget && onToggleFreezeStall && (
+        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onToggleFreezeStall(freezeStallTarget.id, true, freezeStallReason);
+              setFreezeStallTarget(null);
+            }}
+            className="bg-surface-container-lowest rounded-xl p-5 w-full max-w-md shadow-xl flex flex-col gap-3.5 border border-error/40"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-error">
+                <span className="material-symbols-outlined text-[22px]">gpp_bad</span>
+                <h4 className="fluid-headline-md text-on-surface">
+                  Bekukan Operasional Stan
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setFreezeStallTarget(null)}
+                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <p className="font-body-sm text-xs text-on-surface-variant leading-relaxed">
+              Stan <strong className="text-on-surface">{freezeStallTarget.name}</strong> akan otomatis ditutup pada katalog mahasiswa dan penjual tidak dapat membuka toko sebelum pembekuan dicabut oleh Admin.
+            </p>
+
+            <div className="flex flex-col gap-1">
+              <label className="font-label-sm text-xs text-on-surface font-semibold">
+                Alasan Pembekuan Resmi (Tampil di Dashboard Penjual):
+              </label>
+              <textarea
+                rows={3}
+                required
+                value={freezeStallReason}
+                onChange={(e) => setFreezeStallReason(e.target.value)}
+                className="p-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-xs focus:outline-none focus:ring-2 focus:ring-error"
+              />
+            </div>
+
+            <div className="flex gap-2.5 pt-1">
+              <button
+                type="button"
+                onClick={() => setFreezeStallTarget(null)}
+                className="w-1/2 min-h-[44px] rounded-lg bg-surface-container text-on-surface font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="submit"
+                className="w-1/2 min-h-[44px] rounded-lg bg-error text-on-error font-label-md text-xs font-semibold cursor-pointer"
+              >
+                Konfirmasi Bekukan Stan
               </button>
             </div>
           </form>

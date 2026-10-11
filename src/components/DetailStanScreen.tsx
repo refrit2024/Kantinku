@@ -12,6 +12,13 @@ import {
   Stall,
 } from '../data/kantinData';
 import { StallQrModal } from './StallQrModal';
+import { OrderReceiptModal } from './OrderReceiptModal';
+import {
+  checkActionCooldown,
+  isValidPersonName,
+  isValidStudentNim,
+  PRICE_BOUNDS,
+} from '../utils/securityGuard';
 
 interface DetailStanScreenProps {
   stall: Stall;
@@ -90,6 +97,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   >('qris_snap');
   const [snapStep, setSnapStep] = useState<'select' | 'processing' | 'success'>('select');
   const [snapTxId, setSnapTxId] = useState('MID-IBIKKG-882910');
+  const [receiptOrder, setReceiptOrder] = useState<OrderTransaction | null>(null);
 
   const PLATFORM_SERVICE_FEE = 1000;
   const paymentConfig = getStallPaymentDetails(stall);
@@ -104,7 +112,17 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const updateCartQty = (item: MenuItem, delta: number) => {
     if (item.status !== 'ready' && delta > 0) return;
     setCartQuantities((prev) => {
-      const nextQty = Math.max(0, (prev[item.id] || 0) + delta);
+      const currentQty = prev[item.id] || 0;
+      if (delta > 0 && currentQty >= PRICE_BOUNDS.MAX_QTY_PER_ITEM) {
+        if (onShowToast) {
+          onShowToast(
+            `Batas aman pesanan adalah maksimal ${PRICE_BOUNDS.MAX_QTY_PER_ITEM} porsi per menu.`,
+            true
+          );
+        }
+        return prev;
+      }
+      const nextQty = Math.max(0, Math.min(PRICE_BOUNDS.MAX_QTY_PER_ITEM, currentQty + delta));
       const copy = { ...prev };
       if (nextQty === 0) {
         delete copy[item.id];
@@ -198,7 +216,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     payStatus: 'paid_gateway' | 'manual_verification' | 'cash_on_pickup',
     txId?: string
   ) => {
-    onPlaceOrder({
+    const createdOrder = onPlaceOrder({
       stallId: stall.id,
       stallName: stall.name,
       stallLocation: stall.fullLocation,
@@ -223,11 +241,40 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     setCheckoutModalOpen(false);
     setSnapGatewayOpen(false);
     setSnapStep('select');
+    setReceiptOrder(createdOrder);
   };
 
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0 || !studentName.trim() || !studentNim.trim()) return;
+
+    const cd = checkActionCooldown('place_order');
+    if (!cd.allowed) {
+      if (onShowToast) {
+        onShowToast(
+          `Anti-Spam Aktif: Mohon tunggu ${cd.remainingSeconds} detik sebelum membuat pesanan berikutnya.`,
+          true
+        );
+      }
+      return;
+    }
+
+    if (!isValidPersonName(studentName)) {
+      if (onShowToast) {
+        onShowToast('Masukkan nama pemesan yang valid (minimal 2 huruf).', true);
+      }
+      return;
+    }
+
+    if (!isValidStudentNim(studentNim)) {
+      if (onShowToast) {
+        onShowToast(
+          'Format NIM tidak valid. Masukkan 7–12 digit angka NIM Mahasiswa IBI KKG (contoh: 32230104).',
+          true
+        );
+      }
+      return;
+    }
 
     try {
       localStorage.setItem('kantinku_student_name_v1', studentName.trim());
@@ -964,16 +1011,28 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           Rp {ord.totalAmount.toLocaleString('id-ID')}
                         </strong>
                       </div>
-                      {ord.status === 'ready_pickup' && onUpdateOrderStatus && (
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
                         <button
                           type="button"
-                          onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
-                          className="mt-1 w-full min-h-[44px] px-3 py-2 rounded-lg bg-secondary text-on-secondary hover:opacity-95 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-[0.99]"
+                          onClick={() => setReceiptOrder(ord)}
+                          className="flex-1 min-h-[44px] px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
                         >
-                          <span className="material-symbols-outlined text-[16px]">task_alt</span>
-                          <span>Sudah Saya Ambil (Selesaikan)</span>
+                          <span className="material-symbols-outlined text-[16px]">
+                            receipt_long
+                          </span>
+                          <span>Lihat Nota</span>
                         </button>
-                      )}
+                        {ord.status === 'ready_pickup' && onUpdateOrderStatus && (
+                          <button
+                            type="button"
+                            onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
+                            className="flex-1 min-h-[44px] px-3 py-2 rounded-lg bg-secondary text-on-secondary hover:opacity-95 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-[0.99]"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">task_alt</span>
+                            <span>Sudah Diambil</span>
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1699,6 +1758,15 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             </div>
           </div>
         </div>
+      )}
+
+      {/* MODAL NOTA PESANAN MAHASISWA */}
+      {receiptOrder && (
+        <OrderReceiptModal
+          order={receiptOrder}
+          onClose={() => setReceiptOrder(null)}
+          onShowToast={onShowToast}
+        />
       )}
     </div>
   );
