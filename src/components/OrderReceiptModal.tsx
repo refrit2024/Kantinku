@@ -1,21 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
-import { OrderTransaction } from '../data/kantinData';
+import { INITIAL_STALLS, OrderTransaction, Stall } from '../data/kantinData';
 import { generateReceiptSecurityCode } from '../utils/securityGuard';
+import { LiveGpsTrackerMap } from './LiveGpsTrackerMap';
 
 interface OrderReceiptModalProps {
   order: OrderTransaction;
+  stall?: Stall;
   onClose: () => void;
   onShowToast?: (message: string, isError?: boolean) => void;
 }
 
 export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
   order,
+  stall,
   onClose,
   onShowToast,
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [showLiveRouteMap, setShowLiveRouteMap] = useState(true);
+
+  const matchedStall =
+    stall ||
+    INITIAL_STALLS.find((s) => s.id === order.stallId || s.name === order.stallName) ||
+    INITIAL_STALLS[0];
 
   const subtotal =
     order.subtotalAmount ??
@@ -305,19 +314,19 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[70] bg-inverse-surface/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-2xl border border-outline-variant/30 overflow-hidden flex flex-col max-h-[92dvh]">
+      <div className="bg-surface-container-lowest rounded-2xl w-full max-w-xl shadow-2xl border border-outline-variant/30 overflow-hidden flex flex-col max-h-[92dvh]">
         {/* Top Receipt Header */}
         <div className="bg-primary text-on-primary px-5 py-4 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-on-primary/15 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[22px]">receipt_long</span>
+              <span className="material-symbols-outlined text-[22px]">local_shipping</span>
             </div>
             <div className="flex flex-col min-w-0">
               <span className="font-label-sm text-[10px] uppercase tracking-wider text-on-primary/80 font-semibold">
-                Bukti Transaksi &amp; Antrean Resmi
+                Lacak Rute Pengambilan &amp; Bukti Transaksi Resmi
               </span>
               <h3 className="font-headline-md text-base sm:text-lg font-bold truncate">
-                Nota Pesanan Mahasiswa
+                Peta Rute &amp; Nota Pesanan #{order.id}
               </h3>
             </div>
           </div>
@@ -333,6 +342,35 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
 
         {/* Scrollable Receipt Body */}
         <div className="p-4 sm:p-5 overflow-y-auto flex flex-col gap-4">
+          {/* SHOPEE-STYLE AUTOMATIC LIVE MAP & ROUTE TRACKER AT TOP OF ORDER RECEIPT */}
+          {order.status !== 'rejected' && (
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center justify-between">
+                <span className="font-label-sm text-xs font-bold text-secondary flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-secondary animate-ping" />
+                  <span>Peta Rute Pengambilan Pesanan (Otomatis Aktif)</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowLiveRouteMap((prev) => !prev)}
+                  className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                >
+                  {showLiveRouteMap ? 'Sembunyikan Peta' : 'Tampilkan Peta Rute'}
+                </button>
+              </div>
+              {showLiveRouteMap && (
+                <LiveGpsTrackerMap
+                  stalls={[matchedStall]}
+                  selectedStallId={matchedStall.id}
+                  order={order}
+                  mode="order-tracking"
+                  compact={true}
+                  onShowToast={onShowToast}
+                />
+              )}
+            </div>
+          )}
+
           {/* Ticket Number & Status Highlight */}
           <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between gap-2 flex-wrap">
             <div className="flex flex-col">

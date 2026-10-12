@@ -385,11 +385,11 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN (5 cols on Desktop): Penjelasan Alur Sistem dari Nol (Tahap 1) */}
-        <div className="lg:col-span-5 flex flex-col gap-4">
-          <div className="bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3.5">
+        {/* LEFT COLUMN (5 cols on Desktop, shown below form on mobile so users don't have to scroll past text to login) */}
+        <div className="lg:col-span-5 flex flex-col gap-4 order-2 lg:order-1">
+          <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
             <button
               type="button"
               onClick={handleSecretAdminTap}
@@ -400,61 +400,57 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
               <span>Gerbang Akses Sistem • Pilot Tahap 1</span>
             </button>
 
-            <h1 className="fluid-headline-xl text-on-surface">
-              Alur Akses &amp; Autentikasi KantinKu IBI KKG
-            </h1>
-            <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-              Untuk menjaga keakuratan harga dan mencegah orang sembarangan mengubah menu, sistem membagi akses publik menjadi <strong>Mahasiswa</strong> dan <strong>Mitra Penjual Kantin</strong> (terverifikasi):
-            </p>
+            <h2 className="fluid-headline-md text-on-surface">
+              Alur Akses KantinKu IBI KKG
+            </h2>
 
-            {/* Step-by-step Visual Flow */}
-            <div className="flex flex-col gap-2.5 pt-1">
-              <div className="p-3 rounded-lg bg-surface-container-low border-l-4 border-secondary flex flex-col gap-1">
+            {/* Step-by-step Visual Flow without decorative left stripes */}
+            <div className="flex flex-col gap-2">
+              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <span className="font-label-md text-label-md text-on-surface font-bold">
                     1. Mahasiswa IBI KKG
                   </span>
-                  <span className="font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded">
+                  <span className="font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded font-semibold">
                     Tanpa Login
                   </span>
                 </div>
-                <p className="font-body-sm text-[12px] text-on-surface-variant">
-                  Langsung membuka peta kantin, mencari makanan, memfilter harga (≤Rp15.000), dan melihat kapan harga terakhir diperbarui.
+                <p className="font-body-sm text-xs text-on-surface-variant">
+                  Langsung memesan makanan, memfilter harga (≤Rp15.000), dan mengunduh nota antrean.
                 </p>
               </div>
 
-              <div className="p-3 rounded-lg bg-surface-container-low border-l-4 border-primary flex flex-col gap-1">
+              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-1">
                 <div className="flex items-center justify-between">
                   <span className="font-label-md text-label-md text-on-surface font-bold">
                     2. Penjual Kantin (Mitra)
                   </span>
-                  <span className="font-label-sm text-[11px] bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded">
-                    Wajib Registrasi &amp; Login
+                  <span className="font-label-sm text-[11px] bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded font-semibold">
+                    Terverifikasi
                   </span>
                 </div>
-                <p className="font-body-sm text-[12px] text-on-surface-variant">
-                  <strong>Alur dari Nol:</strong> Daftar Akun Stan → Menunggu Verifikasi Kampus → Login Dashboard → Input Menu, Harga &amp; Jam Buka.
+                <p className="font-body-sm text-xs text-on-surface-variant">
+                  Daftar Akun Stan → Verifikasi Admin → Kelola Menu, Harga, QRIS &amp; Pesanan Masuk.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* Komitmen Transparansi Harga & Keaslian Kantin */}
-          <div className="bg-surface-container-high rounded-xl p-4 flex flex-col gap-1.5">
+          <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/20 flex flex-col gap-1">
             <div className="flex items-center gap-1.5 text-primary">
               <span className="material-symbols-outlined text-[18px]">shield_lock</span>
               <span className="font-label-md text-label-md font-bold">
-                Proteksi Keaslian Data Kantin IBI KKG
+                Proteksi Keaslian Data Kantin
               </span>
             </div>
-            <p className="font-body-sm text-[12px] text-on-surface-variant leading-relaxed">
-              Setiap pendaftaran akun penjual baru akan divalidasi oleh pihak kampus terlebih dahulu agar hanya pemilik stan resmi di Area Kantin Dekat Hall D IBI KKG yang dapat memperbarui daftar menu serta harga.
+            <p className="font-body-sm text-xs text-on-surface-variant leading-relaxed">
+              Setiap pendaftaran penjual baru divalidasi oleh Biro Sarpras agar hanya pemilik stan resmi di Area Kantin Dekat Hall D yang dapat memperbarui harga.
             </p>
           </div>
         </div>
 
-        {/* RIGHT COLUMN (7 cols on Desktop): Interactive Role & Login/Register Card */}
-        <div className="lg:col-span-7 bg-surface-container-lowest rounded-xl p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-5">
+        {/* RIGHT COLUMN (7 cols on Desktop, shown FIRST on mobile): Interactive Role & Login/Register Card */}
+        <div className="lg:col-span-7 bg-surface-container-lowest rounded-xl p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-5 order-1 lg:order-2">
           {/* Role Selector Tabs (Only Mahasiswa & Penjual shown to public; Admin only appears when unlocked) */}
           <div className="flex flex-col gap-2">
             <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">

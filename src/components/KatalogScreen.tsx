@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { normalizeStallLocation, OrderTransaction, Stall } from '../data/kantinData';
 import { OrderReceiptModal } from './OrderReceiptModal';
+import { LiveGpsTrackerMap } from './LiveGpsTrackerMap';
 
-export type StudentSubTab = 'kantin' | 'kategori' | 'favorit' | 'pesanan';
+export type StudentSubTab = 'kantin' | 'peta-gps' | 'kategori' | 'favorit' | 'pesanan';
 
 interface KatalogScreenProps {
   stalls: Stall[];
@@ -39,6 +40,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   const [orderLookupQuery, setOrderLookupQuery] = useState('');
   const [selectedReceiptOrder, setSelectedReceiptOrder] =
     useState<OrderTransaction | null>(null);
+  const [trackedOrderInMapId, setTrackedOrderInMapId] = useState<string | null>(null);
 
   const filteredStudentOrders = orders.filter((ord) => {
     const q = orderLookupQuery.trim().toLowerCase();
@@ -147,6 +149,11 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
           <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
             {[
               { id: 'kantin', label: 'Semua Kantin', icon: 'storefront' },
+              {
+                id: 'peta-gps',
+                label: 'Peta GPS Penjual & Arah',
+                icon: 'my_location',
+              },
               { id: 'kategori', label: 'Eksplorasi Menu', icon: 'restaurant_menu' },
               { id: 'favorit', label: `Favorit (${favoriteStallIds.length})`, icon: 'favorite' },
               {
@@ -191,8 +198,17 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
 
       {/* Main Content Container with Responsive Desktop vs Mobile Layout */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 flex flex-col gap-6">
-        {/* SUB-TAB PESANAN SAYA (LACAK STATUS PESANAN TANPA LOGIN) */}
-        {activeSubTab === 'pesanan' ? (
+        {/* SUB-TAB PETA GPS PENJUAL & PANDUAN ARAH PEMBELI */}
+        {activeSubTab === 'peta-gps' ? (
+          <div className="flex flex-col gap-4">
+            <LiveGpsTrackerMap
+              stalls={stalls}
+              onSelectStall={onSelectStall}
+              mode="student-directory"
+              onShowToast={onShowToast}
+            />
+          </div>
+        ) : activeSubTab === 'pesanan' ? (
           <div className="flex flex-col gap-4">
             {/* Header & Pencarian NIM / Kode Order */}
             <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -251,8 +267,65 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                 </button>
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {filteredStudentOrders.map((ord) => {
+              <div className="flex flex-col gap-5">
+                {/* SHOPEEFOOD-STYLE AUTOMATIC ORDER MAP & ROUTE TRACKER AT TOP OF PESANAN SAYA */}
+                {(() => {
+                  const activeOrderToTrack =
+                    filteredStudentOrders.find((o) => o.id === trackedOrderInMapId) ||
+                    filteredStudentOrders.find(
+                      (o) =>
+                        o.status === 'ready_pickup' ||
+                        o.status === 'cooking' ||
+                        o.status === 'waiting_payment_verification'
+                    ) ||
+                    filteredStudentOrders[0];
+
+                  if (!activeOrderToTrack) return null;
+                  const targetStallObj =
+                    stalls.find((s) => s.id === activeOrderToTrack.stallId) || stalls[0];
+
+                  return (
+                    <div className="flex flex-col gap-2">
+                      {filteredStudentOrders.length > 1 && (
+                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+                          <span className="text-xs font-label-sm text-on-surface-variant font-semibold shrink-0">
+                            Pilih Pesanan di Peta Rute:
+                          </span>
+                          {filteredStudentOrders.map((o) => (
+                            <button
+                              key={`track-pill-${o.id}`}
+                              type="button"
+                              onClick={() => setTrackedOrderInMapId(o.id)}
+                              className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-label-sm flex items-center gap-1.5 shrink-0 cursor-pointer border ${
+                                o.id === activeOrderToTrack.id
+                                  ? 'bg-secondary text-on-secondary border-secondary font-bold shadow-2xs'
+                                  : 'bg-surface-container-lowest text-on-surface border-outline-variant/30'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[15px]">
+                                location_on
+                              </span>
+                              <span>
+                                #{o.id} • {o.stallName}
+                              </span>
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      <LiveGpsTrackerMap
+                        stalls={targetStallObj ? [targetStallObj] : stalls}
+                        selectedStallId={activeOrderToTrack.stallId}
+                        order={activeOrderToTrack}
+                        mode="order-tracking"
+                        onShowToast={onShowToast}
+                      />
+                    </div>
+                  );
+                })()}
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {filteredStudentOrders.map((ord) => {
                   const statusMeta =
                     ord.status === 'waiting_payment_verification'
                       ? {
@@ -396,9 +469,9 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                           className="w-full min-h-[44px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                         >
                           <span className="material-symbols-outlined text-[16px]">
-                            receipt_long
+                            map
                           </span>
-                          <span>Lihat &amp; Unduh Nota</span>
+                          <span>Peta Rute &amp; Nota</span>
                         </button>
                         <button
                           type="button"
@@ -412,6 +485,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     </div>
                   );
                 })}
+                </div>
               </div>
             )}
           </div>
@@ -601,17 +675,27 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     </h1>
                   </div>
 
-                  {/* Quick Filter Reset / Info on Desktop */}
-                  {hasActiveFilters && (
+                  {/* Quick GPS Radar Shortcut & Filter Reset on Desktop */}
+                  <div className="flex flex-wrap items-center gap-2 self-start">
                     <button
                       type="button"
-                      onClick={resetAllFilters}
-                      className="hidden lg:inline-flex min-h-[38px] px-3.5 py-1.5 rounded-xl bg-error-container/60 text-on-error-container font-label-sm text-xs font-semibold items-center gap-1.5 cursor-pointer self-start"
+                      onClick={() => onChangeSubTab('peta-gps')}
+                      className="min-h-[40px] px-3.5 py-2 rounded-xl bg-secondary text-on-secondary font-label-sm text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs hover:opacity-95"
                     >
-                      <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-                      <span>Reset Filter ({activeFilterCount})</span>
+                      <span className="material-symbols-outlined text-[16px]">my_location</span>
+                      <span>Buka Peta GPS Penjual &amp; Rute Arah</span>
                     </button>
-                  )}
+                    {hasActiveFilters && (
+                      <button
+                        type="button"
+                        onClick={resetAllFilters}
+                        className="hidden lg:inline-flex min-h-[38px] px-3.5 py-1.5 rounded-xl bg-error-container/60 text-on-error-container font-label-sm text-xs font-semibold items-center gap-1.5 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                        <span>Reset Filter ({activeFilterCount})</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Search Input Bar */}
@@ -1042,6 +1126,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
       {selectedReceiptOrder && (
         <OrderReceiptModal
           order={selectedReceiptOrder}
+          stall={stalls.find((s) => s.id === selectedReceiptOrder.stallId)}
           onClose={() => setSelectedReceiptOrder(null)}
           onShowToast={onShowToast}
         />

@@ -88,6 +88,16 @@ export interface WithdrawalRecord {
   createdAt: string;
 }
 
+export interface SellerLiveGpsLocation {
+  lat: number;
+  lng: number;
+  accuracyMeters?: number;
+  heading?: number | null;
+  isLiveTracking?: boolean;
+  updatedAt: string;
+  locationNote?: string;
+}
+
 export interface Stall {
   id: string;
   name: string;
@@ -118,6 +128,7 @@ export interface Stall {
   paymentMethods: string[];
   paymentDetails?: PaymentDetails;
   withdrawalHistory?: WithdrawalRecord[];
+  gpsLocation?: SellerLiveGpsLocation;
   menuItems: MenuItem[];
   reviews: ReviewItem[];
 }
@@ -229,12 +240,65 @@ export function normalizeStallLocation<
       ? `Berada di area kantin dekat Hall D (${cleanCode}), Lantai Dasar Gedung Kampus IBI KKG.`
       : stall.walkingGuide;
 
+  const defaultGps: SellerLiveGpsLocation =
+    stall.id === 'stan-bu-sari'
+      ? {
+          lat: -6.151265,
+          lng: 106.886815,
+          accuracyMeters: 5,
+          isLiveTracking: false,
+          updatedAt: 'Titik Kampus IBI KKG',
+          locationNote: 'Area Kantin Kampus IBI KKG Dekat Hall D (Stan 01)',
+        }
+      : stall.id === 'stan-mas-budi'
+      ? {
+          lat: -6.151295,
+          lng: 106.886845,
+          accuracyMeters: 5,
+          isLiveTracking: false,
+          updatedAt: 'Titik Kampus IBI KKG',
+          locationNote: 'Area Kantin Kampus IBI KKG Dekat Hall D (Stan 02)',
+        }
+      : stall.id === 'stan-berkah' || stall.id === 'stan-berkah-barokah'
+      ? {
+          lat: -6.151325,
+          lng: 106.886875,
+          accuracyMeters: 5,
+          isLiveTracking: false,
+          updatedAt: 'Titik Kampus IBI KKG',
+          locationNote: 'Area Kantin Kampus IBI KKG Dekat Hall D (Stan 03)',
+        }
+      : stall.id === 'stan-kopi-roti'
+      ? {
+          lat: -6.151355,
+          lng: 106.886905,
+          accuracyMeters: 5,
+          isLiveTracking: false,
+          updatedAt: 'Titik Kampus IBI KKG',
+          locationNote: 'Area Kantin Kampus IBI KKG Dekat Hall D (Stan 04)',
+        }
+      : {
+          lat: -6.15127 + index * 0.00003,
+          lng: 106.88682 + index * 0.00003,
+          accuracyMeters: 6,
+          isLiveTracking: false,
+          updatedAt: 'Titik Kampus IBI KKG',
+          locationNote: cleanLocationDetail,
+        };
+
+  const existingGps = (stall as any).gpsLocation as SellerLiveGpsLocation | undefined;
+  // Auto-fix old placeholder coordinates (-6.1558x) so existing Firestore/localStorage data snaps to real IBI KKG campus (-6.151301, 106.886847)
+  const isOldPlaceholder =
+    !existingGps ||
+    (existingGps.lat < -6.1545 && existingGps.lat > -6.1575 && !existingGps.updatedAt?.includes('Live GPS HP'));
+
   return {
     ...stall,
     code: cleanCode,
     locationDetail: cleanLocationDetail,
     fullLocation: cleanFullLocation,
     walkingGuide: cleanWalkingGuide,
+    gpsLocation: isOldPlaceholder ? defaultGps : existingGps,
   };
 }
 

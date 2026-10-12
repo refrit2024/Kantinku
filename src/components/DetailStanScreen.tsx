@@ -13,6 +13,7 @@ import {
 } from '../data/kantinData';
 import { StallQrModal } from './StallQrModal';
 import { OrderReceiptModal } from './OrderReceiptModal';
+import { LiveGpsTrackerMap } from './LiveGpsTrackerMap';
 import {
   checkActionCooldown,
   isValidPersonName,
@@ -901,14 +902,19 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 </div>
               </div>
 
-              {/* Petunjuk Arah Lokasi Fisik */}
+              {/* Petunjuk Arah Lokasi Fisik & Live GPS Penjual */}
               <div className="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-2">
-                <div className="flex items-center gap-1.5 text-on-surface">
-                  <span className="material-symbols-outlined text-primary text-[18px]">
-                    explore
-                  </span>
-                  <span className="font-label-md text-label-md font-bold">
-                    Panduan Jalan Kaki ke {stall.name}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1.5 text-on-surface">
+                    <span className="material-symbols-outlined text-primary text-[18px]">
+                      explore
+                    </span>
+                    <span className="font-label-md text-label-md font-bold">
+                      Panduan Jalan Kaki ke {stall.name}
+                    </span>
+                  </div>
+                  <span className="text-[10px] px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-bold">
+                    GPS Aktif
                   </span>
                 </div>
                 <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
@@ -951,6 +957,16 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <span>Perbesar</span>
                 </button>
               </div>
+            </div>
+
+            {/* PETA LIVE GPS PENJUAL & PANDUAN ARAH PEMBELI */}
+            <div className="md:col-span-2 lg:col-span-1 w-full">
+              <LiveGpsTrackerMap
+                stalls={[stall]}
+                selectedStallId={stall.id}
+                mode="student-detail"
+                onShowToast={onShowToast}
+              />
             </div>
 
             {/* LIVE TRACKER PESANAN MAHASISWA DI KANTIN INI */}
@@ -1764,6 +1780,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       {receiptOrder && (
         <OrderReceiptModal
           order={receiptOrder}
+          stall={stall}
           onClose={() => setReceiptOrder(null)}
           onShowToast={onShowToast}
         />

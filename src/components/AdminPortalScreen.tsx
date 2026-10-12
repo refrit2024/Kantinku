@@ -161,28 +161,45 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
   return (
     <div className="flex flex-col w-full pb-12">
       {/* Sub-header Web Admin Portal Status Bar */}
-      <div className="w-full bg-surface-container-low border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-2">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="material-symbols-outlined text-[18px] text-primary shrink-0">
-              admin_panel_settings
-            </span>
-            <span className="font-label-md text-label-md text-on-surface font-semibold truncate">
-              Portal Admin Sarpras &amp; BAAK IBI KKG
-            </span>
+      <div className="w-full bg-surface-container-lowest/90 backdrop-blur-md border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-3 shadow-2xs">
+        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 rounded-xl bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[19px]">admin_panel_settings</span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="font-label-md text-sm text-on-surface font-bold truncate">
+                Portal Otorisasi Admin Sarpras &amp; BAAK
+              </span>
+              <span className="text-[11px] text-on-surface-variant truncate">
+                Pengawasan Operasional Kantin &amp; Transparansi Harga · IBI KKG
+              </span>
+            </div>
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+
+          <div className="flex items-center gap-3 shrink-0">
+            <div className="hidden md:flex items-center gap-2 text-xs text-on-surface-variant">
+              <span className="font-mono font-semibold text-secondary tabular-nums">
+                {stalls.filter((s) => s.isOpen && !s.isFrozen).length}/{stalls.length} Stan Aktif
+              </span>
+              <span aria-hidden="true">·</span>
+              <span
+                className={`font-mono font-semibold tabular-nums ${
+                  pendingPriceReportsCount > 0 ? 'text-error' : 'text-on-surface-variant'
+                }`}
+              >
+                {pendingPriceReportsCount} Laporan Harga
+              </span>
+            </div>
+
             <button
               type="button"
               onClick={() => setQrPosterModalOpen(true)}
-              className="min-h-[44px] px-3.5 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1.5 shadow-xs cursor-pointer hover:opacity-95"
+              className="min-h-[40px] px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
             >
               <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
               <span>Cetak QR Stan</span>
             </button>
-            <span className="hidden sm:inline-flex font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md shrink-0">
-              Otorisasi Aktif
-            </span>
           </div>
         </div>
       </div>
@@ -869,101 +886,226 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
             </div>
 
             {/* Kontrol Operasional & Pembekuan Stan (Suspend / Freeze oleh Admin) */}
-            <div className="rounded-xl bg-surface-container-lowest p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3.5 mt-2">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-outline-variant/25 pb-3">
-                <div className="flex flex-col gap-0.5">
-                  <div className="flex items-center gap-2 text-primary">
-                    <span className="material-symbols-outlined text-[20px]">gpp_maybe</span>
-                    <h4 className="fluid-headline-md text-on-surface">
-                      Kontrol Operasional &amp; Pembekuan Stan Mitra (Real-Time)
-                    </h4>
+            <div className="rounded-2xl bg-surface-container-lowest p-5 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-5 mt-2">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-outline-variant/25 pb-4">
+                <div className="flex items-start gap-3.5">
+                  <div className="w-11 h-11 rounded-xl bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0">
+                    <span className="material-symbols-outlined text-[24px]">admin_panel_settings</span>
                   </div>
-                  <p className="font-body-sm text-xs text-on-surface-variant">
-                    Admin Sarpras &amp; BAAK dapat membekukan sementara operasional stan yang melanggar aturan harga/higienitas atau mengaktifkannya kembali.
-                  </p>
+                  <div className="flex flex-col gap-1">
+                    <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+                      <span className="font-semibold text-primary">Otoritas Biro Sarpras &amp; BAAK</span>
+                      <span aria-hidden="true">·</span>
+                      <span>Sinkronisasi Real-Time</span>
+                    </div>
+                    <h4 className="fluid-headline-md text-on-surface">
+                      Kontrol Operasional &amp; Pembekuan Stan Mitra
+                    </h4>
+                    <p className="font-body-sm text-xs sm:text-sm text-on-surface-variant max-w-2xl leading-relaxed">
+                      Pantau kepatuhan seluruh mitra kantin dan bekukan sementara operasional stan yang melanggar ketentuan transparansi harga atau standar higienitas kampus.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Summary Stat Strip */}
+                <div className="flex items-center gap-4 bg-surface-container-low px-4 py-3 rounded-xl border border-outline-variant/25 shrink-0 self-start md:self-center">
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-on-surface-variant">Beroperasi Normal</span>
+                    <span className="font-mono text-base font-bold text-secondary tabular-nums">
+                      {stalls.filter((s) => !s.isFrozen && s.isOpen).length} Stan
+                    </span>
+                  </div>
+                  <div className="w-px h-7 bg-outline-variant/40" />
+                  <div className="flex flex-col">
+                    <span className="text-[11px] text-on-surface-variant">Dibekukan Admin</span>
+                    <span className="font-mono text-base font-bold text-error tabular-nums">
+                      {stalls.filter((s) => s.isFrozen).length} Stan
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                {stalls.map((st) => (
-                  <div
-                    key={st.id}
-                    className={`p-4 rounded-xl border flex flex-col justify-between gap-3 ${
-                      st.isFrozen
-                        ? 'bg-error-container/25 border-error/40'
-                        : 'bg-surface-container-low border-outline-variant/30'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex flex-col gap-0.5 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-label-lg text-sm font-bold text-on-surface">
-                            {st.name}
-                          </span>
-                          <span className="text-[11px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface font-semibold">
-                            {st.code}
-                          </span>
-                        </div>
-                        <span className="text-xs text-on-surface-variant">
-                          {st.locationDetail} • {st.menuItems?.length ?? 0} Menu
-                        </span>
-                      </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {stalls.map((st) => {
+                  const stallReportsCount = priceReports.filter(
+                    (r) =>
+                      (r.stallId === st.id || r.stallName.toLowerCase() === st.name.toLowerCase()) &&
+                      (r.status === 'pending' || r.status === 'sp_sent')
+                  ).length;
+                  const readyMenusCount = (st.menuItems || []).filter(
+                    (m) => m.status === 'ready'
+                  ).length;
 
-                      <span
-                        className={`px-2.5 py-1 rounded-md text-[11px] font-bold shrink-0 ${
-                          st.isFrozen
-                            ? 'bg-error text-on-error'
-                            : st.isOpen
-                            ? 'bg-secondary-container text-on-secondary-container'
-                            : 'bg-surface-container-highest text-on-surface-variant'
-                        }`}
-                      >
-                        {st.isFrozen
-                          ? 'DIBEKUKAN ADMIN'
-                          : st.isOpen
-                          ? 'BUKA AKTIF'
-                          : 'TUTUP'}
-                      </span>
-                    </div>
+                  return (
+                    <div
+                      key={st.id}
+                      className={`rounded-xl border transition-all overflow-hidden flex flex-col justify-between ${
+                        st.isFrozen
+                          ? 'bg-error-container/15 border-error/45 shadow-sm'
+                          : 'bg-surface-container-lowest border-outline-variant/30 hover:border-primary/40 shadow-2xs'
+                      }`}
+                    >
+                      {/* Top Card Content with Stall Thumbnail */}
+                      <div className="p-4 sm:p-5 flex flex-col gap-4">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex items-start gap-3.5 min-w-0">
+                            <div className="relative w-16 h-16 rounded-xl overflow-hidden bg-surface-container shrink-0 border border-outline-variant/25">
+                              <img
+                                src={st.heroImage || st.bannerImage}
+                                alt={st.name}
+                                className={`w-full h-full object-cover ${
+                                  st.isFrozen ? 'grayscale contrast-75' : ''
+                                }`}
+                                referrerPolicy="no-referrer"
+                              />
+                              {st.isFrozen && (
+                                <div className="absolute inset-0 bg-error/55 flex items-center justify-center text-on-error">
+                                  <span className="material-symbols-outlined text-[24px]">
+                                    lock
+                                  </span>
+                                </div>
+                              )}
+                            </div>
 
-                    {st.isFrozen && st.frozenReason && (
-                      <div className="p-2.5 rounded-lg bg-surface-container-lowest border border-error/30 text-xs text-error">
-                        <strong>Alasan Pembekuan:</strong> {st.frozenReason}
-                      </div>
-                    )}
+                            <div className="flex flex-col gap-1 min-w-0">
+                              <div className="flex items-center gap-1.5 text-xs text-on-surface-variant">
+                                <span className="font-mono font-semibold text-primary">
+                                  {st.code}
+                                </span>
+                                <span aria-hidden="true">·</span>
+                                <span className="truncate">{st.specialty}</span>
+                              </div>
+                              <h5 className="font-headline-sm text-base font-bold text-on-surface leading-snug break-words">
+                                {st.name}
+                              </h5>
+                              <div className="flex items-center gap-2 text-xs text-on-surface-variant">
+                                <span>{st.hours}</span>
+                                <span aria-hidden="true">·</span>
+                                <span>Rating {st.rating}/5.0</span>
+                              </div>
+                            </div>
+                          </div>
 
-                    {onToggleFreezeStall && (
-                      <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/25">
-                        {st.isFrozen ? (
-                          <button
-                            type="button"
-                            onClick={() => onToggleFreezeStall(st.id, false)}
-                            className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">
-                              lock_open
+                          <div className="text-right shrink-0">
+                            <span
+                              className={`text-xs font-bold tracking-tight ${
+                                st.isFrozen
+                                  ? 'text-error'
+                                  : st.isOpen
+                                  ? 'text-secondary'
+                                  : 'text-on-surface-variant'
+                              }`}
+                            >
+                              {st.isFrozen
+                                ? 'Dibekukan Admin'
+                                : st.isOpen
+                                ? 'Beroperasi Aktif'
+                                : 'Tutup Sementara'}
                             </span>
-                            <span>Cabut Pembekuan &amp; Aktifkan Stan</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setFreezeStallTarget(st);
-                              setFreezeStallReason(
-                                'Dibekukan sementara oleh Biro Sarpras & BAAK karena pelanggaran transparansi harga katalog (SP-1 belum ditindaklanjuti).'
-                              );
-                            }}
-                            className="w-full sm:w-auto min-h-[44px] px-4 py-2 rounded-lg bg-error-container text-on-error-container hover:bg-error hover:text-on-error font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">block</span>
-                            <span>Bekukan Operasional Stan</span>
-                          </button>
+                            <span className="block text-[11px] text-on-surface-variant mt-0.5">
+                              Update: {st.lastUpdatedTime}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Metric Strip Inside Stall Card */}
+                        <div className="grid grid-cols-3 gap-2 pt-3 border-t border-outline-variant/20 text-xs">
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-on-surface-variant">Menu Tersedia</span>
+                            <span className="font-mono font-semibold text-on-surface tabular-nums">
+                              {readyMenusCount} / {st.menuItems?.length ?? 0} Menu
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-on-surface-variant">Tiket SP-1 / Harga</span>
+                            <span
+                              className={`font-mono font-semibold tabular-nums ${
+                                stallReportsCount > 0 ? 'text-error' : 'text-secondary'
+                              }`}
+                            >
+                              {stallReportsCount > 0
+                                ? `${stallReportsCount} Kasus Aktif`
+                                : '0 Pelanggaran'}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-[11px] text-on-surface-variant">Kontak Mitra</span>
+                            <span className="font-mono font-semibold text-on-surface truncate">
+                              +{st.whatsapp}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Official Suspension Callout Box when Frozen */}
+                        {st.isFrozen && (
+                          <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-error/35 flex flex-col gap-1">
+                            <div className="flex items-center justify-between gap-2 text-xs">
+                              <span className="font-bold text-error flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[16px]">
+                                  gavel
+                                </span>
+                                Berita Acara Pembekuan Sementara
+                              </span>
+                              <span className="font-mono text-[11px] text-on-surface-variant">
+                                Saklar Penjual Terkunci
+                              </span>
+                            </div>
+                            <p className="text-xs text-on-surface leading-relaxed mt-0.5">
+                              {st.frozenReason ||
+                                'Dibekukan sementara oleh Biro Sarpras & BAAK hingga evaluasi harga selesai.'}
+                            </p>
+                          </div>
                         )}
                       </div>
-                    )}
-                  </div>
-                ))}
+
+                      {/* Bottom Action Bar */}
+                      {onToggleFreezeStall && (
+                        <div
+                          className={`px-4 py-3 border-t flex flex-wrap items-center justify-between gap-2 ${
+                            st.isFrozen
+                              ? 'bg-error-container/25 border-error/30'
+                              : 'bg-surface-container-low/70 border-outline-variant/20'
+                          }`}
+                        >
+                          <span className="text-[11px] text-on-surface-variant">
+                            {st.isFrozen
+                              ? 'Toko disembunyikan dari checkout mahasiswa'
+                              : 'Mitra dapat menerima pesanan mahasiswa'}
+                          </span>
+
+                          {st.isFrozen ? (
+                            <button
+                              type="button"
+                              onClick={() => onToggleFreezeStall(st.id, false)}
+                              className="w-full sm:w-auto min-h-[42px] px-4 py-2 rounded-lg bg-secondary hover:opacity-95 text-on-secondary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-[0.99]"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                lock_open
+                              </span>
+                              <span>Cabut Pembekuan &amp; Aktifkan Stan</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setFreezeStallTarget(st);
+                                setFreezeStallReason(
+                                  'Dibekukan sementara oleh Biro Sarpras & BAAK karena pelanggaran transparansi harga katalog (SP-1 belum ditindaklanjuti).'
+                                );
+                              }}
+                              className="w-full sm:w-auto min-h-[42px] px-4 py-2 rounded-lg bg-surface-container-lowest hover:bg-error hover:text-on-error text-error border border-error/35 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors active:scale-[0.99]"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">
+                                block
+                              </span>
+                              <span>Bekukan Operasional Stan</span>
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>
@@ -1809,62 +1951,118 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
 
       {/* Modal: Konfirmasi Pembekuan Operasional Stan oleh Admin */}
       {freezeStallTarget && onToggleFreezeStall && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-inverse-surface/65 backdrop-blur-sm flex items-center justify-center p-4">
           <form
             onSubmit={(e) => {
               e.preventDefault();
               onToggleFreezeStall(freezeStallTarget.id, true, freezeStallReason);
               setFreezeStallTarget(null);
             }}
-            className="bg-surface-container-lowest rounded-xl p-5 w-full max-w-md shadow-xl flex flex-col gap-3.5 border border-error/40"
+            className="bg-surface-container-lowest rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col border border-outline-variant/30"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-error">
-                <span className="material-symbols-outlined text-[22px]">gpp_bad</span>
-                <h4 className="fluid-headline-md text-on-surface">
-                  Bekukan Operasional Stan
-                </h4>
+            {/* Modal Top Header */}
+            <div className="bg-error text-on-error px-5 py-4 flex items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-on-error/15 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">gpp_bad</span>
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[11px] text-on-error/85 font-medium">
+                    Tindakan Disiplin Mitra • Biro Sarpras &amp; BAAK
+                  </span>
+                  <h4 className="font-headline-md text-base sm:text-lg font-bold truncate">
+                    Bekukan Operasional Stan
+                  </h4>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setFreezeStallTarget(null)}
-                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
+                className="w-10 h-10 rounded-full bg-on-error/15 hover:bg-on-error/25 text-on-error flex items-center justify-center cursor-pointer shrink-0"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
 
-            <p className="font-body-sm text-xs text-on-surface-variant leading-relaxed">
-              Stan <strong className="text-on-surface">{freezeStallTarget.name}</strong> akan otomatis ditutup pada katalog mahasiswa dan penjual tidak dapat membuka toko sebelum pembekuan dicabut oleh Admin.
-            </p>
+            <div className="p-5 flex flex-col gap-4">
+              {/* Target Stall Summary Row */}
+              <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/25 flex items-center gap-3.5">
+                <img
+                  src={freezeStallTarget.heroImage || freezeStallTarget.bannerImage}
+                  alt={freezeStallTarget.name}
+                  className="w-12 h-12 rounded-lg object-cover shrink-0"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs text-on-surface-variant">
+                    {freezeStallTarget.code} · {freezeStallTarget.locationDetail}
+                  </span>
+                  <strong className="text-sm text-on-surface font-bold truncate">
+                    {freezeStallTarget.name}
+                  </strong>
+                </div>
+              </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="font-label-sm text-xs text-on-surface font-semibold">
-                Alasan Pembekuan Resmi (Tampil di Dashboard Penjual):
-              </label>
-              <textarea
-                rows={3}
-                required
-                value={freezeStallReason}
-                onChange={(e) => setFreezeStallReason(e.target.value)}
-                className="p-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-xs focus:outline-none focus:ring-2 focus:ring-error"
-              />
-            </div>
+              <p className="font-body-sm text-xs text-on-surface-variant leading-relaxed">
+                Saat dibekukan, status stan otomatis berubah menjadi <strong>Tutup</strong> di katalog mahasiswa dan saklar buka toko di Dashboard Penjual dikunci hingga pembekuan dicabut.
+              </p>
 
-            <div className="flex gap-2.5 pt-1">
-              <button
-                type="button"
-                onClick={() => setFreezeStallTarget(null)}
-                className="w-1/2 min-h-[44px] rounded-lg bg-surface-container text-on-surface font-label-md text-xs font-semibold cursor-pointer"
-              >
-                Batal
-              </button>
-              <button
-                type="submit"
-                className="w-1/2 min-h-[44px] rounded-lg bg-error text-on-error font-label-md text-xs font-semibold cursor-pointer"
-              >
-                Konfirmasi Bekukan Stan
-              </button>
+              {/* Quick Reason Selector */}
+              <div className="flex flex-col gap-1.5">
+                <span className="font-label-sm text-xs text-on-surface font-semibold">
+                  Pilih Alasan Cepat:
+                </span>
+                <div className="flex flex-col gap-1.5">
+                  {[
+                    'Dibekukan sementara oleh Biro Sarpras & BAAK karena pelanggaran transparansi harga katalog (SP-1 belum ditindaklanjuti).',
+                    'Penyesuaian standar kebersihan & audit higienitas pangan kantin kampus IBI KKG.',
+                    'Evaluasi administrasi perpanjangan sewa stan mitra kantin Tahap 1.',
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setFreezeStallReason(preset)}
+                      className={`text-left text-xs px-3 py-2 rounded-lg border transition-colors cursor-pointer ${
+                        freezeStallReason === preset
+                          ? 'bg-error-container/30 border-error text-on-surface font-semibold'
+                          : 'bg-surface-container-low hover:bg-surface-container border-outline-variant/25 text-on-surface-variant'
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="font-label-sm text-xs text-on-surface font-semibold">
+                  Catatan Berita Acara Pembekuan (Tampil di Layar Penjual):
+                </label>
+                <textarea
+                  rows={3}
+                  required
+                  value={freezeStallReason}
+                  onChange={(e) => setFreezeStallReason(e.target.value)}
+                  className="p-3 rounded-xl bg-surface-container-low text-on-surface font-body-sm text-xs border border-outline-variant/30 focus:outline-none focus:ring-2 focus:ring-error"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setFreezeStallTarget(null)}
+                  className="w-1/2 min-h-[44px] rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-xs font-semibold cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="w-1/2 min-h-[44px] rounded-xl bg-error hover:opacity-95 text-on-error font-label-md text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">lock</span>
+                  <span>Konfirmasi Bekukan Stan</span>
+                </button>
+              </div>
             </div>
           </form>
         </div>
