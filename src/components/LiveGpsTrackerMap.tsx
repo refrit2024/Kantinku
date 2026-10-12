@@ -1168,481 +1168,43 @@ export const LiveGpsTrackerMap: React.FC<LiveGpsTrackerMapProps> = ({
     : null;
 
   return (
-    <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
-      {/* SHOPEEFOOD-STYLE ORDER TRACKING HEADER BANNER WHEN ORDER IS PRESENT */}
+    <div className="relative w-full rounded-3xl overflow-hidden border border-slate-200/80 shadow-xl bg-slate-900 text-slate-800 flex flex-col">
+      {/* 1. SHOPEEFOOD/GRAB/GOJEK STYLE ACTIVE ORDER BANNER (IF ORDER IS ACTIVE) */}
       {order && orderStepMeta && (
-        <div className="p-4 rounded-xl bg-secondary-container/35 border border-secondary/30 flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-secondary text-on-secondary flex items-center justify-center shrink-0 shadow-xs">
-                <span className="material-symbols-outlined text-[22px]">
-                  {order.status === 'ready_pickup' ? 'directions_walk' : 'soup_kitchen'}
+        <div className="z-20 bg-emerald-600 text-white px-4 py-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-[22px]">
+                {order.status === 'ready_pickup' ? 'directions_walk' : 'soup_kitchen'}
+              </span>
+            </div>
+            <div className="flex flex-col min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="font-mono text-xs font-bold bg-white/25 px-2 py-0.5 rounded-md">
+                  ORDER #{order.id}
+                </span>
+                <span className="text-emerald-100 text-xs font-medium truncate">
+                  {targetStall?.name}
                 </span>
               </div>
-              <div className="flex flex-col">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-mono text-xs font-bold text-primary">
-                    ORDER #{order.id}
-                  </span>
-                  <span className="text-outline-variant">•</span>
-                  <span className="text-xs font-semibold text-secondary">
-                    Live GPS Pembeli ➔ Penjual
-                  </span>
-                </div>
-                <h4 className="font-headline-md text-sm sm:text-base font-bold text-on-surface">
-                  {orderStepMeta.headline}
-                </h4>
-              </div>
+              <h4 className="font-bold text-sm sm:text-base leading-tight truncate">
+                {orderStepMeta.headline}
+              </h4>
             </div>
-            <span
-              className={`px-3 py-1 rounded-lg font-label-sm text-xs font-bold ${orderStepMeta.badgeClass}`}
-            >
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="px-3 py-1 rounded-xl bg-white text-emerald-800 font-bold text-xs shadow-xs">
               {order.pickupTime}
             </span>
           </div>
-
-          {orderStepMeta.step > 0 && (
-            <div className="grid grid-cols-3 gap-2">
-              <div className="flex flex-col gap-1">
-                <div
-                  className={`h-1.5 rounded-full ${
-                    orderStepMeta.step >= 1 ? 'bg-secondary' : 'bg-surface-container-high'
-                  }`}
-                />
-                <span className="text-[11px] font-semibold text-on-surface-variant">
-                  1. Pesanan Masuk
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <div
-                  className={`h-1.5 rounded-full ${
-                    orderStepMeta.step >= 2 ? 'bg-secondary' : 'bg-surface-container-high'
-                  }`}
-                />
-                <span className="text-[11px] font-semibold text-on-surface-variant">
-                  2. Sedang Dimasak
-                </span>
-              </div>
-              <div className="flex flex-col gap-1">
-                <div
-                  className={`h-1.5 rounded-full ${
-                    orderStepMeta.step >= 3 ? 'bg-secondary' : 'bg-surface-container-high'
-                  }`}
-                />
-                <span className="text-[11px] font-semibold text-on-surface-variant">
-                  3. Siap Diambil (Ikuti Rute)
-                </span>
-              </div>
-            </div>
-          )}
-
-          <p className="text-xs text-on-surface-variant leading-relaxed">
-            {orderStepMeta.subtext}
-          </p>
         </div>
       )}
 
-      {/* SECTION 1: CLEAN HEADER & DEVICE GPS TOOLBAR */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3 border-b border-outline-variant/20">
-        <div className="flex flex-col gap-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span
-              className={`px-2.5 py-0.5 rounded-md font-label-sm text-[11px] font-bold inline-flex items-center gap-1.5 ${
-                isTargetUsingRealSellerPhoneGps
-                  ? 'bg-secondary text-on-secondary'
-                  : 'bg-secondary-container text-on-secondary-container'
-              }`}
-            >
-              <span
-                className={`w-2 h-2 rounded-full ${
-                  isTargetUsingRealSellerPhoneGps ? 'bg-on-secondary animate-ping' : 'bg-secondary'
-                }`}
-              />
-              <span>
-                {isTargetUsingRealSellerPhoneGps
-                  ? 'LIVE GPS HP PENJUAL'
-                  : 'TITIK KANTIN KAMPUS IBI KKG'}
-              </span>
-            </span>
-
-            {mode !== 'seller-broadcast' && studentGps && (
-              <span className="px-2.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/25 text-blue-700 font-mono text-[11px] font-semibold inline-flex items-center gap-1">
-                <span className="material-symbols-outlined text-[13px]">smartphone</span>
-                <span>
-                  Titik Kamu: {studentGps.lat.toFixed(4)}, {studentGps.lng.toFixed(4)}
-                  {studentGps.accuracy ? ` (±${studentGps.accuracy}m)` : ''}
-                </span>
-              </span>
-            )}
-          </div>
-
-          {!compact && (
-            <h3 className="font-headline-md text-base sm:text-lg font-bold text-on-surface leading-snug">
-              {mode === 'seller-broadcast'
-                ? `Pancarkan Lokasi GPS Anda (${sellerStall?.name || 'Penjual'})`
-                : `Navigasi Rute ke ${targetStall?.name} (${targetStall?.code})`}
-            </h3>
-          )}
-        </div>
-
-        {/* Right Toolbar: Map View Switcher + GPS Actions */}
-        <div className="flex flex-wrap items-center gap-2 shrink-0">
-          <div className="flex items-center bg-surface-container-low p-1 rounded-xl border border-outline-variant/25">
-            <button
-              type="button"
-              onClick={() => setMapTypeId('hybrid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-label-sm cursor-pointer transition-colors ${
-                mapTypeId === 'hybrid'
-                  ? 'bg-primary text-on-primary font-bold shadow-2xs'
-                  : 'text-on-surface-variant hover:text-on-surface'
-              }`}
-            >
-              Satelit
-            </button>
-            <button
-              type="button"
-              onClick={() => setMapTypeId('roadmap')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-label-sm cursor-pointer transition-colors ${
-                mapTypeId === 'roadmap'
-                  ? 'bg-primary text-on-primary font-bold shadow-2xs'
-                  : 'text-on-surface-variant hover:text-on-surface'
-              }`}
-            >
-              Peta Jalan
-            </button>
-          </div>
-
-          {mode === 'seller-broadcast' ? (
-            <>
-              <button
-                type="button"
-                onClick={toggleSellerLiveBroadcast}
-                className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-label-md text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all ${
-                  isWatchingSellerGps
-                    ? 'bg-error text-on-error'
-                    : 'bg-secondary text-on-secondary hover:opacity-95'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  {isWatchingSellerGps ? 'location_disabled' : 'my_location'}
-                </span>
-                <span>
-                  {isWatchingSellerGps ? 'Hentikan Live GPS' : 'Pancarkan GPS HP Saya'}
-                </span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setAllowTapOnMapToPin((prev) => !prev)}
-                className={`min-h-[38px] px-3 py-1.5 rounded-xl font-label-sm text-xs font-semibold flex items-center gap-1.5 cursor-pointer border ${
-                  allowTapOnMapToPin
-                    ? 'bg-primary text-on-primary border-primary'
-                    : 'bg-surface-container-low text-on-surface border-outline-variant/30'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">pin_drop</span>
-                <span>{allowTapOnMapToPin ? 'Ketuk Peta Aktif' : 'Geser Pin'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={handleResetToCampusDefault}
-                className="min-h-[38px] px-3 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-sm text-xs font-semibold cursor-pointer"
-              >
-                Reset ke Kampus
-              </button>
-            </>
-          ) : (
-            <>
-              <button
-                type="button"
-                onClick={() => startBuyerPhoneGpsTracking(true)}
-                className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-label-md text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all ${
-                  studentGps?.source === 'device-gps' && isWatchingStudentGps
-                    ? 'bg-secondary text-on-secondary'
-                    : 'bg-primary text-on-primary hover:opacity-95'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  {isLocatingBuyerGps
-                    ? 'sync'
-                    : studentGps?.source === 'device-gps'
-                    ? 'my_location'
-                    : 'location_searching'}
-                </span>
-                <span>
-                  {isLocatingBuyerGps
-                    ? 'Mendeteksi GPS...'
-                    : studentGps?.source === 'device-gps'
-                    ? 'Perbarui GPS'
-                    : 'Deteksi GPS Saya'}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setAllowBuyerManualPin((prev) => !prev)}
-                className={`min-h-[38px] px-3 py-1.5 rounded-xl font-label-sm text-xs font-semibold flex items-center gap-1.5 cursor-pointer border transition-colors ${
-                  allowBuyerManualPin
-                    ? 'bg-primary text-on-primary border-primary'
-                    : 'bg-surface-container-low text-on-surface border-outline-variant/30 hover:bg-surface-container'
-                }`}
-                title="Klik posisi Anda secara manual di peta"
-              >
-                <span className="material-symbols-outlined text-[16px]">pin_drop</span>
-                <span>{allowBuyerManualPin ? 'Ketuk Peta...' : 'Titik Manual'}</span>
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Prompt banner ONLY if buyer GPS is not yet acquired */}
-      {mode !== 'seller-broadcast' && !studentGps && (
-        <div className="p-3 rounded-xl bg-tertiary-fixed/45 border border-tertiary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-on-surface">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[18px] text-tertiary animate-pulse">
-              location_searching
-            </span>
-            <span>
-              {isLocatingBuyerGps
-                ? 'Sedang mendeteksi koordinat lokasi perangkat Anda...'
-                : 'Izinkan akses lokasi GPS atau gunakan tombol "Titik Manual" untuk melihat rute ke penjual.'}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={() => startBuyerPhoneGpsTracking(true)}
-            className="px-3 py-1.5 rounded-lg bg-primary text-on-primary font-bold text-xs cursor-pointer shrink-0"
-          >
-            Aktifkan GPS Sekarang
-          </button>
-        </div>
-      )}
-
-      {/* Seller Patokan Note Input when in seller-broadcast mode */}
-      {mode === 'seller-broadcast' && (
-        <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
-          <div className="flex items-center gap-2 text-xs font-semibold text-on-surface shrink-0">
-            <span className="material-symbols-outlined text-[18px] text-primary">
-              edit_location_alt
-            </span>
-            <span>Patokan Posisi Penjual:</span>
-          </div>
-          <input
-            type="text"
-            value={sellerLocationNote}
-            onChange={(e) => setSellerLocationNote(e.target.value)}
-            placeholder="Contoh: Di depan pintu Hall D / Dekat parkiran motor Gedung A"
-            className="flex-1 h-10 px-3 rounded-lg bg-surface-container-lowest text-on-surface text-xs border border-outline-variant/25 focus:outline-none focus:ring-2 focus:ring-primary"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (!sellerStall || !onUpdateSellerGps) return;
-              const currentGps = sellerStall.gpsLocation || {
-                lat: IBI_KKG_CAMPUS_CENTER.lat,
-                lng: IBI_KKG_CAMPUS_CENTER.lng,
-                isLiveTracking: false,
-                updatedAt: 'Baru saja',
-              };
-              const nowStr = new Date().toLocaleTimeString('id-ID', {
-                hour: '2-digit',
-                minute: '2-digit',
-              });
-              onUpdateSellerGps({
-                ...currentGps,
-                updatedAt: `${nowStr} WIB`,
-                locationNote: sellerLocationNote.trim() || sellerStall.locationDetail,
-              });
-              onShowToast?.('Patokan lokasi penjual berhasil diperbarui untuk mahasiswa!');
-            }}
-            className="min-h-[40px] px-4 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold cursor-pointer shrink-0"
-          >
-            Simpan Patokan
-          </button>
-        </div>
-      )}
-
-      {/* SECTION 2: UNIFIED NAVIGATION CONTROL PANEL (Stall Selector + Travel Mode + Route Comparison Cards) */}
-      {mode !== 'seller-broadcast' && (
-        <div className="p-3.5 sm:p-4 rounded-xl bg-surface-container-low/70 border border-outline-variant/25 flex flex-col gap-3.5">
-          {/* Row A: Stall Selector Pills (Only in student-directory mode) */}
-          {mode === 'student-directory' && (
-            <div className="flex flex-col gap-1.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
-                1. Pilih Stan Kantin Tujuan
-              </span>
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
-                {normalizedStalls.map((st) => {
-                  const isSelected = st.id === targetStall?.id;
-                  return (
-                    <button
-                      key={st.id}
-                      type="button"
-                      onClick={() => {
-                        setActiveStallId(st.id);
-                        setInfoOpenStallId(st.id);
-                        setCameraPanTrigger(`select-${st.id}-${Date.now()}`);
-                      }}
-                      className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-label-sm text-xs flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer border transition-all ${
-                        isSelected
-                          ? 'bg-primary text-on-primary border-primary font-bold shadow-xs'
-                          : 'bg-surface-container-lowest text-on-surface border-outline-variant/25 hover:bg-surface-container'
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          !st.isOpen
-                            ? 'bg-error'
-                            : isSelected
-                            ? 'bg-on-primary animate-ping'
-                            : 'bg-secondary'
-                        }`}
-                      />
-                      <span>
-                        {st.code} • {st.name}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Row B: Travel Mode Selector + Route Alternatives Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pt-0.5">
-            <div className="flex flex-col gap-0.5">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-on-surface-variant">
-                {mode === 'student-directory'
-                  ? '2. Pilih Moda & Jalur Rute (Ala Google Maps)'
-                  : 'Pilih Moda & Jalur Rute Perjalanan'}
-              </span>
-              <span className="text-xs text-on-surface-variant">
-                Garis <strong className="text-emerald-700">Hijau</strong> = Rute Aktif • Garis{' '}
-                <strong className="text-slate-600">Abu-abu</strong> = Alternatif (Bisa diklik di peta)
-              </span>
-            </div>
-
-            {/* Segmented Control for Travel Mode */}
-            <div className="inline-flex items-center bg-surface-container-lowest p-1 rounded-xl border border-outline-variant/30 self-start sm:self-auto">
-              {(
-                [
-                  { id: 'WALKING', label: 'Jalan Kaki', icon: 'directions_walk' },
-                  { id: 'TWO_WHEELER', label: 'Motor', icon: 'two_wheeler' },
-                  { id: 'DRIVING', label: 'Mobil', icon: 'directions_car' },
-                ] as const
-              ).map((tm) => (
-                <button
-                  key={tm.id}
-                  type="button"
-                  onClick={() => setTravelMode(tm.id)}
-                  className={`min-h-[34px] px-3 py-1 rounded-lg text-xs font-label-sm flex items-center gap-1.5 cursor-pointer transition-all ${
-                    travelMode === tm.id
-                      ? 'bg-primary text-on-primary font-bold shadow-2xs'
-                      : 'text-on-surface-variant hover:text-on-surface'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">{tm.icon}</span>
-                  <span>{tm.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Row C: Google Maps-Style Route Comparison Cards */}
-          {routeCandidates.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              {routeCandidates.map((cand, idx) => {
-                const isSelected = idx === selectedRouteIndex;
-                const minutes = Math.max(1, Math.ceil(cand.durationSeconds / 60));
-                const distText =
-                  cand.distanceMeters >= 1000
-                    ? `${(cand.distanceMeters / 1000).toFixed(2)} km`
-                    : `${cand.distanceMeters.toLocaleString('id-ID')} m`;
-
-                return (
-                  <button
-                    key={cand.id}
-                    type="button"
-                    onClick={() => setSelectedRouteIndex(idx)}
-                    className={`p-3 rounded-xl text-left flex flex-col justify-between gap-1.5 cursor-pointer border transition-all ${
-                      isSelected
-                        ? 'bg-surface-container-lowest border-emerald-600 ring-2 ring-emerald-600/25 shadow-xs'
-                        : 'bg-surface-container-lowest/70 border-outline-variant/25 hover:bg-surface-container-lowest'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between gap-2">
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-bold inline-flex items-center gap-1 truncate ${
-                          isSelected
-                            ? 'bg-emerald-700 text-white'
-                            : cand.tagType === 'fastest'
-                            ? 'bg-primary-fixed text-on-primary-fixed'
-                            : cand.tagType === 'shortest'
-                            ? 'bg-secondary-container text-on-secondary-container'
-                            : 'bg-surface-container-high text-on-surface-variant'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[12px]">
-                          {cand.tagType === 'fastest'
-                            ? 'bolt'
-                            : cand.tagType === 'shortest'
-                            ? 'straighten'
-                            : 'alt_route'}
-                        </span>
-                        <span className="truncate">{cand.label}</span>
-                      </span>
-                      {isSelected && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-600 shrink-0" />
-                      )}
-                    </div>
-
-                    <div className="flex items-baseline justify-between gap-2">
-                      <span
-                        className={`text-base font-extrabold ${
-                          isSelected ? 'text-emerald-700' : 'text-on-surface'
-                        }`}
-                      >
-                        {minutes} menit
-                      </span>
-                      <span className="text-xs font-mono font-bold text-on-surface-variant">
-                        {distText}
-                      </span>
-                    </div>
-
-                    <div className="text-[11px] text-on-surface-variant truncate border-t border-outline-variant/15 pt-1">
-                      {cand.viaSummary} • {cand.hasToll ? 'Lewat Tol' : 'Non-Tol'}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {gpsErrorMsg && (
-        <div className="p-3 rounded-xl bg-tertiary-fixed/60 text-on-tertiary-fixed text-xs flex items-center justify-between gap-2 flex-wrap">
-          <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-[16px]">info</span>
-            <span>{gpsErrorMsg}</span>
-          </div>
-          {mode !== 'seller-broadcast' && (
-            <button
-              type="button"
-              onClick={() => startBuyerPhoneGpsTracking(true)}
-              className="px-3 py-1 rounded-lg bg-primary text-on-primary font-bold text-[11px] cursor-pointer"
-            >
-              Coba Lagi GPS
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* SECTION 3: GOOGLE MAP CANVAS WITH FLOATING SUMMARY BAR */}
+      {/* 2. THE MAP STAGE: FULL-BLEED IMMERSIVE CANVAS */}
       <div
         className={`relative w-full ${
-          compact ? 'h-[280px] sm:h-[320px]' : 'h-[380px] sm:h-[440px]'
-        } rounded-2xl overflow-hidden border border-outline-variant/30 shadow-inner`}
+          compact ? 'h-[360px] sm:h-[400px]' : 'h-[460px] sm:h-[540px] lg:h-[600px]'
+        } bg-slate-900 overflow-hidden`}
       >
         {useUniversalTileEngine ? (
           <UniversalLeafletMap
@@ -1808,39 +1370,180 @@ export const LiveGpsTrackerMap: React.FC<LiveGpsTrackerMapProps> = ({
           </Map>
         )}
 
-        {/* FLOATING BOTTOM SUMMARY BAR */}
+        {/* 3. GRAB/GOJEK FLOATING TOP HUD: STALL SELECTION PILLS & STATUS BADGE */}
+        <div className="absolute top-3 left-3 right-3 z-10 pointer-events-none flex flex-col gap-2">
+          {/* Top Bar: Floating Status & Stall Pills */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="pointer-events-auto flex items-center gap-1.5 bg-white/95 backdrop-blur-md px-3 py-1.5 rounded-full shadow-lg border border-slate-200/80 text-xs font-medium text-slate-700">
+              <span
+                className={`w-2.5 h-2.5 rounded-full ${
+                  isTargetUsingRealSellerPhoneGps
+                    ? 'bg-emerald-500 animate-ping'
+                    : 'bg-emerald-600'
+                }`}
+              />
+              <span className="font-bold text-slate-900">
+                {targetStall?.name || 'Kantin IBI KKG'}
+              </span>
+              <span className="text-slate-400">·</span>
+              <span className="text-[11px] text-emerald-700 font-semibold">
+                {targetStall?.code || 'Hall D'}
+              </span>
+            </div>
+
+            {/* Floating Map Mode Toggle (Satelit vs Jalan) */}
+            <div className="pointer-events-auto bg-white/95 backdrop-blur-md p-1 rounded-full shadow-lg border border-slate-200/80 flex items-center">
+              <button
+                type="button"
+                onClick={() => setMapTypeId('hybrid')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  mapTypeId === 'hybrid'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Satelit
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapTypeId('roadmap')}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                  mapTypeId === 'roadmap'
+                    ? 'bg-slate-900 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Peta
+              </button>
+            </div>
+          </div>
+
+          {/* Horizontal Stall Carousel (ShopeeFood / GoFood Style) */}
+          {mode === 'student-directory' && (
+            <div className="pointer-events-auto flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
+              {normalizedStalls.map((st) => {
+                const isSelected = st.id === targetStall?.id;
+                return (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveStallId(st.id);
+                      setInfoOpenStallId(st.id);
+                      setCameraPanTrigger(`select-${st.id}-${Date.now()}`);
+                    }}
+                    className={`min-h-[38px] px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-2 whitespace-nowrap shrink-0 shadow-md backdrop-blur-md transition-all active:scale-95 ${
+                      isSelected
+                        ? 'bg-emerald-600 text-white border-2 border-white ring-2 ring-emerald-600/30'
+                        : 'bg-white/95 text-slate-700 hover:bg-white border border-slate-200/80'
+                    }`}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full ${
+                        !st.isOpen ? 'bg-red-400' : isSelected ? 'bg-white' : 'bg-emerald-500'
+                      }`}
+                    />
+                    <span>
+                      {st.code} · {st.name}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* 4. FLOATING RIGHT ACTION BUTTONS (MY LOCATION & RE-CENTER) */}
+        <div className="absolute right-3.5 bottom-28 z-10 flex flex-col gap-2">
+          {mode !== 'seller-broadcast' ? (
+            <>
+              <button
+                type="button"
+                onClick={() => startBuyerPhoneGpsTracking(true)}
+                className="w-11 h-11 rounded-2xl bg-white/95 backdrop-blur-md text-slate-800 shadow-xl border border-slate-200/80 flex items-center justify-center hover:bg-white active:scale-90 transition-all"
+                title="Kunci Ulang Posisi GPS Saya"
+              >
+                <span className="material-symbols-outlined text-[22px] text-blue-600">
+                  {isLocatingBuyerGps ? 'sync' : 'my_location'}
+                </span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setAllowBuyerManualPin((prev) => !prev)}
+                className={`w-11 h-11 rounded-2xl backdrop-blur-md shadow-xl border transition-all flex items-center justify-center active:scale-90 ${
+                  allowBuyerManualPin
+                    ? 'bg-blue-600 text-white border-blue-600'
+                    : 'bg-white/95 text-slate-800 border-slate-200/80 hover:bg-white'
+                }`}
+                title="Pilih Titik Manual di Peta"
+              >
+                <span className="material-symbols-outlined text-[22px]">pin_drop</span>
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={toggleSellerLiveBroadcast}
+              className={`w-11 h-11 rounded-2xl backdrop-blur-md shadow-xl border transition-all flex items-center justify-center active:scale-90 ${
+                isWatchingSellerGps
+                  ? 'bg-red-600 text-white border-red-600'
+                  : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-700'
+              }`}
+              title="Pancarkan Live GPS HP Penjual"
+            >
+              <span className="material-symbols-outlined text-[22px]">
+                {isWatchingSellerGps ? 'location_disabled' : 'cell_tower'}
+              </span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => setCameraPanTrigger(`center-${Date.now()}`)}
+            className="w-11 h-11 rounded-2xl bg-white/95 backdrop-blur-md text-slate-800 shadow-xl border border-slate-200/80 flex items-center justify-center hover:bg-white active:scale-90 transition-all"
+            title="Pusatkan ke Stan"
+          >
+            <span className="material-symbols-outlined text-[22px] text-slate-700">center_focus_strong</span>
+          </button>
+        </div>
+
+        {/* 5. GRAB/GOJEK FLOATING BOTTOM ROUTE CARD (PREVIEW BAR) */}
         {targetStall && (
-          <div className="absolute bottom-3 left-3 right-3 z-10 bg-surface-container-lowest/95 backdrop-blur-md p-3 rounded-xl border border-outline-variant/30 shadow-lg flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 font-bold text-xs shadow-xs">
-                <span className="material-symbols-outlined text-[18px]">route</span>
+          <div className="absolute bottom-3 left-3 right-3 z-10 bg-white/95 backdrop-blur-md p-3.5 sm:p-4 rounded-2xl border border-slate-200/90 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
+                <span className="material-symbols-outlined text-[24px]">
+                  {travelMode === 'WALKING'
+                    ? 'directions_walk'
+                    : travelMode === 'TWO_WHEELER'
+                    ? 'two_wheeler'
+                    : 'directions_car'}
+                </span>
               </div>
               <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-xs font-bold text-on-surface truncate">
-                    {targetStall.name} ({targetStall.code})
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-slate-900 text-sm sm:text-base leading-tight truncate">
+                    {targetStall.name}
                   </span>
                   {liveDistanceMeters !== null ? (
-                    <span className="px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 text-[10px] font-bold">
-                      {liveDistanceMeters >= 1000
-                        ? `${(liveDistanceMeters / 1000).toFixed(2)} km`
-                        : `${liveDistanceMeters.toLocaleString('id-ID')} m`}{' '}
-                      •{' '}
+                    <span className="font-extrabold text-emerald-700 text-xs sm:text-sm">
+                      ·{' '}
                       {routeSummary
                         ? `${Math.max(1, Math.ceil(routeSummary.durationSeconds / 60))} mnt`
-                        : `${Math.max(1, Math.ceil(liveDistanceMeters / 75))} mnt`}
+                        : `${Math.max(1, Math.ceil(liveDistanceMeters / 75))} mnt`}{' '}
+                      ({liveDistanceMeters >= 1000
+                        ? `${(liveDistanceMeters / 1000).toFixed(2)} km`
+                        : `${liveDistanceMeters.toLocaleString('id-ID')} m`})
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 text-[10px] font-bold">
-                      Menunggu GPS...
-                    </span>
+                    <span className="text-amber-600 text-xs font-medium">· Mengunci GPS...</span>
                   )}
                 </div>
-                <span className="text-[11px] text-on-surface-variant truncate">
-                  {routeSummary?.viaSummary ? `${routeSummary.viaSummary} • ` : ''}
-                  {targetStall.gpsLocation?.locationNote || targetStall.walkingGuide}
-                  {compassInfo ? ` • Arah ${compassInfo.cardinal}` : ''}
-                </span>
+                <div className="text-xs text-slate-500 truncate flex items-center gap-1.5 mt-0.5">
+                  <span>{targetStall.walkingGuide || targetStall.locationDetail}</span>
+                  {compassInfo && <span>· Arah {compassInfo.cardinal}</span>}
+                </div>
               </div>
             </div>
 
@@ -1848,49 +1551,197 @@ export const LiveGpsTrackerMap: React.FC<LiveGpsTrackerMapProps> = ({
               <button
                 type="button"
                 onClick={() => onSelectStall(targetStall.id)}
-                className="min-h-[38px] px-4 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-xs"
+                className="w-full sm:w-auto min-h-[44px] px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 shrink-0 shadow-md transition-all cursor-pointer"
               >
-                <span>Lihat Menu Stan</span>
-                <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                <span>Lihat Menu &amp; Pesan</span>
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
             )}
           </div>
         )}
       </div>
 
-      {/* SECTION 4: TURN-BY-TURN DIRECTIONS STRIP */}
-      {mode !== 'seller-broadcast' && routeSummary?.steps && routeSummary.steps.length > 0 && (
-        <div className="p-3.5 rounded-xl bg-surface-container-low/70 border border-outline-variant/25 flex flex-col gap-2">
-          <div className="flex items-center justify-between gap-2 flex-wrap">
-            <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-secondary">
-                turn_right
+      {/* 6. GOJEK/GRAB STYLE BOTTOM SHEET: TRAVEL MODE & ROUTE COMPARISON (TERCEPAT VS ALTERNATIF) */}
+      {mode !== 'seller-broadcast' && (
+        <div className="bg-white p-4 sm:p-5 flex flex-col gap-4 border-t border-slate-100">
+          {/* Header Row: Vehicle Selector (Motor / Jalan Kaki / Mobil) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex flex-col">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+                Pilih Moda Perjalanan (Ala Shopee / Grab)
               </span>
-              <span>Panduan Belokan Jalan (Searah &amp; Putar Balik):</span>
-            </span>
-            <span className="text-[10px] px-2.5 py-0.5 rounded-md bg-secondary-container text-on-secondary-container font-bold">
-              {routeSummary.viaSummary || 'Jalur Resmi'}
-            </span>
+              <span className="text-sm font-semibold text-slate-800">
+                {travelMode === 'TWO_WHEELER'
+                  ? 'Motor (Kurir ShopeeFood)'
+                  : travelMode === 'WALKING'
+                  ? 'Jalan Kaki Kampus'
+                  : 'Mobil (Jalur Utama)'}
+              </span>
+            </div>
+
+            {/* Grab/Gojek-Style Segmented Buttons */}
+            <div className="flex items-center gap-1.5 p-1 bg-slate-100 rounded-2xl self-start sm:self-auto">
+              {(
+                [
+                  { id: 'TWO_WHEELER', label: 'Motor', icon: 'two_wheeler' },
+                  { id: 'WALKING', label: 'Jalan Kaki', icon: 'directions_walk' },
+                  { id: 'DRIVING', label: 'Mobil', icon: 'directions_car' },
+                ] as const
+              ).map((tm) => (
+                <button
+                  key={tm.id}
+                  type="button"
+                  onClick={() => setTravelMode(tm.id)}
+                  className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer ${
+                    travelMode === tm.id
+                      ? 'bg-white text-emerald-800 shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">{tm.icon}</span>
+                  <span>{tm.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-0.5">
-            {routeSummary.steps.map((st, idx) => (
-              <div
-                key={idx}
-                className="px-3 py-1.5 rounded-lg bg-surface-container-lowest border border-outline-variant/25 text-xs text-on-surface flex items-center gap-2 shrink-0"
-              >
-                <span className="w-4 h-4 rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center shrink-0">
-                  {idx + 1}
-                </span>
-                <span className="font-medium">{st.instruction}</span>
-                {st.distanceMeters > 0 && (
-                  <span className="text-[10px] text-on-surface-variant font-mono">
-                    ({st.distanceMeters >= 1000
-                      ? `${(st.distanceMeters / 1000).toFixed(1)} km`
-                      : `${st.distanceMeters} m`})
+
+          {/* Route Comparison Cards (Rute Tercepat vs Alternatif Jalur Lain) */}
+          {routeCandidates.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {routeCandidates.map((cand, idx) => {
+                const isSelected = idx === selectedRouteIndex;
+                const minutes = Math.max(1, Math.ceil(cand.durationSeconds / 60));
+                const distText =
+                  cand.distanceMeters >= 1000
+                    ? `${(cand.distanceMeters / 1000).toFixed(2)} km`
+                    : `${cand.distanceMeters.toLocaleString('id-ID')} m`;
+
+                return (
+                  <button
+                    key={cand.id}
+                    type="button"
+                    onClick={() => setSelectedRouteIndex(idx)}
+                    className={`p-3.5 rounded-2xl text-left flex flex-col justify-between gap-2 transition-all cursor-pointer border ${
+                      isSelected
+                        ? 'bg-emerald-50/80 border-emerald-500 ring-2 ring-emerald-500/20 shadow-sm'
+                        : 'bg-slate-50/60 border-slate-200/80 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-lg inline-flex items-center gap-1 ${
+                          isSelected
+                            ? 'bg-emerald-600 text-white'
+                            : cand.tagType === 'fastest'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : 'bg-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[13px]">
+                          {cand.tagType === 'fastest' ? 'bolt' : 'alt_route'}
+                        </span>
+                        <span>{cand.label}</span>
+                      </span>
+
+                      {isSelected && (
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-600" />
+                      )}
+                    </div>
+
+                    <div className="flex items-baseline justify-between gap-2">
+                      <span className="text-xl font-extrabold text-slate-900">
+                        {minutes} <span className="text-xs font-semibold text-slate-500">menit</span>
+                      </span>
+                      <span className="text-xs font-mono font-bold text-slate-600">
+                        {distText}
+                      </span>
+                    </div>
+
+                    <div className="text-[11px] text-slate-500 truncate border-t border-slate-200/60 pt-1.5">
+                      {cand.viaSummary} · {cand.hasToll ? 'Lewat Tol' : 'Non-Tol'}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Turn-by-Turn Guidance Strip (Panduan Belokan) */}
+          {routeSummary?.steps && routeSummary.steps.length > 0 && (
+            <div className="bg-slate-50 rounded-2xl p-3 border border-slate-200/60 flex flex-col gap-2">
+              <div className="flex items-center justify-between gap-2 text-xs font-bold text-slate-700">
+                <span className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px] text-emerald-600">
+                    turn_right
                   </span>
-                )}
+                  <span>Panduan Rute Jalan (Searah &amp; Putar Balik):</span>
+                </span>
+                <span className="text-[11px] text-slate-500 font-medium">
+                  {routeSummary.viaSummary}
+                </span>
               </div>
-            ))}
+
+              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+                {routeSummary.steps.map((st, idx) => (
+                  <div
+                    key={idx}
+                    className="px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs text-slate-800 flex items-center gap-2 shrink-0 shadow-2xs"
+                  >
+                    <span className="w-4 h-4 rounded-full bg-emerald-600 text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                      {idx + 1}
+                    </span>
+                    <span className="font-medium whitespace-nowrap">{st.instruction}</span>
+                    {st.distanceMeters > 0 && (
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        ({st.distanceMeters >= 1000
+                          ? `${(st.distanceMeters / 1000).toFixed(1)} km`
+                          : `${st.distanceMeters} m`})
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 7. SELLER BROADCAST CONTROLS (ONLY IN SELLER MODE) */}
+      {mode === 'seller-broadcast' && (
+        <div className="bg-white p-4 sm:p-5 flex flex-col gap-3 border-t border-slate-100">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <input
+              type="text"
+              value={sellerLocationNote}
+              onChange={(e) => setSellerLocationNote(e.target.value)}
+              placeholder="Contoh: Di depan pintu Hall D / Dekat parkiran motor"
+              className="flex-1 h-11 px-3.5 rounded-xl bg-slate-50 text-slate-900 text-xs border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-600"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (!sellerStall || !onUpdateSellerGps) return;
+                const currentGps = sellerStall.gpsLocation || {
+                  lat: IBI_KKG_CAMPUS_CENTER.lat,
+                  lng: IBI_KKG_CAMPUS_CENTER.lng,
+                  isLiveTracking: false,
+                  updatedAt: 'Baru saja',
+                };
+                const nowStr = new Date().toLocaleTimeString('id-ID', {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                });
+                onUpdateSellerGps({
+                  ...currentGps,
+                  updatedAt: `${nowStr} WIB`,
+                  locationNote: sellerLocationNote.trim() || sellerStall.locationDetail,
+                });
+                onShowToast?.('Patokan posisi berhasil disimpan untuk mahasiswa!');
+              }}
+              className="h-11 px-5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-md"
+            >
+              Simpan Patokan
+            </button>
           </div>
         </div>
       )}
