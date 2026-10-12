@@ -5,7 +5,6 @@ import {
   Map,
   Pin,
   useMap,
-  useMapsLibrary,
 } from '@vis.gl/react-google-maps';
 import {
   normalizeStallLocation,
@@ -13,6 +12,7 @@ import {
   SellerLiveGpsLocation,
   Stall,
 } from '../data/kantinData';
+import { UniversalLeafletMap } from './UniversalLeafletMap';
 
 // Exact verified coordinates of Kwik Kian Gie School of Business (IBI KKG)
 // Jl. Yos Sudarso Kav. 87, Sunter Jaya, Tanjung Priok, Jakarta Utara 14350
@@ -232,303 +232,262 @@ function labelAndClassifyRouteCandidates(
   });
 }
 
+export async function computeMultiRouteCandidates(
+  origin: { lat: number; lng: number },
+  destination: { lat: number; lng: number },
+  travelMode: 'WALKING' | 'TWO_WHEELER' | 'DRIVING'
+): Promise<{ candidates: RouteOptionCandidate[]; isFallbackDirect: boolean }> {
+  const directMeters = calculateHaversineMeters(origin, destination);
+  const isInsideCampusWalk = travelMode === 'WALKING' && directMeters <= 350;
+
+  // Engine A: Valhalla Turn-by-Turn Multi-Route Engine (`alternates: 2`)
+  try {
+    const valhallaCosting = isInsideCampusWalk
+      ? 'pedestrian'
+      : travelMode === 'TWO_WHEELER' || travelMode === 'WALKING'
+      ? 'motor_scooter'
+      : 'auto';
+
+    const valhallaBody: Record<string, any> = {
+      locations: [
+        { lat: origin.lat, lon: origin.lng },
+        { lat: destination.lat, lon: destination.lng },
+      ],
+      costing: valhallaCosting,
+      alternates: 2,
+      directions_options: { units: 'kilometers' },
+    };
+
+    if (valhallaCosting === 'motor_scooter') {
+      valhallaBody.costing_options = {
+        motor_scooter: {
+          use_highways: 0,
+          use_tolls: 0,
+        },
+      };
+    }
+
+    const vRes = await fetch('https://valhalla1.openstreetmap.de/route', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(valhallaBody),
+    });
+
+    if (vRes.ok) {
+      const vData = await vRes.json();
+      const allTrips = [
+        vData?.trip,
+        ...(Array.isArray(vData?.alternates) ? vData.alternates.map((a: any) => a?.trip) : []),
+      ].filter(Boolean);
+
+      const parsedRaw: Array<{
+        path: Array<{ lat: number; lng: number }>;
+        distanceMeters: number;
+        durationSeconds: number;
+        viaSummary: string;
+        steps: RouteStepInstruction[];
+        hasToll?: boolean;
+      }> = [];
+
+      for (const trip of allTrips) {
+        const leg = trip?.legs?.[0];
+        if (!leg?.shape) continue;
+        const roadPath = decodeValhallaShape6(leg.shape);
+        if (roadPath.length < 2) continue;
+
+        const distMeters = Math.round((leg.summary?.length ?? directMeters / 1000) * 1000);
+        const rawSec = Math.round(leg.summary?.time ?? distMeters / 7);
+        const durSec =
+          travelMode === 'WALKING'
+            ? Math.max(20, Math.round(distMeters / 1.3))
+            : Math.max(20, rawSec);
+
+        const streetLengths: Record<string, number> = {};
+        if (Array.isArray(leg.maneuvers)) {
+          for (const m of leg.maneuvers) {
+            const names: string[] = Array.isArray(m.street_names) ? m.street_names : [];
+            const validName = names.find((n) => n && n.length > 3 && !/^\d+$/.test(n));
+            if (validName) {
+              streetLengths[validName] =
+                (streetLengths[validName] || 0) + Number(m.length || 0);
+            }
+          }
+        }
+        const topStreets = Object.entries(streetLengths)
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 2)
+          .map((e) => e[0]);
+
+        const viaSummary =
+          topStreets.length > 0
+            ? `Via ${topStreets.join(' & ')}`
+            : leg.summary?.has_toll
+            ? 'Via Jalan Tol Utama'
+            : 'Via Jalur Jalan Raya';
+
+        const steps: RouteStepInstruction[] = Array.isArray(leg.maneuvers)
+          ? leg.maneuvers.slice(0, 10).map((m: any) => ({
+              instruction: translateManeuverToIndonesian(String(m.instruction || '')),
+              streetName: Array.isArray(m.street_names)
+                ? m.street_names.join(' / ')
+                : undefined,
+              distanceMeters: Math.round((m.length || 0) * 1000),
+            }))
+          : [];
+
+        parsedRaw.push({
+          path: roadPath,
+          distanceMeters: distMeters,
+          durationSeconds: durSec,
+          viaSummary,
+          steps,
+          hasToll: Boolean(leg.summary?.has_toll),
+        });
+      }
+
+      if (parsedRaw.length > 0) {
+        return {
+          candidates: labelAndClassifyRouteCandidates(parsedRaw),
+          isFallbackDirect: false,
+        };
+      }
+    }
+  } catch {
+    // Fallback to OSRM below
+  }
+
+  // Engine B: OSRM Road Routing with `alternatives=3`
+  const osrmProfile = isInsideCampusWalk ? 'foot' : 'driving';
+  const osrmUrls = [
+    `https://router.project-osrm.org/route/v1/${osrmProfile}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&alternatives=3&steps=true`,
+    `https://routing.openstreetmap.de/routed-car/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&alternatives=3&steps=true`,
+  ];
+
+  for (const url of osrmUrls) {
+    try {
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const data = await res.json();
+      const routesArr: any[] = Array.isArray(data?.routes) ? data.routes : [];
+      if (routesArr.length === 0) continue;
+
+      const parsedRaw: Array<{
+        path: Array<{ lat: number; lng: number }>;
+        distanceMeters: number;
+        durationSeconds: number;
+        viaSummary: string;
+        steps: RouteStepInstruction[];
+      }> = [];
+
+      for (const route of routesArr) {
+        const coords: [number, number][] | undefined = route?.geometry?.coordinates;
+        if (!Array.isArray(coords) || coords.length < 2) continue;
+        const roadPath = coords.map(([lng, lat]) => ({ lat, lng }));
+        const dist = Math.round(route.distance || directMeters);
+        const speedMetersPerSec =
+          travelMode === 'WALKING' ? 1.3 : travelMode === 'TWO_WHEELER' ? 8.5 : 6.5;
+        const durSec = Math.max(
+          15,
+          Math.round(
+            travelMode === 'WALKING'
+              ? dist / speedMetersPerSec
+              : route.duration || dist / speedMetersPerSec
+          )
+        );
+
+        const rawSteps = route?.legs?.[0]?.steps;
+        const steps: RouteStepInstruction[] = Array.isArray(rawSteps)
+          ? rawSteps
+              .filter((s: any) => s.distance > 15 || s.name)
+              .slice(0, 10)
+              .map((s: any) => {
+                const mod = s.maneuver?.modifier || '';
+                const dirLabel = mod.includes('left')
+                  ? 'Belok kiri'
+                  : mod.includes('right')
+                  ? 'Belok kanan'
+                  : mod.includes('uturn')
+                  ? 'Putar balik (U-Turn)'
+                  : 'Lurus ikuti jalan';
+                return {
+                  instruction: s.name ? `${dirLabel} ke ${s.name}` : dirLabel,
+                  streetName: s.name || undefined,
+                  distanceMeters: Math.round(s.distance || 0),
+                };
+              })
+          : [];
+
+        const viaSummary = route?.legs?.[0]?.summary
+          ? `Via ${route.legs[0].summary}`
+          : 'Via Jalur Jalan Utama';
+
+        parsedRaw.push({
+          path: roadPath,
+          distanceMeters: dist,
+          durationSeconds: durSec,
+          viaSummary,
+          steps,
+        });
+      }
+
+      if (parsedRaw.length > 0) {
+        return {
+          candidates: labelAndClassifyRouteCandidates(parsedRaw),
+          isFallbackDirect: false,
+        };
+      }
+    } catch {
+      // try next server
+    }
+  }
+
+  return {
+    candidates: [
+      {
+        id: 'route-opt-0',
+        label: 'Rute Langsung',
+        tagType: 'fastest',
+        viaSummary: 'Jalur Langsung Area Kampus',
+        distanceMeters: directMeters,
+        durationSeconds: Math.max(15, Math.round(directMeters / 1.25)),
+        path: [origin, destination],
+        steps: [],
+      },
+    ],
+    isFallbackDirect: true,
+  };
+}
+
 interface WalkingRouteOverlayProps {
-  origin: { lat: number; lng: number } | null;
-  destination: { lat: number; lng: number } | null;
-  travelMode: 'WALKING' | 'TWO_WHEELER' | 'DRIVING';
+  routeCandidates: RouteOptionCandidate[];
   selectedRouteIndex: number;
   onSelectRouteIndex: (idx: number) => void;
-  onRoutesComputed: (
-    routes: RouteOptionCandidate[],
-    activeSummary: {
-      distanceMeters: number;
-      durationSeconds: number;
-      usingFallbackLine: boolean;
-      steps?: RouteStepInstruction[];
-      viaSummary?: string;
-      label?: string;
-    } | null
-  ) => void;
 }
 
 const WalkingRouteOverlay: React.FC<WalkingRouteOverlayProps> = ({
-  origin,
-  destination,
-  travelMode,
+  routeCandidates,
   selectedRouteIndex,
   onSelectRouteIndex,
-  onRoutesComputed,
 }) => {
   const map = useMap();
   const polylinesRef = useRef<google.maps.Polyline[]>([]);
-  const [computedCandidates, setComputedCandidates] = useState<RouteOptionCandidate[]>([]);
-  const [isFallbackDirect, setIsFallbackDirect] = useState<boolean>(false);
 
-  // 1. Fetch primary + alternative routes whenever origin, destination, or travelMode changes
-  useEffect(() => {
-    if (!map || !origin || !destination) {
-      setComputedCandidates([]);
-      onRoutesComputed([], null);
-      return;
-    }
-
-    let cancelled = false;
-    const directMeters = calculateHaversineMeters(origin, destination);
-    const isInsideCampusWalk = travelMode === 'WALKING' && directMeters <= 350;
-
-    const fetchAllRouteAlternatives = async () => {
-      // Engine A: Valhalla Turn-by-Turn Multi-Route Engine (`alternates: 2`)
-      // Strictly enforces one-way streets (`oneway=yes`), U-turns, and travel-mode rules
-      try {
-        const valhallaCosting = isInsideCampusWalk
-          ? 'pedestrian'
-          : travelMode === 'TWO_WHEELER' || travelMode === 'WALKING'
-          ? 'motor_scooter'
-          : 'auto';
-
-        const valhallaBody: Record<string, any> = {
-          locations: [
-            { lat: origin.lat, lon: origin.lng },
-            { lat: destination.lat, lon: destination.lng },
-          ],
-          costing: valhallaCosting,
-          alternates: 2, // Request up to 3 routes total (1 fastest + 2 alternatives)
-          directions_options: { units: 'kilometers' },
-        };
-
-        if (valhallaCosting === 'motor_scooter') {
-          valhallaBody.costing_options = {
-            motor_scooter: {
-              use_highways: 0,
-              use_tolls: 0,
-            },
-          };
-        }
-
-        const vRes = await fetch('https://valhalla1.openstreetmap.de/route', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(valhallaBody),
-        });
-
-        if (vRes.ok) {
-          const vData = await vRes.json();
-          const allTrips = [
-            vData?.trip,
-            ...(Array.isArray(vData?.alternates) ? vData.alternates.map((a: any) => a?.trip) : []),
-          ].filter(Boolean);
-
-          const parsedRaw: Array<{
-            path: Array<{ lat: number; lng: number }>;
-            distanceMeters: number;
-            durationSeconds: number;
-            viaSummary: string;
-            steps: RouteStepInstruction[];
-            hasToll?: boolean;
-          }> = [];
-
-          for (const trip of allTrips) {
-            const leg = trip?.legs?.[0];
-            if (!leg?.shape) continue;
-            const roadPath = decodeValhallaShape6(leg.shape);
-            if (roadPath.length < 2) continue;
-
-            const distMeters = Math.round((leg.summary?.length ?? directMeters / 1000) * 1000);
-            const rawSec = Math.round(leg.summary?.time ?? distMeters / 7);
-            const durSec =
-              travelMode === 'WALKING'
-                ? Math.max(20, Math.round(distMeters / 1.3))
-                : Math.max(20, rawSec);
-
-            // Filter out pure route numbers like "1" or "2" when building "Via Jl. ..."
-            const streetLengths: Record<string, number> = {};
-            if (Array.isArray(leg.maneuvers)) {
-              for (const m of leg.maneuvers) {
-                const names: string[] = Array.isArray(m.street_names) ? m.street_names : [];
-                const validName = names.find((n) => n && n.length > 3 && !/^\d+$/.test(n));
-                if (validName) {
-                  streetLengths[validName] =
-                    (streetLengths[validName] || 0) + Number(m.length || 0);
-                }
-              }
-            }
-            const topStreets = Object.entries(streetLengths)
-              .sort((a, b) => b[1] - a[1])
-              .slice(0, 2)
-              .map((e) => e[0]);
-
-            const viaSummary =
-              topStreets.length > 0
-                ? `Via ${topStreets.join(' & ')}`
-                : leg.summary?.has_toll
-                ? 'Via Jalan Tol Utama'
-                : 'Via Jalur Jalan Raya';
-
-            const steps: RouteStepInstruction[] = Array.isArray(leg.maneuvers)
-              ? leg.maneuvers.slice(0, 10).map((m: any) => ({
-                  instruction: translateManeuverToIndonesian(String(m.instruction || '')),
-                  streetName: Array.isArray(m.street_names)
-                    ? m.street_names.join(' / ')
-                    : undefined,
-                  distanceMeters: Math.round((m.length || 0) * 1000),
-                }))
-              : [];
-
-            parsedRaw.push({
-              path: roadPath,
-              distanceMeters: distMeters,
-              durationSeconds: durSec,
-              viaSummary,
-              steps,
-              hasToll: Boolean(leg.summary?.has_toll),
-            });
-          }
-
-          if (!cancelled && parsedRaw.length > 0) {
-            const labeled = labelAndClassifyRouteCandidates(parsedRaw);
-            setIsFallbackDirect(false);
-            setComputedCandidates(labeled);
-
-            const bounds = new google.maps.LatLngBounds();
-            labeled.forEach((cand) => cand.path.forEach((pt) => bounds.extend(pt)));
-            map.fitBounds(bounds, 56);
-            return;
-          }
-        }
-      } catch {
-        // Fallback to OSRM with alternatives=3 below
-      }
-
-      // Engine B: OSRM Road Routing with `alternatives=3`
-      const osrmProfile = isInsideCampusWalk ? 'foot' : 'driving';
-      const osrmUrls = [
-        `https://router.project-osrm.org/route/v1/${osrmProfile}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&alternatives=3&steps=true`,
-        `https://routing.openstreetmap.de/routed-car/route/v1/driving/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson&alternatives=3&steps=true`,
-      ];
-
-      for (const url of osrmUrls) {
-        try {
-          const res = await fetch(url);
-          if (!res.ok) continue;
-          const data = await res.json();
-          const routesArr: any[] = Array.isArray(data?.routes) ? data.routes : [];
-          if (routesArr.length === 0) continue;
-
-          const parsedRaw: Array<{
-            path: Array<{ lat: number; lng: number }>;
-            distanceMeters: number;
-            durationSeconds: number;
-            viaSummary: string;
-            steps: RouteStepInstruction[];
-          }> = [];
-
-          for (const route of routesArr) {
-            const coords: [number, number][] | undefined = route?.geometry?.coordinates;
-            if (!Array.isArray(coords) || coords.length < 2) continue;
-            const roadPath = coords.map(([lng, lat]) => ({ lat, lng }));
-            const dist = Math.round(route.distance || directMeters);
-            const speedMetersPerSec =
-              travelMode === 'WALKING' ? 1.3 : travelMode === 'TWO_WHEELER' ? 8.5 : 6.5;
-            const durSec = Math.max(
-              15,
-              Math.round(
-                travelMode === 'WALKING'
-                  ? dist / speedMetersPerSec
-                  : route.duration || dist / speedMetersPerSec
-              )
-            );
-
-            const rawSteps = route?.legs?.[0]?.steps;
-            const steps: RouteStepInstruction[] = Array.isArray(rawSteps)
-              ? rawSteps
-                  .filter((s: any) => s.distance > 15 || s.name)
-                  .slice(0, 10)
-                  .map((s: any) => {
-                    const mod = s.maneuver?.modifier || '';
-                    const dirLabel = mod.includes('left')
-                      ? 'Belok kiri'
-                      : mod.includes('right')
-                      ? 'Belok kanan'
-                      : mod.includes('uturn')
-                      ? 'Putar balik (U-Turn)'
-                      : 'Lurus ikuti jalan';
-                    return {
-                      instruction: s.name ? `${dirLabel} ke ${s.name}` : dirLabel,
-                      streetName: s.name || undefined,
-                      distanceMeters: Math.round(s.distance || 0),
-                    };
-                  })
-              : [];
-
-            const viaSummary = route?.legs?.[0]?.summary
-              ? `Via ${route.legs[0].summary}`
-              : 'Via Jalur Jalan Utama';
-
-            parsedRaw.push({
-              path: roadPath,
-              distanceMeters: dist,
-              durationSeconds: durSec,
-              viaSummary,
-              steps,
-            });
-          }
-
-          if (!cancelled && parsedRaw.length > 0) {
-            const labeled = labelAndClassifyRouteCandidates(parsedRaw);
-            setIsFallbackDirect(false);
-            setComputedCandidates(labeled);
-
-            const bounds = new google.maps.LatLngBounds();
-            labeled.forEach((cand) => cand.path.forEach((pt) => bounds.extend(pt)));
-            map.fitBounds(bounds, 56);
-            return;
-          }
-        } catch {
-          // try next server
-        }
-      }
-
-      if (!cancelled) {
-        const fallbackCandidate: RouteOptionCandidate = {
-          id: 'route-opt-0',
-          label: 'Rute Langsung',
-          tagType: 'fastest',
-          viaSummary: 'Jalur Langsung Area Kampus',
-          distanceMeters: directMeters,
-          durationSeconds: Math.max(15, Math.round(directMeters / 1.25)),
-          path: [origin, destination],
-          steps: [],
-        };
-        setIsFallbackDirect(true);
-        setComputedCandidates([fallbackCandidate]);
-      }
-    };
-
-    fetchAllRouteAlternatives();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [map, origin?.lat, origin?.lng, destination?.lat, destination?.lng, travelMode]);
-
-  // 2. Render both unselected alternative routes (interactive clickable grey lines) and the selected primary route (emerald green with directional arrows)
   useEffect(() => {
     polylinesRef.current.forEach((p) => p.setMap(null));
     polylinesRef.current = [];
 
-    if (!map || computedCandidates.length === 0 || typeof google === 'undefined') {
+    if (!map || routeCandidates.length === 0 || typeof google === 'undefined') {
       return;
     }
 
     const safeIdx =
-      selectedRouteIndex >= 0 && selectedRouteIndex < computedCandidates.length
+      selectedRouteIndex >= 0 && selectedRouteIndex < routeCandidates.length
         ? selectedRouteIndex
         : 0;
 
     const createdPolylines: google.maps.Polyline[] = [];
 
-    // Draw UNSELECTED alternative routes first (underneath, in Google Maps slate/grey style, clickable!)
-    computedCandidates.forEach((cand, idx) => {
+    routeCandidates.forEach((cand, idx) => {
       if (idx === safeIdx) return;
 
       const altOuter = new google.maps.Polyline({
@@ -563,8 +522,7 @@ const WalkingRouteOverlay: React.FC<WalkingRouteOverlayProps> = ({
       createdPolylines.push(altOuter, altInner);
     });
 
-    // Draw SELECTED active route on top (Shopee/Google Maps vibrant emerald with directional flow arrows)
-    const activeCand = computedCandidates[safeIdx];
+    const activeCand = routeCandidates[safeIdx];
     if (activeCand) {
       const outerCasing = new google.maps.Polyline({
         path: activeCand.path,
@@ -604,14 +562,9 @@ const WalkingRouteOverlay: React.FC<WalkingRouteOverlayProps> = ({
       innerRoadLine.setMap(map);
       createdPolylines.push(outerCasing, innerRoadLine);
 
-      onRoutesComputed(computedCandidates, {
-        distanceMeters: activeCand.distanceMeters,
-        durationSeconds: activeCand.durationSeconds,
-        usingFallbackLine: isFallbackDirect,
-        steps: activeCand.steps,
-        viaSummary: activeCand.viaSummary,
-        label: activeCand.label,
-      });
+      const bounds = new google.maps.LatLngBounds();
+      routeCandidates.forEach((cand) => cand.path.forEach((pt) => bounds.extend(pt)));
+      map.fitBounds(bounds, 56);
     }
 
     polylinesRef.current = createdPolylines;
@@ -619,7 +572,7 @@ const WalkingRouteOverlay: React.FC<WalkingRouteOverlayProps> = ({
     return () => {
       createdPolylines.forEach((p) => p.setMap(null));
     };
-  }, [map, computedCandidates, selectedRouteIndex, isFallbackDirect]);
+  }, [map, routeCandidates, selectedRouteIndex]);
 
   return null;
 };
@@ -749,21 +702,76 @@ export const LiveGpsTrackerMap: React.FC<LiveGpsTrackerMapProps> = ({
   const [travelMode, setTravelMode] = useState<'WALKING' | 'TWO_WHEELER' | 'DRIVING'>('TWO_WHEELER');
   const [routeCandidates, setRouteCandidates] = useState<RouteOptionCandidate[]>([]);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
-  const [routeSummary, setRouteSummary] = useState<{
-    distanceMeters: number;
-    durationSeconds: number;
-    usingFallbackLine: boolean;
-    steps?: RouteStepInstruction[];
-    viaSummary?: string;
-    label?: string;
-  } | null>(null);
+  const [isFallbackDirectLine, setIsFallbackDirectLine] = useState<boolean>(false);
   const [infoOpenStallId, setInfoOpenStallId] = useState<string | null>(null);
   const [gpsErrorMsg, setGpsErrorMsg] = useState<string | null>(null);
+
+  // Detect whether Google Maps JS SDK is available and authorized on the current domain (e.g. AI Studio vs GitHub Pages)
+  const [useUniversalTileEngine, setUseUniversalTileEngine] = useState<boolean>(() => {
+    const key = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY || '';
+    const host = typeof window !== 'undefined' ? window.location.hostname : '';
+    const isExternalStaticHost =
+      host.endsWith('github.io') ||
+      host.endsWith('vercel.app') ||
+      host.endsWith('netlify.app') ||
+      host.endsWith('pages.dev');
+    return !key || isExternalStaticHost || Boolean((window as any).__gmpLoadFailed);
+  });
+
+  useEffect(() => {
+    const handleGmpError = () => setUseUniversalTileEngine(true);
+    window.addEventListener('gmp-map-load-error', handleGmpError);
+    window.addEventListener('gmp-quota-exceeded', handleGmpError);
+    return () => {
+      window.removeEventListener('gmp-map-load-error', handleGmpError);
+      window.removeEventListener('gmp-quota-exceeded', handleGmpError);
+    };
+  }, []);
 
   // Reset selected route to 0 (Rute Tercepat) when user switches travel mode or target stall
   useEffect(() => {
     setSelectedRouteIndex(0);
   }, [travelMode, activeStallId]);
+
+  // Compute multi-route candidates (Valhalla / OSRM) whenever buyer GPS, target stall, or travel mode changes
+  useEffect(() => {
+    if (!studentGps || !targetCoords) {
+      setRouteCandidates([]);
+      setIsFallbackDirectLine(false);
+      return;
+    }
+
+    let cancelled = false;
+    computeMultiRouteCandidates(studentGps, targetCoords, travelMode).then((res) => {
+      if (cancelled) return;
+      setRouteCandidates(res.candidates);
+      setIsFallbackDirectLine(res.isFallbackDirect);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [studentGps?.lat, studentGps?.lng, targetCoords.lat, targetCoords.lng, travelMode]);
+
+  const activeRouteCandidate =
+    routeCandidates.length > 0
+      ? routeCandidates[
+          selectedRouteIndex >= 0 && selectedRouteIndex < routeCandidates.length
+            ? selectedRouteIndex
+            : 0
+        ]
+      : null;
+
+  const routeSummary = activeRouteCandidate
+    ? {
+        distanceMeters: activeRouteCandidate.distanceMeters,
+        durationSeconds: activeRouteCandidate.durationSeconds,
+        usingFallbackLine: isFallbackDirectLine,
+        steps: activeRouteCandidate.steps,
+        viaSummary: activeRouteCandidate.viaSummary,
+        label: activeRouteCandidate.label,
+      }
+    : null;
 
   useEffect(() => {
     if (sellerStall?.gpsLocation?.locationNote) {
@@ -1636,141 +1644,169 @@ export const LiveGpsTrackerMap: React.FC<LiveGpsTrackerMapProps> = ({
           compact ? 'h-[280px] sm:h-[320px]' : 'h-[380px] sm:h-[440px]'
         } rounded-2xl overflow-hidden border border-outline-variant/30 shadow-inner`}
       >
-        <Map
-          mapId="DEMO_MAP_ID"
-          defaultCenter={targetCoords}
-          defaultZoom={19}
-          mapTypeId={mapTypeId}
-          gestureHandling="greedy"
-          internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
-          style={{ width: '100%', height: '100%' }}
-        >
-          <MapCameraFollower target={targetCoords} triggerKey={cameraPanTrigger} />
-
-          <MapTapCatcher
-            enabled={mode === 'seller-broadcast' && allowTapOnMapToPin}
-            onPickCoordinate={handleSellerManualPin}
+        {useUniversalTileEngine ? (
+          <UniversalLeafletMap
+            center={targetCoords}
+            mapTypeId={mapTypeId}
+            cameraPanTrigger={cameraPanTrigger}
+            tapPinModeEnabled={
+              mode === 'seller-broadcast' ? allowTapOnMapToPin : allowBuyerManualPin
+            }
+            onPickCoordinate={
+              mode === 'seller-broadcast' ? handleSellerManualPin : handleBuyerManualPin
+            }
+            studentGps={studentGps}
+            stallsToRender={
+              mode === 'student-directory'
+                ? normalizedStalls
+                : targetStall
+                ? [targetStall]
+                : []
+            }
+            targetStallId={targetStall?.id}
+            onSelectStallMarker={(sid) => {
+              setActiveStallId(sid);
+              setInfoOpenStallId(sid);
+            }}
+            infoOpenStallId={infoOpenStallId}
+            onCloseInfoWindow={() => setInfoOpenStallId(null)}
+            onOpenStallMenu={onSelectStall}
+            showMenuButtonInPopup={Boolean(mode === 'student-directory' && onSelectStall)}
+            routeCandidates={routeCandidates}
+            selectedRouteIndex={selectedRouteIndex}
+            onSelectRouteIndex={setSelectedRouteIndex}
           />
+        ) : (
+          <Map
+            mapId="DEMO_MAP_ID"
+            defaultCenter={targetCoords}
+            defaultZoom={19}
+            mapTypeId={mapTypeId}
+            gestureHandling="greedy"
+            internalUsageAttributionIds={['gmp_mcp_codeassist_v1_aistudio']}
+            style={{ width: '100%', height: '100%' }}
+          >
+            <MapCameraFollower target={targetCoords} triggerKey={cameraPanTrigger} />
 
-          <MapTapCatcher
-            enabled={mode !== 'seller-broadcast' && allowBuyerManualPin}
-            onPickCoordinate={handleBuyerManualPin}
-          />
-
-          {studentGps && targetCoords && (
-            <WalkingRouteOverlay
-              origin={studentGps}
-              destination={targetCoords}
-              travelMode={travelMode}
-              selectedRouteIndex={selectedRouteIndex}
-              onSelectRouteIndex={setSelectedRouteIndex}
-              onRoutesComputed={(candidates, summary) => {
-                setRouteCandidates(candidates);
-                setRouteSummary(summary);
-              }}
+            <MapTapCatcher
+              enabled={mode === 'seller-broadcast' && allowTapOnMapToPin}
+              onPickCoordinate={handleSellerManualPin}
             />
-          )}
 
-          {studentGps && (
-            <AdvancedMarker
-              position={studentGps}
-              title={`Titik Awal Anda (${studentGps.lat.toFixed(5)}, ${studentGps.lng.toFixed(5)})`}
-            >
-              <div className="flex flex-col items-center">
-                <div className="px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold shadow-md mb-1 whitespace-nowrap border border-white">
-                  Posisi Kamu
-                </div>
-                <div className="w-5 h-5 rounded-full bg-blue-600 border-2 border-white shadow-lg ring-4 ring-blue-500/40" />
-              </div>
-            </AdvancedMarker>
-          )}
+            <MapTapCatcher
+              enabled={mode !== 'seller-broadcast' && allowBuyerManualPin}
+              onPickCoordinate={handleBuyerManualPin}
+            />
 
-          {(mode === 'student-directory'
-            ? normalizedStalls
-            : targetStall
-            ? [targetStall]
-            : []
-          ).map((st) => {
-            const pos = st.gpsLocation
-              ? { lat: st.gpsLocation.lat, lng: st.gpsLocation.lng }
-              : IBI_KKG_CAMPUS_CENTER;
-            const isSelected = st.id === targetStall?.id;
+            {routeCandidates.length > 0 && (
+              <WalkingRouteOverlay
+                routeCandidates={routeCandidates}
+                selectedRouteIndex={selectedRouteIndex}
+                onSelectRouteIndex={setSelectedRouteIndex}
+              />
+            )}
 
-            return (
-              <React.Fragment key={st.id}>
-                <AdvancedMarker
-                  position={pos}
-                  onClick={() => {
-                    setActiveStallId(st.id);
-                    setInfoOpenStallId(st.id);
-                  }}
-                  title={`${st.name} (${st.code})`}
-                >
-                  <div className="flex flex-col items-center cursor-pointer">
-                    <div
-                      className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-md mb-1 flex items-center gap-1 whitespace-nowrap border ${
-                        !st.isOpen
-                          ? 'bg-red-700 text-white border-white'
-                          : isSelected
-                          ? 'bg-emerald-700 text-white border-white scale-105'
-                          : 'bg-white text-slate-900 border-emerald-600'
-                      }`}
-                    >
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          st.isOpen ? 'bg-emerald-300 animate-ping' : 'bg-red-300'
-                        }`}
-                      />
-                      <span>
-                        {st.code}: {st.name}
-                      </span>
-                    </div>
-                    <Pin
-                      background={!st.isOpen ? '#dc2626' : isSelected ? '#047857' : '#0284c7'}
-                      borderColor="#ffffff"
-                      glyphColor="#ffffff"
-                      scale={isSelected ? 1.25 : 1.05}
-                    />
+            {studentGps && (
+              <AdvancedMarker
+                position={studentGps}
+                title={`Titik Awal Anda (${studentGps.lat.toFixed(5)}, ${studentGps.lng.toFixed(5)})`}
+              >
+                <div className="flex flex-col items-center">
+                  <div className="px-2.5 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold shadow-md mb-1 whitespace-nowrap border border-white">
+                    Posisi Kamu
                   </div>
-                </AdvancedMarker>
+                  <div className="w-5 h-5 rounded-full bg-blue-600 border-2 border-white shadow-lg ring-4 ring-blue-500/40" />
+                </div>
+              </AdvancedMarker>
+            )}
 
-                {infoOpenStallId === st.id && (
-                  <InfoWindow
+            {(mode === 'student-directory'
+              ? normalizedStalls
+              : targetStall
+              ? [targetStall]
+              : []
+            ).map((st) => {
+              const pos = st.gpsLocation
+                ? { lat: st.gpsLocation.lat, lng: st.gpsLocation.lng }
+                : IBI_KKG_CAMPUS_CENTER;
+              const isSelected = st.id === targetStall?.id;
+
+              return (
+                <React.Fragment key={st.id}>
+                  <AdvancedMarker
                     position={pos}
-                    onCloseClick={() => setInfoOpenStallId(null)}
-                    maxWidth={260}
+                    onClick={() => {
+                      setActiveStallId(st.id);
+                      setInfoOpenStallId(st.id);
+                    }}
+                    title={`${st.name} (${st.code})`}
                   >
-                    <div className="flex flex-col gap-1.5 text-slate-900 p-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">
-                          {st.code} • {st.isOpen ? 'Buka' : 'Tutup'}
-                        </span>
-                        <span className="text-[11px] text-slate-600 font-mono">
-                          {st.gpsLocation?.updatedAt || 'Titik Kampus'}
+                    <div className="flex flex-col items-center cursor-pointer">
+                      <div
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold shadow-md mb-1 flex items-center gap-1 whitespace-nowrap border ${
+                          !st.isOpen
+                            ? 'bg-red-700 text-white border-white'
+                            : isSelected
+                            ? 'bg-emerald-700 text-white border-white scale-105'
+                            : 'bg-white text-slate-900 border-emerald-600'
+                        }`}
+                      >
+                        <span
+                          className={`w-2 h-2 rounded-full ${
+                            st.isOpen ? 'bg-emerald-300 animate-ping' : 'bg-red-300'
+                          }`}
+                        />
+                        <span>
+                          {st.code}: {st.name}
                         </span>
                       </div>
-                      <h4 className="font-bold text-sm leading-snug">{st.name}</h4>
-                      <p className="text-xs text-slate-700">
-                        <strong>Patokan Penjual:</strong>{' '}
-                        {st.gpsLocation?.locationNote || st.locationDetail}
-                      </p>
-                      <p className="text-[11px] text-slate-600">{st.walkingGuide}</p>
-                      {mode === 'student-directory' && onSelectStall && (
-                        <button
-                          type="button"
-                          onClick={() => onSelectStall(st.id)}
-                          className="mt-1 w-full py-1.5 px-3 rounded-lg bg-emerald-700 text-white text-xs font-bold cursor-pointer"
-                        >
-                          Lihat Menu &amp; Pesan →
-                        </button>
-                      )}
+                      <Pin
+                        background={!st.isOpen ? '#dc2626' : isSelected ? '#047857' : '#0284c7'}
+                        borderColor="#ffffff"
+                        glyphColor="#ffffff"
+                        scale={isSelected ? 1.25 : 1.05}
+                      />
                     </div>
-                  </InfoWindow>
-                )}
-              </React.Fragment>
-            );
-          })}
-        </Map>
+                  </AdvancedMarker>
+
+                  {infoOpenStallId === st.id && (
+                    <InfoWindow
+                      position={pos}
+                      onCloseClick={() => setInfoOpenStallId(null)}
+                      maxWidth={260}
+                    >
+                      <div className="flex flex-col gap-1.5 text-slate-900 p-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-900">
+                            {st.code} • {st.isOpen ? 'Buka' : 'Tutup'}
+                          </span>
+                          <span className="text-[11px] text-slate-600 font-mono">
+                            {st.gpsLocation?.updatedAt || 'Titik Kampus'}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm leading-snug">{st.name}</h4>
+                        <p className="text-xs text-slate-700">
+                          <strong>Patokan Penjual:</strong>{' '}
+                          {st.gpsLocation?.locationNote || st.locationDetail}
+                        </p>
+                        <p className="text-[11px] text-slate-600">{st.walkingGuide}</p>
+                        {mode === 'student-directory' && onSelectStall && (
+                          <button
+                            type="button"
+                            onClick={() => onSelectStall(st.id)}
+                            className="mt-1 w-full py-1.5 px-3 rounded-lg bg-emerald-700 text-white text-xs font-bold cursor-pointer"
+                          >
+                            Lihat Menu &amp; Pesan →
+                          </button>
+                        )}
+                      </div>
+                    </InfoWindow>
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </Map>
+        )}
 
         {/* FLOATING BOTTOM SUMMARY BAR */}
         {targetStall && (
