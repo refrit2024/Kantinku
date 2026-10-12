@@ -385,242 +385,243 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   };
 
   return (
-    <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-8">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* LEFT COLUMN (5 cols on Desktop, shown below form on mobile so users don't have to scroll past text to login) */}
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+        {/* LEFT COLUMN (5 cols on Desktop): Campus Transparency & Flow */}
         <div className="lg:col-span-5 flex flex-col gap-4 order-2 lg:order-1">
-          <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
-            <button
-              type="button"
-              onClick={handleSecretAdminTap}
-              title="Ketuk 5x untuk membuka akses internal Admin Kampus"
-              className="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md w-fit font-label-sm text-label-sm select-none cursor-default"
-            >
-              <span className="material-symbols-outlined text-[15px]">verified_user</span>
-              <span>Gerbang Akses Sistem • Pilot Tahap 1</span>
-            </button>
+          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col gap-4">
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={handleSecretAdminTap}
+                title="Ketuk 5x untuk membuka akses internal Admin Kampus"
+                className="inline-flex items-center gap-1.5 text-emerald-800 text-xs font-bold select-none cursor-default"
+              >
+                <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
+                <span>Portal Kampus · IBI KKG</span>
+              </button>
+              <span className="text-[11px] text-slate-400 font-medium">Hall D</span>
+            </div>
 
-            <h2 className="fluid-headline-md text-on-surface">
-              Alur Akses KantinKu IBI KKG
-            </h2>
+            <div>
+              <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-snug">
+                Transparansi Digital Kantin IBI KKG
+              </h2>
+              <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                Platform terpadu direktori menu, stan resmi, dan monitoring harga kampus IBI Kwik Kian Gie Sunter.
+              </p>
+            </div>
 
-            {/* Step-by-step Visual Flow without decorative left stripes */}
-            <div className="flex flex-col gap-2">
-              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-label-md text-label-md text-on-surface font-bold">
-                    1. Mahasiswa IBI KKG
-                  </span>
-                  <span className="font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded font-semibold">
-                    Tanpa Login
-                  </span>
+            {/* Visual Step List - clean unboxed typography */}
+            <div className="space-y-3 pt-2 border-t border-slate-100">
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                  1
                 </div>
-                <p className="font-body-sm text-xs text-on-surface-variant">
-                  Langsung memesan makanan, memfilter harga (≤Rp15.000), dan mengunduh nota antrean.
-                </p>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-slate-900">Mahasiswa Bebas Akses</span>
+                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                    Langsung jelajah menu, cek stan buka/tutup, dan pesan tanpa kewajiban login.
+                  </p>
+                </div>
               </div>
 
-              <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-1">
-                <div className="flex items-center justify-between">
-                  <span className="font-label-md text-label-md text-on-surface font-bold">
-                    2. Penjual Kantin (Mitra)
-                  </span>
-                  <span className="font-label-sm text-[11px] bg-primary-fixed text-on-primary-fixed px-2 py-0.5 rounded font-semibold">
-                    Terverifikasi
-                  </span>
+              <div className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                  2
                 </div>
-                <p className="font-body-sm text-xs text-on-surface-variant">
-                  Daftar Akun Stan → Verifikasi Admin → Kelola Menu, Harga, QRIS &amp; Pesanan Masuk.
-                </p>
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-slate-900">Mitra Stan Terverifikasi</span>
+                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
+                    Diverifikasi Biro Sarpras untuk memastikan keabsahan stan & kesesuaian harga kasir.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-surface-container-low rounded-xl p-4 border border-outline-variant/20 flex flex-col gap-1">
-            <div className="flex items-center gap-1.5 text-primary">
-              <span className="material-symbols-outlined text-[18px]">shield_lock</span>
-              <span className="font-label-md text-label-md font-bold">
-                Proteksi Keaslian Data Kantin
+            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-2.5">
+              <span className="material-symbols-outlined text-[18px] text-emerald-600 shrink-0 mt-0.5">
+                verified
               </span>
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Harga di sistem terhubung langsung ke kasir stan untuk melindungi mahasiswa dari perbedaan tarif.
+              </p>
             </div>
-            <p className="font-body-sm text-xs text-on-surface-variant leading-relaxed">
-              Setiap pendaftaran penjual baru divalidasi oleh Biro Sarpras agar hanya pemilik stan resmi di Area Kantin Dekat Hall D yang dapat memperbarui harga.
-            </p>
           </div>
         </div>
 
-        {/* RIGHT COLUMN (7 cols on Desktop, shown FIRST on mobile): Interactive Role & Login/Register Card */}
-        <div className="lg:col-span-7 bg-surface-container-lowest rounded-xl p-5 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-5 order-1 lg:order-2">
-          {/* Role Selector Tabs (Only Mahasiswa & Penjual shown to public; Admin only appears when unlocked) */}
-          <div className="flex flex-col gap-2">
-            <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-              Pilih Peran Pengguna:
+        {/* RIGHT COLUMN (7 cols on Desktop): Main Auth Card (Clean, Un-cluttered) */}
+        <div className="lg:col-span-7 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col gap-5 order-1 lg:order-2">
+          {/* Role Selector Bar */}
+          <div className="flex flex-col gap-1.5">
+            <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              Pilih Peran Akses:
             </span>
             <div
-              className={`grid grid-cols-1 ${
-                adminPortalUnlocked || isAdminLoggedIn ? 'sm:grid-cols-3' : 'sm:grid-cols-2'
-              } gap-2`}
+              className={`grid grid-cols-2 ${
+                adminPortalUnlocked || isAdminLoggedIn ? 'sm:grid-cols-3' : ''
+              } gap-1.5 bg-slate-100 p-1 rounded-xl`}
             >
               <button
                 type="button"
                 onClick={() => setSelectedRole('mahasiswa')}
-                className={`min-h-[48px] px-3 py-2.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                className={`min-h-[42px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   selectedRole === 'mahasiswa'
-                    ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
-                    : 'bg-surface-container-low text-on-surface border-transparent hover:bg-surface-container'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px]">school</span>
+                <span className="material-symbols-outlined text-[18px]">school</span>
                 <span>Mahasiswa</span>
               </button>
 
               <button
                 type="button"
                 onClick={() => setSelectedRole('penjual')}
-                className={`min-h-[48px] px-3 py-2.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                className={`min-h-[42px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   selectedRole === 'penjual'
-                    ? 'bg-primary text-on-primary border-primary font-semibold shadow-xs'
-                    : 'bg-surface-container-low text-on-surface border-transparent hover:bg-surface-container'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                 }`}
               >
-                <span className="material-symbols-outlined text-[20px]">storefront</span>
-                <span>Penjual Kantin</span>
+                <span className="material-symbols-outlined text-[18px]">storefront</span>
+                <span>Penjual Stan</span>
               </button>
 
               {(adminPortalUnlocked || isAdminLoggedIn) && (
                 <button
                   type="button"
                   onClick={() => setSelectedRole('admin')}
-                  className={`min-h-[48px] px-3 py-2.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-2 transition-all cursor-pointer border ${
+                  className={`col-span-2 sm:col-span-1 min-h-[42px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     selectedRole === 'admin'
-                      ? 'bg-tertiary text-on-tertiary border-tertiary font-semibold shadow-xs'
-                      : 'bg-tertiary-fixed/40 text-on-tertiary-fixed border-tertiary/30 hover:bg-tertiary-fixed'
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[20px]">
+                  <span className="material-symbols-outlined text-[18px]">
                     admin_panel_settings
                   </span>
-                  <span>Admin Kampus (Internal)</span>
+                  <span>Admin</span>
                 </button>
               )}
             </div>
           </div>
 
-          {/* ROLE 1: MAHASISWA (Direct Access without Login barrier) */}
+          {/* ROLE 1: MAHASISWA */}
           {selectedRole === 'mahasiswa' && (
-            <div className="flex flex-col gap-4 pt-2 border-t border-outline-variant/25">
-              <div className="p-4 rounded-xl bg-surface-container-low flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-secondary">
-                  <span className="material-symbols-outlined text-[22px]">check_circle</span>
-                  <h2 className="fluid-headline-md text-on-surface">
-                    Akses Langsung Mahasiswa IBI KKG
-                  </h2>
+            <div className="flex flex-col gap-4 pt-1">
+              <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-emerald-800">
+                  <span className="material-symbols-outlined text-[20px] text-emerald-600">check_circle</span>
+                  <h3 className="text-sm font-bold text-slate-900">
+                    Akses Langsung Tanpa Login
+                  </h3>
                 </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Sesuai konsep Tahap 1, mahasiswa tidak perlu membuat akun atau login yang rumit hanya untuk melihat harga makanan dan lokasi kantin saat jam istirahat kuliah yang singkat.
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Mahasiswa dapat langsung menjelajah katalog menu, memeriksa stan yang sedang buka di Hall D, dan membuat pesanan saat istirahat kuliah tanpa login.
                 </p>
               </div>
 
               <button
                 type="button"
                 onClick={onContinueAsStudent}
-                className="w-full min-h-[48px] py-3 px-4 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-[0.99]"
+                className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-[0.99] transition-all"
               >
                 <span>Buka Katalog &amp; Peta Kantin IBI KKG</span>
-                <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
             </div>
           )}
 
-          {/* ROLE 2: PENJUAL KANTIN (Login or Register New Stall) */}
+          {/* ROLE 2: PENJUAL KANTIN */}
           {selectedRole === 'penjual' && (
-            <div className="flex flex-col gap-4 pt-2 border-t border-outline-variant/25">
-              {/* If Seller is already logged in (Persistent Session), let them go straight in without re-logging in */}
+            <div className="flex flex-col gap-4 pt-1">
+              {/* If Seller is already logged in */}
               {loggedInSeller && (
-                <div className="p-4 rounded-xl bg-secondary-container/45 border border-secondary/40 flex flex-col gap-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex items-center gap-2 text-secondary">
-                      <span className="material-symbols-outlined text-[22px]">verified</span>
-                      <div>
-                        <h3 className="font-label-lg text-label-lg text-on-surface font-bold">
-                          Sesi Login Aktif: {loggedInSeller.stallName}
-                        </h3>
-                        <span className="font-body-sm text-[12px] text-on-surface-variant">
-                          {loggedInSeller.ownerName} ({loggedInSeller.email}) • Tidak perlu login ulang
-                        </span>
-                      </div>
+                <div className="p-3.5 rounded-xl bg-emerald-50/80 border border-emerald-200 flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[20px] text-emerald-600">verified</span>
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">
+                        {loggedInSeller.stallName}
+                      </h4>
+                      <span className="text-[11px] text-slate-500">
+                        {loggedInSeller.ownerName}
+                      </span>
                     </div>
                   </div>
-                  <div className="flex flex-wrap sm:flex-nowrap gap-2">
+                  <div className="flex items-center gap-2">
                     <button
                       type="button"
                       onClick={onOpenSellerDashboard}
-                      className="flex-1 min-h-[44px] px-4 py-2 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                      className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold flex items-center gap-1 cursor-pointer hover:bg-emerald-700 transition-colors"
                     >
-                      <span>Lanjut ke Dashboard Penjual</span>
-                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                      <span>Dashboard</span>
+                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </button>
                     <button
                       type="button"
                       onClick={onLogout}
-                      className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container-lowest text-error border border-error/30 font-label-sm text-label-sm font-semibold cursor-pointer"
+                      className="px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-xs font-semibold cursor-pointer hover:bg-rose-100"
                     >
-                      Keluar Akun
+                      Keluar
                     </button>
                   </div>
                 </div>
               )}
 
-              <div className="flex bg-surface-container p-1 rounded-xl">
+              {/* Sub-tab: Login vs Register */}
+              <div className="flex border-b border-slate-200 pb-1 gap-2">
                 <button
                   type="button"
                   onClick={() => setSellerAuthMode('login')}
-                  className={`flex-1 min-h-[44px] rounded-lg font-label-md text-label-md transition-colors cursor-pointer ${
+                  className={`pb-2 px-1 text-xs font-bold transition-all cursor-pointer relative ${
                     sellerAuthMode === 'login'
-                      ? 'bg-surface-container-lowest text-on-surface font-semibold shadow-xs'
-                      : 'text-on-surface-variant hover:text-on-surface'
+                      ? 'text-emerald-700 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-emerald-600'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  Login Penjual Terdaftar
+                  Masuk ke Akun Stan
                 </button>
                 <button
                   type="button"
                   onClick={() => setSellerAuthMode('register')}
-                  className={`flex-1 min-h-[44px] rounded-lg font-label-md text-label-md transition-colors cursor-pointer ${
+                  className={`pb-2 px-1 text-xs font-bold transition-all cursor-pointer relative ${
                     sellerAuthMode === 'register'
-                      ? 'bg-surface-container-lowest text-primary font-semibold shadow-xs'
-                      : 'text-on-surface-variant hover:text-on-surface'
+                      ? 'text-emerald-700 after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-emerald-600'
+                      : 'text-slate-500 hover:text-slate-800'
                   }`}
                 >
-                  + Daftar Akun Penjual Baru
+                  + Daftar Stan Baru
                 </button>
               </div>
 
               {sellerAuthMode === 'login' ? (
-                <form onSubmit={handleSellerLogin} className="flex flex-col gap-3.5">
+                /* LOGIN FORM */
+                <form onSubmit={handleSellerLogin} className="flex flex-col gap-4">
                   <div>
-                    <h2 className="fluid-headline-md text-on-surface">
-                      Masuk ke Dashboard Penjual
+                    <h2 className="text-base font-bold text-slate-900">
+                      Login Mitra Penjual
                     </h2>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      Hanya penjual kantin IBI KKG yang telah diverifikasi Admin yang dapat mengelola menu dan harga.
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Kelola menu, update harga kasir, dan pantau pesanan stan Anda di Hall D.
                     </p>
                   </div>
 
-                  {/* Live Real-Time Status Notification Box (Pending / Approved / Rejected) */}
+                  {/* Live Real-Time Status Notification Banner */}
                   {pendingAccountAlert && (
                     <div
-                      className={`p-4 rounded-xl border flex flex-col gap-2.5 transition-all ${
+                      className={`p-3.5 rounded-xl border flex flex-col gap-2 transition-all ${
                         pendingAccountAlert.status === 'approved'
-                          ? 'bg-secondary-container/60 border-secondary text-on-secondary-container'
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                           : pendingAccountAlert.status === 'pending'
-                          ? 'bg-tertiary-fixed/50 border-tertiary text-on-tertiary-fixed'
-                          : 'bg-error-container border-error text-on-error-container'
+                          ? 'bg-amber-50 border-amber-200 text-amber-900'
+                          : 'bg-rose-50 border-rose-200 text-rose-900'
                       }`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-1.5 font-label-md font-bold">
-                          <span className="material-symbols-outlined text-[20px]">
+                        <div className="flex items-center gap-1.5 text-xs font-bold">
+                          <span className="material-symbols-outlined text-[18px]">
                             {pendingAccountAlert.status === 'approved'
                               ? 'check_circle'
                               : pendingAccountAlert.status === 'pending'
@@ -629,74 +630,67 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                           </span>
                           <span>
                             {pendingAccountAlert.status === 'approved'
-                              ? 'Notifikasi: Akun Telah Disetujui Admin!'
+                              ? 'Akun Disetujui Admin Kampus'
                               : pendingAccountAlert.status === 'pending'
-                              ? 'Status Live: Menunggu Verifikasi Admin...'
-                              : 'Notifikasi: Pendaftaran Ditolak / Perlu Revisi'}
+                              ? 'Menunggu Verifikasi Sarpras'
+                              : 'Pendaftaran Ditolak / Perlu Revisi'}
                           </span>
                         </div>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container-lowest/80 text-on-surface font-semibold">
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-white/80 font-semibold text-slate-700">
                           Live Sync
                         </span>
                       </div>
 
                       {pendingAccountAlert.status === 'approved' ? (
                         <div className="flex flex-col gap-2">
-                          <p className="font-body-sm text-[12px] text-on-surface leading-relaxed">
-                            Selamat! Pendaftaran <strong>{pendingAccountAlert.stallName}</strong> ({pendingAccountAlert.ownerName}) telah <strong>DISETUJUI</strong> oleh Admin Kampus IBI KKG. Anda sekarang memiliki akses penuh ke Dashboard Penjual.
+                          <p className="text-xs leading-relaxed">
+                            Pendaftaran <strong>{pendingAccountAlert.stallName}</strong> telah disetujui. Silakan masuk untuk mengelola stan.
                           </p>
                           <button
                             type="button"
                             onClick={() => onLoginSellerSuccess(pendingAccountAlert)}
-                            className="w-full min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center justify-center gap-1.5 shadow-xs cursor-pointer"
+                            className="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
                           >
-                            <span>Masuk ke Dashboard {pendingAccountAlert.stallName} Sekarang</span>
-                            <span className="material-symbols-outlined text-[18px]">
+                            <span>Buka Dashboard {pendingAccountAlert.stallName}</span>
+                            <span className="material-symbols-outlined text-[16px]">
                               arrow_forward
                             </span>
                           </button>
                         </div>
                       ) : pendingAccountAlert.status === 'pending' ? (
                         <div className="flex flex-col gap-2">
-                          <p className="font-body-sm text-[12px] leading-relaxed">
-                            Pendaftaran <strong>{pendingAccountAlert.stallName}</strong> ({pendingAccountAlert.ownerName}) sedang menunggu persetujuan Admin Sarpras. Walaupun Anda menutup website ini selama beberapa jam, begitu Anda kembali membuka web (atau di latar belakang), hasil verifikasi akan langsung muncul otomatis!
+                          <p className="text-xs leading-relaxed">
+                            Pendaftaran <strong>{pendingAccountAlert.stallName}</strong> sedang diverifikasi. Pembaruan akan tampil otomatis di sini.
                           </p>
                           {notifPerm !== 'granted' && (
                             <button
                               type="button"
                               onClick={requestBrowserNotificationPermission}
-                              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container-lowest text-on-surface font-label-sm text-label-sm font-semibold flex items-center justify-center gap-1.5 border border-outline-variant/40 cursor-pointer w-fit"
+                              className="px-3 py-1.5 rounded-lg bg-white text-slate-700 text-xs font-semibold flex items-center gap-1.5 border border-slate-200 cursor-pointer w-fit"
                             >
-                              <span className="material-symbols-outlined text-[16px] text-primary">
+                              <span className="material-symbols-outlined text-[15px] text-emerald-600">
                                 notifications_active
                               </span>
-                              <span>Aktifkan Notifikasi Layar / Browser</span>
+                              <span>Aktifkan Notifikasi Layar</span>
                             </button>
                           )}
                         </div>
                       ) : (
                         <div className="flex flex-col gap-1.5">
-                          <p className="font-body-sm text-[12px]">
-                            Maaf, pengajuan akun <strong>{pendingAccountAlert.stallName}</strong> ditolak oleh Admin Sarpras IBI KKG.
+                          <p className="text-xs">
+                            Pengajuan <strong>{pendingAccountAlert.stallName}</strong> ditolak oleh Admin.
                           </p>
-                          <div className="p-2.5 rounded-lg bg-surface-container-lowest/90 text-on-surface border border-error/30 flex flex-col gap-0.5">
-                            <span className="font-label-sm text-[11px] text-error font-bold uppercase tracking-wider">
-                              Keterangan / Alasan Penolakan Admin:
-                            </span>
-                            <span className="font-body-sm text-body-sm font-medium text-on-surface">
-                              &ldquo;{pendingAccountAlert.rejectedNote}&rdquo;
-                            </span>
+                          <div className="p-2 rounded-lg bg-white/90 border border-rose-200 text-slate-800 text-xs">
+                            <span className="font-bold text-rose-700">Catatan Admin: </span>
+                            &ldquo;{pendingAccountAlert.rejectedNote}&rdquo;
                           </div>
-                          <span className="text-[11px] opacity-90">
-                            Silakan daftar ulang atau perbaiki data sesuai catatan Admin di atas.
-                          </span>
                         </div>
                       )}
                     </div>
                   )}
 
-                  <div className="flex flex-col gap-1">
-                    <label className="font-label-sm text-label-sm text-on-surface-variant">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-slate-700">
                       Email Akun Penjual
                     </label>
                     <input
@@ -705,13 +699,13 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                       placeholder="Contoh: busari@ibikkg.ac.id"
                       value={sellerEmail}
                       onChange={(e) => setSellerEmail(e.target.value)}
-                      className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="h-11 px-3.5 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all"
                     />
                   </div>
 
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1.5">
                     <div className="flex items-center justify-between gap-2">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
+                      <label className="text-xs font-semibold text-slate-700">
                         Kata Sandi
                       </label>
                       <button
@@ -725,9 +719,9 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                           setVerifiedForgotAccount(null);
                           setForgotModalOpen(true);
                         }}
-                        className="font-label-sm text-xs text-primary hover:underline font-semibold cursor-pointer"
+                        className="text-xs text-emerald-700 hover:underline font-semibold cursor-pointer"
                       >
-                        Lupa Kata Sandi?
+                        Lupa Sandi?
                       </button>
                     </div>
                     <div className="relative flex items-center">
@@ -737,12 +731,12 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                         placeholder="Masukkan kata sandi"
                         value={sellerPassword}
                         onChange={(e) => setSellerPassword(e.target.value)}
-                        className="w-full h-11 pl-3.5 pr-10 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                        className="w-full h-11 pl-3.5 pr-10 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 placeholder:text-slate-400 text-sm focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none transition-all"
                       />
                       <button
                         type="button"
                         onClick={() => setShowSellerPassword((p) => !p)}
-                        className="absolute right-1 w-10 h-10 text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center"
+                        className="absolute right-1 w-9 h-9 text-slate-400 hover:text-slate-600 cursor-pointer flex items-center justify-center"
                         title={showSellerPassword ? 'Sembunyikan sandi' : 'Tampilkan sandi'}
                       >
                         <span className="material-symbols-outlined text-[18px]">
@@ -754,17 +748,17 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
 
                   <button
                     type="submit"
-                    className="w-full min-h-[48px] py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-sm cursor-pointer active:scale-[0.99]"
+                    className="w-full min-h-[46px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer active:scale-[0.99] transition-all"
                   >
-                    Login ke Dashboard Penjual
+                    Masuk ke Dashboard Penjual
                   </button>
 
-                  {/* Quick Fill Demo Accounts for Testing */}
-                  <div className="p-3.5 rounded-xl bg-surface-container-low flex flex-col gap-2">
-                    <span className="font-label-sm text-label-sm text-on-surface-variant">
-                      Akun Simulasi Cepat (Klik untuk isi otomatis):
+                  {/* Clean, Compact Quick Fill Demo Chips (Zero Clutter) */}
+                  <div className="pt-2 border-t border-slate-100 flex flex-col gap-2">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Akun Simulasi Cepat (Klik untuk Isi):
                     </span>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div className="flex flex-wrap gap-1.5">
                       {sellerAccounts.map((acc) => (
                         <button
                           key={acc.id}
@@ -774,30 +768,23 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                             setSellerPassword(acc.password);
                             trackSellerAccount(acc);
                           }}
-                          className="p-2.5 rounded-lg bg-surface-container-lowest hover:bg-surface-container-high text-left border border-outline-variant/25 flex flex-col gap-0.5 cursor-pointer transition-colors"
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200/80 text-left flex items-center gap-1.5 cursor-pointer text-xs transition-colors"
                         >
-                          <div className="flex items-center justify-between gap-1">
-                            <span className="font-label-sm text-on-surface font-bold truncate">
-                              {acc.stallName}
-                            </span>
-                            <span
-                              className={`text-[10px] px-1.5 py-0.5 rounded font-semibold shrink-0 ${
-                                acc.status === 'approved'
-                                  ? 'bg-secondary-container text-on-secondary-container'
-                                  : acc.status === 'rejected'
-                                  ? 'bg-error-container text-on-error-container'
-                                  : 'bg-tertiary-fixed text-on-tertiary-fixed'
-                              }`}
-                            >
-                              {acc.status === 'approved'
-                                ? 'Terverifikasi'
+                          <span className="font-semibold text-slate-800">{acc.stallName}</span>
+                          <span
+                            className={`text-[9px] px-1 py-0.2 rounded font-bold ${
+                              acc.status === 'approved'
+                                ? 'bg-emerald-100 text-emerald-800'
                                 : acc.status === 'rejected'
-                                ? 'Ditolak'
-                                : 'Pending'}
-                            </span>
-                          </div>
-                          <span className="text-[11px] text-on-surface-variant truncate">
-                            {acc.email}
+                                ? 'bg-rose-100 text-rose-800'
+                                : 'bg-amber-100 text-amber-800'
+                            }`}
+                          >
+                            {acc.status === 'approved'
+                              ? 'Aktif'
+                              : acc.status === 'rejected'
+                              ? 'Ditolak'
+                              : 'Pending'}
                           </span>
                         </button>
                       ))}
@@ -805,152 +792,164 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   </div>
                 </form>
               ) : (
-                /* FORM REGISTRASI PENJUAL BARU DARI NOL */
-                <form onSubmit={handleSellerRegisterSubmit} className="flex flex-col gap-3">
+                /* REGISTRATION FORM (Organized, Spaced, Not Crammed) */
+                <form onSubmit={handleSellerRegisterSubmit} className="flex flex-col gap-4">
                   <div>
-                    <h2 className="fluid-headline-md text-on-surface">
-                      Registrasi Mitra Penjual Kantin Baru
+                    <h2 className="text-base font-bold text-slate-900">
+                      Pendaftaran Stan Kantin Baru
                     </h2>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      Daftarkan stan kantin Anda di lingkungan IBI KKG. Setelah disetujui Admin, Anda dapat menginput menu dan harga dari nol.
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Daftarkan stan di Hall D. Akun akan diverifikasi Biro Sarpras sebelum aktif di web.
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Nama Pemilik / Penanggung Jawab
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Contoh: Pak Hendra"
-                        value={regOwnerName}
-                        onChange={(e) => setRegOwnerName(e.target.value)}
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      />
+                  {/* Section 1: Profil Stan */}
+                  <div className="flex flex-col gap-3">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      1. Identitas Stan &amp; Lokasi
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Nama Pemilik Stan
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: Pak Hendra"
+                          value={regOwnerName}
+                          onChange={(e) => setRegOwnerName(e.target.value)}
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Nama Stan Kantin
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: Ayam Bakar Pak Hendra"
+                          value={regStallName}
+                          onChange={(e) => setRegStallName(e.target.value)}
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Nama Stan Kantin
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Contoh: Kantin Ayam Bakar Pak Hendra"
-                        value={regStallName}
-                        onChange={(e) => setRegStallName(e.target.value)}
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Area Gedung Kantin
+                        </label>
+                        <select
+                          value={regBuilding}
+                          onChange={(e) =>
+                            setRegBuilding(e.target.value as 'Gedung A' | 'Gedung B')
+                          }
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        >
+                          <option value="Gedung A">Area Kantin Dekat Hall D (Deretan Utama)</option>
+                          <option value="Gedung B">Area Kantin Dekat Hall D (Sudut Duduk)</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Nomor / Patokan Stan
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: Stan 05 dekat pintu Hall D"
+                          value={regLocationDetail}
+                          onChange={(e) => setRegLocationDetail(e.target.value)}
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Area Lokasi Kantin IBI KKG
-                      </label>
-                      <select
-                        value={regBuilding}
-                        onChange={(e) =>
-                          setRegBuilding(e.target.value as 'Gedung A' | 'Gedung B')
-                        }
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      >
-                        <option value="Gedung A">Area Kantin Dekat Hall D (Deretan Utama)</option>
-                        <option value="Gedung B">Area Kantin Dekat Hall D (Sudut Tempat Duduk)</option>
-                      </select>
+                  {/* Section 2: Operasional & Kredensial Akun */}
+                  <div className="flex flex-col gap-3 pt-2 border-t border-slate-100">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      2. Operasional &amp; Akun Login
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Kategori Menu
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={regCategory}
+                          onChange={(e) => setRegCategory(e.target.value)}
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Jam Buka
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={regHours}
+                          onChange={(e) => setRegHours(e.target.value)}
+                          placeholder="07.00–17.00"
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          No. WhatsApp
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="62812xxxxxxx"
+                          value={regWhatsapp}
+                          onChange={(e) => setRegWhatsapp(e.target.value)}
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Detail Nomor Stan / Patokan
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Contoh: Stan 05 dekat pintu Hall D"
-                        value={regLocationDetail}
-                        onChange={(e) => setRegLocationDetail(e.target.value)}
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Kategori Hidangan
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={regCategory}
-                        onChange={(e) => setRegCategory(e.target.value)}
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Jam Operasional
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        value={regHours}
-                        onChange={(e) => setRegHours(e.target.value)}
-                        placeholder="07.00–17.00"
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Nomor WhatsApp
-                      </label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="62812xxxxxxx"
-                        value={regWhatsapp}
-                        onChange={(e) => setRegWhatsapp(e.target.value)}
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 border-t border-outline-variant/25">
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Email Login Penjual
-                      </label>
-                      <input
-                        type="email"
-                        required
-                        placeholder="email@kantin.com"
-                        value={regEmail}
-                        onChange={(e) => setRegEmail(e.target.value)}
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-label-sm text-label-sm text-on-surface-variant">
-                        Buat Kata Sandi
-                      </label>
-                      <input
-                        type="password"
-                        required
-                        placeholder="Minimal 6 karakter"
-                        value={regPassword}
-                        onChange={(e) => setRegPassword(e.target.value)}
-                        className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                      />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Email Login
+                        </label>
+                        <input
+                          type="email"
+                          required
+                          placeholder="email@kantin.com"
+                          value={regEmail}
+                          onChange={(e) => setRegEmail(e.target.value)}
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Kata Sandi
+                        </label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="Minimal 6 karakter"
+                          value={regPassword}
+                          onChange={(e) => setRegPassword(e.target.value)}
+                          className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
+                        />
+                      </div>
                     </div>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full min-h-[48px] py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-sm cursor-pointer active:scale-[0.99] mt-1"
+                    className="w-full min-h-[46px] py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer active:scale-[0.99] transition-all mt-1"
                   >
-                    Ajukan Pendaftaran Akun Penjual
+                    Ajukan Pendaftaran Stan Penjual
                   </button>
                 </form>
               )}
@@ -959,22 +958,19 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
 
           {/* ROLE 3: ADMIN KAMPUS */}
           {selectedRole === 'admin' && (
-            <form
-              onSubmit={handleAdminLogin}
-              className="flex flex-col gap-4 pt-2 border-t border-outline-variant/25"
-            >
+            <form onSubmit={handleAdminLogin} className="flex flex-col gap-4 pt-1">
               <div>
-                <h2 className="fluid-headline-md text-on-surface">
-                  Login Portal Admin Sarpras &amp; BAAK
+                <h2 className="text-base font-bold text-slate-900">
+                  Portal Admin Sarpras &amp; BAAK
                 </h2>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  Khusus staf berwenang IBI Kwik Kian Gie untuk memverifikasi pendaftaran akun penjual kantin dan memoderasi laporan harga.
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Khusus staf berwenang IBI KKG untuk verifikasi stan dan moderasi laporan harga.
                 </p>
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
-                  Email Resmi Admin Kampus
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-700">
+                  Email Resmi Admin
                 </label>
                 <input
                   type="email"
@@ -982,12 +978,12 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   placeholder="sarpras@ibikkg.ac.id"
                   value={adminEmail}
                   onChange={(e) => setAdminEmail(e.target.value)}
-                  className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="h-11 px-3.5 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
                 />
               </div>
 
-              <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-slate-700">
                   Kata Sandi Otorisasi
                 </label>
                 <input
@@ -996,27 +992,26 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   placeholder="Masukkan kata sandi admin"
                   value={adminPassword}
                   onChange={(e) => setAdminPassword(e.target.value)}
-                  className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  className="h-11 px-3.5 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-sm focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
                 />
               </div>
 
               <button
                 type="submit"
-                className="w-full min-h-[48px] py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-sm cursor-pointer active:scale-[0.99]"
+                className="w-full min-h-[46px] py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs sm:text-sm font-bold shadow-xs cursor-pointer active:scale-[0.99] transition-all"
               >
                 Masuk ke Portal Admin
               </button>
 
               {adminCredentials.email === 'sarpras@ibikkg.ac.id' &&
               adminCredentials.password === 'admin123' ? (
-                <div className="p-3.5 rounded-xl bg-surface-container-low flex items-center justify-between gap-2">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-2">
                   <div className="flex flex-col">
-                    <span className="font-label-sm text-on-surface font-bold">
-                      Akun Bawaan Admin IBI KKG:
+                    <span className="text-xs font-bold text-slate-800">
+                      Akun Bawaan Admin:
                     </span>
-                    <span className="text-[12px] text-on-surface-variant">
-                      Email: <strong>{adminCredentials.email}</strong> | Sandi:{' '}
-                      <strong>{adminCredentials.password}</strong>
+                    <span className="text-[11px] text-slate-500">
+                      sarpras@ibikkg.ac.id / admin123
                     </span>
                   </div>
                   <button
@@ -1025,19 +1020,17 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                       setAdminEmail(adminCredentials.email);
                       setAdminPassword(adminCredentials.password);
                     }}
-                    className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold shadow-xs cursor-pointer shrink-0"
+                    className="px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-emerald-700 text-xs font-bold shadow-2xs hover:bg-slate-50 cursor-pointer"
                   >
                     Isi Otomatis
                   </button>
                 </div>
               ) : (
-                <div className="p-3 rounded-xl bg-secondary-container/40 border border-secondary/30 text-on-surface flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[18px] text-secondary">
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-600 text-xs flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[16px] text-emerald-600">
                     lock
                   </span>
-                  <span className="font-body-sm text-[12px] text-on-surface-variant">
-                    Kredensial Admin telah diperbarui secara kustom &amp; tersinkronisasi di Cloud Database.
-                  </span>
+                  <span>Kredensial Admin kustom aktif &amp; tersinkronisasi di database.</span>
                 </div>
               )}
             </form>
@@ -1046,48 +1039,48 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
       </div>
 
       {unreadDecisionModal && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-outline-variant/30">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-slate-200">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <div
-                  className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
                     unreadDecisionModal.status === 'approved'
-                      ? 'bg-secondary-container text-on-secondary-container'
-                      : 'bg-error-container text-on-error-container'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : 'bg-rose-100 text-rose-800'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[24px]">
+                  <span className="material-symbols-outlined text-[22px]">
                     {unreadDecisionModal.status === 'approved'
                       ? 'verified'
                       : 'notification_important'}
                   </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
-                    Pemberitahuan Sistem Verifikasi
+                  <span className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold">
+                    Verifikasi Biro Sarpras
                   </span>
-                  <h3 className="fluid-headline-md text-on-surface">
+                  <h3 className="text-base font-bold text-slate-900">
                     {unreadDecisionModal.status === 'approved'
-                      ? 'Akun Kantin Anda Disetujui!'
-                      : 'Pengajuan Kantin Ditolak / Revisi'}
+                      ? 'Stan Disetujui Admin!'
+                      : 'Pengajuan Ditolak / Revisi'}
                   </h3>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setUnreadDecisionModal(null)}
-                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
 
             {unreadDecisionModal.status === 'approved' ? (
               <div className="flex flex-col gap-3">
-                <p className="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                <p className="text-xs text-slate-600 leading-relaxed">
                   Admin Sarpras IBI KKG telah menyetujui pendaftaran stan{' '}
-                  <strong className="text-on-surface">{unreadDecisionModal.stallName}</strong> ({unreadDecisionModal.ownerName}). Anda kini dapat langsung masuk ke Dashboard Penjual untuk mulai menginput menu dan harga.
+                  <strong className="text-slate-900">{unreadDecisionModal.stallName}</strong> ({unreadDecisionModal.ownerName}). Anda kini dapat langsung masuk ke Dashboard Penjual untuk mengelola menu dan pesanan.
                 </p>
                 <button
                   type="button"
@@ -1096,30 +1089,30 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     setUnreadDecisionModal(null);
                     onLoginSellerSuccess(acc);
                   }}
-                  className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-primary text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                  className="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                 >
-                  <span>Masuk ke Dashboard Penjual Sekarang</span>
-                  <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                  <span>Masuk ke Dashboard Penjual</span>
+                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </button>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
+                <p className="text-xs text-slate-600">
                   Pengajuan stan{' '}
-                  <strong className="text-on-surface">{unreadDecisionModal.stallName}</strong> belum dapat disetujui oleh Admin Sarpras IBI KKG dengan alasan berikut:
+                  <strong className="text-slate-900">{unreadDecisionModal.stallName}</strong> belum dapat disetujui dengan catatan berikut:
                 </p>
-                <div className="p-3.5 rounded-xl bg-error-container/60 border border-error text-on-error-container flex flex-col gap-1">
-                  <span className="font-label-sm text-[11px] font-bold uppercase tracking-wider">
-                    Alasan Penolakan / Revisi dari Admin:
+                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-950 flex flex-col gap-1">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700">
+                    Alasan dari Admin:
                   </span>
-                  <span className="font-body-md text-body-md font-semibold">
+                  <span className="text-xs font-medium">
                     &ldquo;{unreadDecisionModal.rejectedNote}&rdquo;
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setUnreadDecisionModal(null)}
-                  className="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-surface-container-high text-on-surface font-label-md text-label-md font-semibold cursor-pointer"
+                  className="w-full min-h-[42px] px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
                 >
                   Saya Mengerti
                 </button>
@@ -1129,30 +1122,30 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
         </div>
       )}
 
-      {/* MODAL LUPA KATA SANDI PENJUAL (VERIFIKASI MANDIRI EMAIL + WHATSAPP ATAU BANTUAN ADMIN) */}
+      {/* MODAL LUPA KATA SANDI PENJUAL */}
       {forgotModalOpen && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-outline-variant/30 max-h-[90dvh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-slate-200 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[22px]">lock_reset</span>
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">lock_reset</span>
                 </div>
                 <div>
-                  <span className="font-label-sm text-[11px] text-primary font-bold uppercase tracking-wider">
-                    Pemulihan Akses Mitra Kantin
+                  <span className="text-[11px] text-emerald-700 font-bold uppercase tracking-wider">
+                    Pemulihan Sandi Stan
                   </span>
-                  <h3 className="fluid-headline-md text-on-surface">
-                    Lupa Kata Sandi Penjual?
+                  <h3 className="text-base font-bold text-slate-900">
+                    Lupa Kata Sandi?
                   </h3>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setForgotModalOpen(false)}
-                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
 
@@ -1168,7 +1161,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     (a) => a.email.toLowerCase() === cleanEmail
                   );
                   if (!foundAcc) {
-                    onShowToast('Email akun penjual tersebut tidak ditemukan.', true);
+                    onShowToast('Email akun penjual tidak ditemukan.', true);
                     return;
                   }
 
@@ -1177,7 +1170,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
 
                   if (!last4Input || (digitsInput !== accDigits && last4Input !== accLast4)) {
                     onShowToast(
-                      'Nomor WhatsApp atau 4 digit terakhir tidak cocok dengan data pendaftaran stan.',
+                      'Nomor WhatsApp atau 4 digit terakhir tidak cocok dengan data stan.',
                       true
                     );
                     return;
@@ -1188,12 +1181,12 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 }}
                 className="flex flex-col gap-3.5"
               >
-                <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Ibu/Bapak Kantin dapat langsung mereset kata sandi secara mandiri dengan memverifikasi <strong>Email Akun</strong> dan <strong>Nomor WhatsApp</strong> (atau cukup 4 angka terakhir WA) yang terdaftar:
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Reset kata sandi mandiri dengan memverifikasi <strong>Email</strong> dan <strong>Nomor WhatsApp</strong> stan terdaftar:
                 </p>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                  <label className="text-xs font-semibold text-slate-700">
                     1. Email Login Penjual
                   </label>
                   <input
@@ -1202,12 +1195,12 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     placeholder="Contoh: busari@ibikkg.ac.id"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                  <label className="text-xs font-semibold text-slate-700">
                     2. Nomor WhatsApp Terdaftar (atau 4 Digit Terakhir)
                   </label>
                   <input
@@ -1216,32 +1209,20 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     placeholder="Contoh: 081290001980 atau 1980"
                     value={forgotWhatsapp}
                     onChange={(e) => setForgotWhatsapp(e.target.value)}
-                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
                   />
-                  <span className="text-[11px] text-on-surface-variant">
-                    Petunjuk: Masukkan nomor WA saat mendaftar stan (misal: akhiran <strong>1980</strong> untuk Bu Sari, <strong>3311</strong> untuk Mas Budi).
+                  <span className="text-[11px] text-slate-400">
+                    Contoh: akhiran <strong>1980</strong> untuk Bu Sari, <strong>3311</strong> untuk Mas Budi.
                   </span>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  className="w-full min-h-[44px] py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                 >
-                  <span className="material-symbols-outlined text-[18px]">verified_user</span>
-                  <span>Verifikasi &amp; Buat Kata Sandi Baru</span>
+                  <span className="material-symbols-outlined text-[16px]">verified_user</span>
+                  <span>Verifikasi &amp; Lanjut</span>
                 </button>
-
-                <div className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-1.5">
-                  <span className="font-label-sm text-xs text-on-surface font-bold flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px] text-secondary">
-                      support_agent
-                    </span>
-                    Lupa Email &amp; Nomor WhatsApp Sekaligus?
-                  </span>
-                  <p className="font-body-sm text-[11px] text-on-surface-variant leading-relaxed">
-                    Jangan khawatir! Penjual cukup menghubungi <strong>Admin Kampus (Sarpras IBI KKG)</strong>. Admin dapat meresetkan kata sandi stan secara instan melalui <em>Portal Admin → Pengaturan Akun Admin / Tabel Akun Penjual</em>.
-                  </p>
-                </div>
               </form>
             ) : (
               <form
@@ -1264,45 +1245,45 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 }}
                 className="flex flex-col gap-3.5"
               >
-                <div className="p-3 rounded-xl bg-secondary-container/50 border border-secondary/30 flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-secondary text-[22px]">
+                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-emerald-600 text-[20px]">
                     check_circle
                   </span>
                   <div className="flex flex-col">
-                    <span className="font-label-sm text-xs text-on-surface font-bold">
-                      Identitas Terverifikasi: {verifiedForgotAccount?.stallName}
+                    <span className="text-xs font-bold text-slate-900">
+                      Terverifikasi: {verifiedForgotAccount?.stallName}
                     </span>
-                    <span className="text-[11px] text-on-surface-variant">
-                      {verifiedForgotAccount?.ownerName} ({verifiedForgotAccount?.email})
+                    <span className="text-[11px] text-slate-500">
+                      {verifiedForgotAccount?.ownerName}
                     </span>
                   </div>
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                  <label className="text-xs font-semibold text-slate-700">
                     Kata Sandi Baru
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Masukkan kata sandi baru yang mudah diingat"
+                    placeholder="Masukkan sandi baru"
                     value={forgotNewPassword}
                     onChange={(e) => setForgotNewPassword(e.target.value)}
-                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
                   />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                  <label className="font-label-sm text-label-sm text-on-surface font-semibold">
+                  <label className="text-xs font-semibold text-slate-700">
                     Ulangi Kata Sandi Baru
                   </label>
                   <input
                     type="text"
                     required
-                    placeholder="Ketik ulang kata sandi baru"
+                    placeholder="Ketik ulang sandi baru"
                     value={forgotConfirmPassword}
                     onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                    className="h-11 px-3.5 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
                   />
                 </div>
 
@@ -1310,15 +1291,15 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setForgotStep('verify')}
-                    className="w-1/3 min-h-[44px] rounded-xl bg-surface-container text-on-surface font-label-sm text-label-sm font-semibold cursor-pointer"
+                    className="w-1/3 min-h-[42px] rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
                   >
                     Kembali
                   </button>
                   <button
                     type="submit"
-                    className="w-2/3 min-h-[44px] rounded-xl bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer shadow-sm"
+                    className="w-2/3 min-h-[42px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer shadow-xs"
                   >
-                    Simpan Kata Sandi Baru
+                    Simpan Sandi Baru
                   </button>
                 </div>
               </form>

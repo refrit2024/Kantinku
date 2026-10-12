@@ -141,28 +141,34 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
     (categoryFilter !== 'all' ? 1 : 0) +
     (onlyOpenFilter ? 1 : 0);
 
+  const openStallsCount = stalls.filter((s) => s.isOpen).length;
+
   return (
-    <div className="flex flex-col w-full pb-12">
-      {/* Clean Horizontal Sub-Nav Bar for Student Web Application */}
-      <div className="w-full bg-surface-container-low border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-2.5">
-        <div className="max-w-7xl mx-auto flex flex-col lg:flex-row lg:items-center lg:justify-between gap-2.5">
-          <div className="flex items-center gap-2 overflow-x-auto no-scrollbar">
+    <div className="flex flex-col w-full pb-16 min-h-screen bg-slate-50/70">
+      {/* 1. SHOPEEFOOD/GOJEK STYLE SUB-NAV BAR (Sticky Under Top Bar) */}
+      <nav aria-label="Navigasi Menu Utama" className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 shadow-xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 py-2 sm:py-2.5">
+          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto py-0.5">
             {[
-              { id: 'kantin', label: 'Semua Kantin', icon: 'storefront' },
+              { id: 'kantin', label: 'Semua Stan', icon: 'storefront' },
               {
                 id: 'peta-gps',
-                label: 'Peta GPS Penjual & Arah',
-                icon: 'my_location',
+                label: 'Peta GPS & Rute',
+                icon: 'near_me',
               },
-              { id: 'kategori', label: 'Eksplorasi Menu', icon: 'restaurant_menu' },
-              { id: 'favorit', label: `Favorit (${favoriteStallIds.length})`, icon: 'favorite' },
+              { id: 'kategori', label: 'Eksplor Menu', icon: 'restaurant_menu' },
+              {
+                id: 'favorit',
+                label: 'Favorit',
+                icon: 'favorite',
+                count: favoriteStallIds.length,
+              },
               {
                 id: 'pesanan',
-                label:
-                  activeOrdersCount > 0
-                    ? `Pesanan Saya (${activeOrdersCount} Aktif)`
-                    : `Pesanan Saya (${orders.length})`,
+                label: 'Pesanan Saya',
                 icon: 'receipt_long',
+                activeCount: activeOrdersCount,
+                totalCount: orders.length,
               },
             ].map((tab) => {
               const isActive = activeSubTab === tab.id;
@@ -171,34 +177,51 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   key={tab.id}
                   type="button"
                   onClick={() => onChangeSubTab(tab.id as StudentSubTab)}
-                  className={`min-h-[44px] px-4 py-2 rounded-xl font-label-sm text-label-sm flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-colors cursor-pointer active:scale-[0.98] ${
+                  className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-[13px] font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
                     isActive
-                      ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                      : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
+                      ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
+                      : 'bg-slate-100/90 text-slate-700 hover:text-slate-900 hover:bg-slate-200/80'
                   }`}
                 >
-                  <span className="material-symbols-outlined text-[16px]">{tab.icon}</span>
+                  <span className={`material-symbols-outlined text-[18px] ${isActive ? 'text-white' : 'text-slate-600'}`}>
+                    {tab.icon}
+                  </span>
                   <span>{tab.label}</span>
+
+                  {tab.count !== undefined && tab.count > 0 && (
+                    <span className="tabular-nums font-bold text-xs opacity-90">
+                      ({tab.count})
+                    </span>
+                  )}
+
+                  {tab.activeCount !== undefined && tab.activeCount > 0 && (
+                    <span className="tabular-nums font-bold text-xs text-amber-300">
+                      ({tab.activeCount})
+                    </span>
+                  )}
                 </button>
               );
             })}
           </div>
 
-          {/* Desktop Quick Status Summary on the Right of Sub-Nav */}
-          <div className="hidden lg:flex items-center gap-3 text-xs text-on-surface-variant">
-            <span className="inline-flex items-center gap-1.5 font-semibold text-secondary bg-secondary-container/50 px-2.5 py-1 rounded-lg">
-              <span className="w-2 h-2 rounded-full bg-secondary"></span>
-              {stalls.filter((s) => s.isOpen).length} dari {stalls.length} Stan Buka Hari Ini
+          {/* Quick Campus Status Indicator on Desktop */}
+          <div className="hidden lg:flex items-center gap-3 text-xs text-slate-600 shrink-0">
+            <span className="font-semibold text-emerald-800 flex items-center gap-1.5">
+              <span>{openStallsCount} dari {stalls.length} Stan Buka</span>
             </span>
-            <span>•</span>
-            <span>Area Kantin Dekat Hall D — Kampus IBI KKG</span>
+            <span aria-hidden="true" className="text-slate-300">·</span>
+            <span className="font-medium text-slate-600 flex items-center gap-1">
+              <span className="material-symbols-outlined text-[15px] text-emerald-600">domain</span>
+              Kantin Hall D · IBI KKG
+            </span>
           </div>
         </div>
-      </div>
+      </nav>
 
-      {/* Main Content Container with Responsive Desktop vs Mobile Layout */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 flex flex-col gap-6">
-        {/* SUB-TAB PETA GPS PENJUAL & PANDUAN ARAH PEMBELI */}
+      {/* 2. MAIN CONTAINER */}
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex flex-col gap-6">
+
+        {/* SUB-TAB: PETA GPS REAL-TIME */}
         {activeSubTab === 'peta-gps' ? (
           <div className="flex flex-col gap-4">
             <LiveGpsTrackerMap
@@ -209,50 +232,51 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
             />
           </div>
         ) : activeSubTab === 'pesanan' ? (
-          <div className="flex flex-col gap-4">
-            {/* Header & Pencarian NIM / Kode Order */}
-            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          /* SUB-TAB: PESANAN SAYA (ShopeeFood / Gojek Order Tracker) */
+          <div className="flex flex-col gap-5">
+            {/* Header & Order Search Input */}
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
               <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-primary">
-                  <span className="material-symbols-outlined text-[22px]">receipt_long</span>
-                  <h2 className="fluid-headline-md text-on-surface">
-                    Lacak Status Pesanan Saya (Real-Time)
+                <div className="flex items-center gap-2 text-emerald-700">
+                  <span className="material-symbols-outlined text-[24px]">receipt_long</span>
+                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
+                    Lacak Pesanan Saya (Real-Time)
                   </h2>
                 </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
-                  Pantau status masakan Anda langsung dari kantin IBI KKG tanpa perlu login. Ketik <strong>NIM</strong>, <strong>Nama</strong>, atau <strong>Kode Order</strong> Anda untuk menyaring pesanan.
+                <p className="text-sm text-slate-600 max-w-2xl">
+                  Pantau langsung proses antrean dapur dan siap ambil pesanan Anda di kantin IBI KKG. Masukkan <strong>NIM</strong> atau <strong>Nama</strong> untuk memfilter.
                 </p>
               </div>
 
               <div className="relative w-full md:w-80 shrink-0">
-                <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[18px]">
+                <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
                   search
                 </span>
                 <input
                   type="search"
                   value={orderLookupQuery}
                   onChange={(e) => setOrderLookupQuery(e.target.value)}
-                  placeholder="Cari NIM, Nama, atau Kode Order..."
-                  className="w-full h-11 pl-10 pr-3 rounded-lg bg-surface-container-low text-on-surface placeholder:text-outline font-body-sm text-body-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Cari NIM, Nama, atau ID..."
+                  className="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-slate-200"
                 />
               </div>
             </div>
 
             {filteredStudentOrders.length === 0 ? (
-              <div className="bg-surface-container-lowest rounded-xl p-8 text-center flex flex-col items-center gap-3 shadow-sm border border-outline-variant/25">
-                <div className="w-12 h-12 rounded-full bg-surface-container-high text-on-surface-variant flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[26px]">shopping_bag</span>
+              <div className="bg-white rounded-2xl p-8 sm:p-12 text-center flex flex-col items-center gap-3 shadow-sm border border-slate-200/80">
+                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[32px]">fastfood</span>
                 </div>
                 <div className="flex flex-col gap-1 max-w-md">
-                  <h3 className="fluid-headline-md text-on-surface">
+                  <h3 className="text-lg font-bold text-slate-900">
                     {orderLookupQuery.trim()
                       ? 'Pesanan Tidak Ditemukan'
-                      : 'Belum Ada Pesanan Aktif'}
+                      : 'Belum Ada Pesanan yang Berjalan'}
                   </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">
+                  <p className="text-sm text-slate-500">
                     {orderLookupQuery.trim()
-                      ? `Tidak ada pesanan dengan kata kunci "${orderLookupQuery}".`
-                      : 'Pilih kantin favorit Anda, klik tombol "+ Pesan" pada menu makanan/minuman, lalu bayar via QRIS, DANA/GoPay/OVO, Transfer Bank, atau Tunai di Kasir.'}
+                      ? `Tidak ada pesanan aktif dengan kata kunci "${orderLookupQuery}".`
+                      : 'Yuk pilih makanan favorit Anda dari katalog kantin IBI KKG dan pesan dengan mudah tanpa antre.'}
                   </p>
                 </div>
                 <button
@@ -261,14 +285,14 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     if (orderLookupQuery.trim()) setOrderLookupQuery('');
                     else onChangeSubTab('kantin');
                   }}
-                  className="min-h-[44px] px-5 py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer"
+                  className="mt-2 min-h-[44px] px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm cursor-pointer shadow-sm shadow-emerald-600/30 hover:bg-emerald-700 active:scale-95 transition-all"
                 >
-                  {orderLookupQuery.trim() ? 'Tampilkan Semua Pesanan' : 'Mulai Pilih Kantin & Menu'}
+                  {orderLookupQuery.trim() ? 'Tampilkan Semua Pesanan' : 'Buka Katalog Kantin'}
                 </button>
               </div>
             ) : (
               <div className="flex flex-col gap-5">
-                {/* SHOPEEFOOD-STYLE AUTOMATIC ORDER MAP & ROUTE TRACKER AT TOP OF PESANAN SAYA */}
+                {/* Embedded Live Map Tracking Top Drawer */}
                 {(() => {
                   const activeOrderToTrack =
                     filteredStudentOrders.find((o) => o.id === trackedOrderInMapId) ||
@@ -281,14 +305,12 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     filteredStudentOrders[0];
 
                   if (!activeOrderToTrack) return null;
-                  const targetStallObj =
-                    stalls.find((s) => s.id === activeOrderToTrack.stallId) || stalls[0];
 
                   return (
                     <div className="flex flex-col gap-2">
                       {filteredStudentOrders.length > 1 && (
                         <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                          <span className="text-xs font-label-sm text-on-surface-variant font-semibold shrink-0">
+                          <span className="text-xs font-semibold text-slate-500 shrink-0">
                             Pilih Pesanan di Peta Rute:
                           </span>
                           {filteredStudentOrders.map((o) => (
@@ -296,837 +318,697 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               key={`track-pill-${o.id}`}
                               type="button"
                               onClick={() => setTrackedOrderInMapId(o.id)}
-                              className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-label-sm flex items-center gap-1.5 shrink-0 cursor-pointer border ${
+                              className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer border transition-all ${
                                 o.id === activeOrderToTrack.id
-                                  ? 'bg-secondary text-on-secondary border-secondary font-bold shadow-2xs'
-                                  : 'bg-surface-container-lowest text-on-surface border-outline-variant/30'
+                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                               }`}
                             >
-                              <span className="material-symbols-outlined text-[15px]">
-                                location_on
-                              </span>
-                              <span>
-                                #{o.id} • {o.stallName}
-                              </span>
+                              <span className="font-bold">{o.stallName}</span>
+                              <span className="opacity-75">#{o.id.slice(-4)}</span>
                             </button>
                           ))}
                         </div>
                       )}
 
-                      <LiveGpsTrackerMap
-                        stalls={targetStallObj ? [targetStallObj] : stalls}
-                        selectedStallId={activeOrderToTrack.stallId}
-                        order={activeOrderToTrack}
-                        mode="order-tracking"
-                        onShowToast={onShowToast}
-                      />
+                      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col gap-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                            <span className="text-sm font-bold text-slate-800">
+                              Navigasi Rute Langsung ke {activeOrderToTrack.stallName}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceiptOrder(activeOrderToTrack)}
+                            className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">receipt</span>
+                            <span>Lihat Nota Digital</span>
+                          </button>
+                        </div>
+                        <LiveGpsTrackerMap
+                          stalls={stalls}
+                          order={activeOrderToTrack}
+                          mode="order-tracking"
+                          onShowToast={onShowToast}
+                        />
+                      </div>
                     </div>
                   );
                 })()}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {/* Orders List Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredStudentOrders.map((ord) => {
-                  const statusMeta =
-                    ord.status === 'waiting_payment_verification'
-                      ? {
-                          badge: 'Menunggu Verifikasi Bayar Penjual',
-                          className: 'bg-tertiary-fixed text-tertiary',
-                          step: 1,
-                        }
-                      : ord.status === 'cooking'
-                      ? {
-                          badge: 'Sedang Disiapkan / Dibungkus',
-                          className: 'bg-primary-fixed text-on-primary-fixed',
-                          step: 2,
-                        }
-                      : ord.status === 'ready_pickup'
-                      ? {
-                          badge: 'Siap Diambil di Stan Sekarang',
-                          className: 'bg-secondary-container text-on-secondary-container',
-                          step: 3,
-                        }
-                      : ord.status === 'completed'
-                      ? {
-                          badge: 'Pesanan Selesai Diambil',
-                          className: 'bg-surface-container-high text-on-surface-variant',
-                          step: 4,
-                        }
-                      : {
-                          badge: 'Ditolak / Dibatalkan',
-                          className: 'bg-error-container text-on-error-container',
-                          step: 0,
-                        };
+                    const statusConfig = {
+                      waiting_payment_verification: {
+                        label: 'Menunggu Verifikasi',
+                        bg: 'bg-amber-50 text-amber-800 border-amber-200',
+                        dot: 'bg-amber-500',
+                      },
+                      cooking: {
+                        label: 'Sedang Dimasak',
+                        bg: 'bg-blue-50 text-blue-800 border-blue-200',
+                        dot: 'bg-blue-500',
+                      },
+                      ready_pickup: {
+                        label: 'Siap Diambil di Stan!',
+                        bg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                        dot: 'bg-emerald-500',
+                      },
+                      completed: {
+                        label: 'Selesai',
+                        bg: 'bg-slate-100 text-slate-700 border-slate-200',
+                        dot: 'bg-slate-400',
+                      },
+                      rejected: {
+                        label: 'Ditolak / Dibatalkan',
+                        bg: 'bg-rose-50 text-rose-800 border-rose-200',
+                        dot: 'bg-rose-500',
+                      },
+                    }[ord.status];
 
-                  return (
-                    <div
-                      key={ord.id}
-                      className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col justify-between gap-3.5"
-                    >
-                      <div className="flex flex-col gap-3">
-                        <div className="flex items-start justify-between gap-2 flex-wrap">
-                          <div className="flex flex-col">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-xs font-bold text-primary">
-                                {ord.id}
-                              </span>
-                              <span className="text-outline-variant">•</span>
-                              <span className="font-label-sm text-xs text-on-surface-variant">
-                                {ord.createdAt}
-                              </span>
+                    return (
+                      <div
+                        key={ord.id}
+                        className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-col justify-between gap-4"
+                      >
+                        <div className="flex flex-col gap-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <h4 className="font-bold text-slate-900 text-base">
+                                {ord.stallName}
+                              </h4>
+                              <p className="text-xs text-slate-500 font-mono mt-0.5">
+                                #{ord.id} • {ord.createdAt}
+                              </p>
                             </div>
-                            <h3 className="fluid-headline-md text-on-surface mt-0.5">
-                              {ord.stallName}
-                            </h3>
-                            <span className="font-body-sm text-xs text-on-surface-variant flex items-center gap-1">
-                              <span className="material-symbols-outlined text-[14px] text-secondary">
-                                location_on
-                              </span>
-                              <span>{ord.stallLocation}</span>
-                            </span>
-                          </div>
-                          <span
-                            className={`px-2.5 py-1 rounded-lg font-label-sm text-xs font-bold ${statusMeta.className}`}
-                          >
-                            {statusMeta.badge}
-                          </span>
-                        </div>
-
-                        {/* Progress Stepper Bar */}
-                        {statusMeta.step > 0 && (
-                          <div className="grid grid-cols-3 gap-1.5 pt-1">
-                            <div
-                              className={`h-1.5 rounded-full ${
-                                statusMeta.step >= 1 ? 'bg-primary' : 'bg-surface-container-high'
-                              }`}
-                            />
-                            <div
-                              className={`h-1.5 rounded-full ${
-                                statusMeta.step >= 2 ? 'bg-primary' : 'bg-surface-container-high'
-                              }`}
-                            />
-                            <div
-                              className={`h-1.5 rounded-full ${
-                                statusMeta.step >= 3 ? 'bg-secondary' : 'bg-surface-container-high'
-                              }`}
-                            />
-                          </div>
-                        )}
-
-                        {/* Info Pemesan & Jam Ambil */}
-                        <div className="p-3 rounded-lg bg-surface-container-low flex flex-col gap-1 text-xs">
-                          <div className="flex justify-between gap-2">
-                            <span className="text-on-surface-variant">Pemesan:</span>
-                            <span className="font-semibold text-on-surface">
-                              {ord.studentName} (NIM: {ord.studentNim})
-                            </span>
-                          </div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-on-surface-variant">Target Jam Ambil:</span>
-                            <span className="font-semibold text-primary">{ord.pickupTime}</span>
-                          </div>
-                          <div className="flex justify-between gap-2">
-                            <span className="text-on-surface-variant">Metode Pembayaran:</span>
-                            <span className="font-semibold text-on-surface">
-                              {ord.paymentProviderLabel}
-                            </span>
-                          </div>
-                        </div>
-
-                        {/* Daftar Menu yang Dipesan */}
-                        <div className="flex flex-col gap-1.5 border-t border-outline-variant/20 pt-2.5">
-                          {(ord.items ?? []).map((it, idx) => (
-                            <div
-                              key={`${ord.id}-item-${idx}`}
-                              className="flex items-center justify-between text-xs"
+                            <span
+                              className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shrink-0 ${statusConfig.bg}`}
                             >
-                              <span className="text-on-surface">
-                                <strong>{it.quantity}x</strong> {it.name}
-                              </span>
-                              <span className="font-semibold text-on-surface">
-                                Rp {(it.price * it.quantity).toLocaleString('id-ID')}
+                              <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
+                              <span>{statusConfig.label}</span>
+                            </span>
+                          </div>
+
+                          <div className="p-3 rounded-xl bg-slate-50 text-xs flex flex-col gap-1.5 border border-slate-100">
+                            <div className="flex justify-between text-slate-600">
+                              <span>Pemesan:</span>
+                              <span className="font-semibold text-slate-900">
+                                {ord.studentName} ({ord.studentNim})
                               </span>
                             </div>
-                          ))}
-                          <div className="flex items-center justify-between pt-2 border-t border-outline-variant/20 font-label-md text-sm">
-                            <span className="font-bold text-on-surface">Total Bayar</span>
-                            <span className="font-bold text-primary">
-                              Rp {(ord.totalAmount ?? 0).toLocaleString('id-ID')}
-                            </span>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Jam Ambil:</span>
+                              <span className="font-semibold text-emerald-700">{ord.pickupTime}</span>
+                            </div>
+                            <div className="flex justify-between text-slate-600">
+                              <span>Bayar:</span>
+                              <span className="font-semibold text-slate-900">
+                                {ord.paymentProviderLabel}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-col gap-1 pt-1">
+                            {(ord.items ?? []).map((it, idx) => (
+                              <div
+                                key={`${ord.id}-item-${idx}`}
+                                className="flex items-center justify-between text-xs text-slate-700"
+                              >
+                                <span>
+                                  <strong>{it.quantity}x</strong> {it.name}
+                                </span>
+                                <span className="font-medium">
+                                  Rp {(it.price * it.quantity).toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                            ))}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-sm font-bold text-slate-900">
+                              <span>Total Bayar:</span>
+                              <span className="text-emerald-700">
+                                Rp {(ord.totalAmount ?? 0).toLocaleString('id-ID')}
+                              </span>
+                            </div>
                           </div>
                         </div>
 
-                        {ord.rejectionReason && (
-                          <div className="p-2.5 rounded-lg bg-error-container/60 text-on-error-container text-xs">
-                            <strong>Catatan Penjual:</strong> {ord.rejectionReason}
-                          </div>
-                        )}
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedReceiptOrder(ord)}
+                            className="min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">map</span>
+                            <span>Rute &amp; Nota</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => onSelectStall(ord.stallId)}
+                            className="min-h-[38px] px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                          >
+                            <span className="material-symbols-outlined text-[16px]">storefront</span>
+                            <span>Buka Stan</span>
+                          </button>
+                        </div>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setSelectedReceiptOrder(ord)}
-                          className="w-full min-h-[44px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">
-                            map
-                          </span>
-                          <span>Peta Rute &amp; Nota</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => onSelectStall(ord.stallId)}
-                          className="w-full min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">storefront</span>
-                          <span>Buka Stan</span>
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
                 </div>
               </div>
             )}
           </div>
         ) : (
-          /* DESKTOP vs MOBILE DISTINCT LAYOUT:
-             - On Mobile (<1024px): Compact Hero Header + Search Bar + Horizontal Quick Filter Pills + Stacked Cards
-             - On Desktop (>=1024px): Clean 12-Col Architecture:
-               - Left Sidebar (lg:col-span-3): Structured Filter Panel (Budget, Kategori, Status Buka) + Daftar Pintasan Stan
-               - Right Main Content (lg:col-span-9): Desktop Hero Search Header + 2-Column Spacious Stall Directory Grid
-          */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-            {/* LEFT SIDEBAR ON DESKTOP (3 cols sticky) — Structured Filters & Quick Stall Jump */}
-            <aside className="lg:col-span-3 lg:sticky lg:top-20 flex flex-col gap-4 min-w-0 order-2 lg:order-1">
-              {/* Desktop Vertical Filter Sidebar (Hidden on Mobile because Mobile uses horizontal filter bar) */}
-              <div className="hidden lg:flex bg-surface-container-lowest rounded-xl p-5 shadow-sm border border-outline-variant/25 flex-col gap-4">
-                <div className="flex items-center justify-between gap-2 border-b border-outline-variant/20 pb-3">
-                  <div className="flex items-center gap-2 text-on-surface">
-                    <span className="material-symbols-outlined text-[19px] text-primary">tune</span>
-                    <h2 className="font-headline-sm text-base font-bold">Filter Katalog</h2>
+          /* SUB-TAB: SEMUA KANTIN / EKSPLOR MENU / FAVORIT */
+          <div className="flex flex-col gap-6">
+            {/* 3. SHOPEEFOOD/GOJEK STYLE HERO BANNER & SEARCH SECTION */}
+            <section className="relative overflow-hidden rounded-3xl bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-5 sm:p-8 shadow-md">
+              {/* Subtle background decorative shapes */}
+              <div className="absolute -top-12 -right-12 w-56 h-56 rounded-full bg-emerald-600/30 blur-2xl pointer-events-none"></div>
+              <div className="absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-teal-500/20 blur-2xl pointer-events-none"></div>
+
+              <div className="relative z-10 flex flex-col gap-4 sm:gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col gap-1">
+                    {/* Eyebrow Kicker - Clean unboxed metadata (Skill.md zero-pill & anti-slop rules) */}
+                    <div className="flex items-center gap-2 text-xs font-medium text-emerald-200/90 tracking-wide">
+                      <span>KantinKu IBI Kwik Kian Gie</span>
+                      <span aria-hidden="true" className="text-emerald-400">·</span>
+                      <span>Bebas Biaya Admin</span>
+                    </div>
+                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white mt-1 text-balance">
+                      Mau Makan Apa Hari Ini?
+                    </h1>
+                    <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl leading-relaxed">
+                      Pesan menu makanan &amp; minuman favorit langsung dari pedagang kantin kampus. Harga jujur tanpa mark-up.
+                    </p>
                   </div>
-                  {hasActiveFilters && (
+
+                  {/* Hero Actions (Selector 8) - Touch targets >= 44px, responsive width */}
+                  <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto">
                     <button
                       type="button"
-                      onClick={resetAllFilters}
-                      className="text-xs font-label-sm text-error hover:underline font-semibold cursor-pointer"
+                      onClick={() => onChangeSubTab('peta-gps')}
+                      className="min-h-[44px] px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-95 transition-all flex-1 sm:flex-none"
                     >
-                      Reset Semua
+                      <span className="material-symbols-outlined text-[18px]">near_me</span>
+                      <span>Peta &amp; Navigasi Stan</span>
                     </button>
-                  )}
-                </div>
-
-                {/* Status Buka Toggle */}
-                <div className="flex flex-col gap-2">
-                  <span className="font-label-sm text-xs text-on-surface-variant font-semibold">
-                    Status Operasional
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
-                    className={`w-full min-h-[40px] px-3 py-2 rounded-xl font-label-sm text-xs flex items-center justify-between transition-colors cursor-pointer border ${
-                      onlyOpenFilter
-                        ? 'bg-secondary text-on-secondary border-secondary font-semibold shadow-xs'
-                        : 'bg-surface-container-low text-on-surface border-outline-variant/25 hover:bg-surface-container'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2">
-                      <span
-                        className={`w-2 h-2 rounded-full ${
-                          onlyOpenFilter ? 'bg-on-secondary' : 'bg-secondary'
-                        }`}
-                      ></span>
-                      <span>Hanya yang Buka Sekarang</span>
-                    </span>
-                    <span className="material-symbols-outlined text-[16px]">
-                      {onlyOpenFilter ? 'check_box' : 'check_box_outline_blank'}
-                    </span>
-                  </button>
-                </div>
-
-                {/* Filter Budget Mahasiswa */}
-                <div className="flex flex-col gap-1.5 pt-2 border-t border-outline-variant/20">
-                  <span className="font-label-sm text-xs text-on-surface-variant font-semibold">
-                    Batas Budget Mahasiswa
-                  </span>
-                  <div className="flex flex-col gap-1">
-                    {[
-                      { id: 'all', label: 'Semua Budget Harga' },
-                      { id: '<=10000', label: 'Hemat ≤ Rp 10.000' },
-                      { id: '<=15000', label: 'Populer ≤ Rp 15.000' },
-                      { id: '10000-15000', label: 'Rp 10.000 – Rp 15.000' },
-                      { id: '15000-20000', label: 'Rp 15.000 – Rp 20.000' },
-                    ].map((p) => (
+                    {hasActiveFilters && (
                       <button
-                        key={p.id}
                         type="button"
-                        onClick={() => setPriceFilter(p.id)}
-                        className={`w-full min-h-[36px] px-3 py-1.5 rounded-lg font-label-sm text-xs flex items-center justify-between transition-colors cursor-pointer ${
-                          priceFilter === p.id
-                            ? 'bg-primary text-on-primary font-semibold'
-                            : 'text-on-surface hover:bg-surface-container-low'
-                        }`}
+                        onClick={resetAllFilters}
+                        className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md"
                       >
-                        <span>{p.label}</span>
-                        {priceFilter === p.id && (
-                          <span className="material-symbols-outlined text-[15px]">check</span>
-                        )}
+                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
+                        <span>Reset ({activeFilterCount})</span>
                       </button>
-                    ))}
+                    )}
                   </div>
                 </div>
 
-                {/* Filter Kategori Menu */}
-                <div className="flex flex-col gap-1.5 pt-2 border-t border-outline-variant/20">
-                  <span className="font-label-sm text-xs text-on-surface-variant font-semibold">
-                    Kategori Hidangan
-                  </span>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {[
-                      { id: 'all', label: 'Semua' },
-                      { id: 'makanan', label: 'Makanan' },
-                      { id: 'minuman', label: 'Minuman' },
-                      { id: 'snack', label: 'Snack' },
-                    ].map((cat) => (
+                {/* Search Bar - Responsive Clean Input */}
+                <form
+                  onSubmit={(e) => e.preventDefault()}
+                  className="w-full relative shadow-md"
+                >
+                  <div className="relative flex items-center">
+                    <span className="material-symbols-outlined absolute left-4 text-emerald-700 text-[22px]">
+                      search
+                    </span>
+                    <input
+                      type="search"
+                      id="menuSearchInput"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Cari ayam geprek, nasi padang, es kopi, bento, atau nama stan..."
+                      className="w-full h-12 sm:h-14 pl-12 pr-12 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-3 focus:ring-amber-400/50 transition-all"
+                    />
+                    {searchQuery && (
+                      <button
+                        type="button"
+                        onClick={() => setSearchQuery('')}
+                        aria-label="Bersihkan pencarian"
+                        className="absolute right-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">close</span>
+                      </button>
+                    )}
+                  </div>
+                </form>
+
+                {/* Quick Category Bubbles with 44px Touch Targets */}
+                <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar pt-1">
+                  {[
+                    { id: 'all', label: 'Semua', icon: 'restaurant' },
+                    { id: 'makanan', label: 'Makanan Berat', icon: 'lunch_dining' },
+                    { id: 'minuman', label: 'Minuman Segar', icon: 'local_cafe' },
+                    { id: 'snack', label: 'Camilan / Snack', icon: 'bakery_dining' },
+                  ].map((cat) => {
+                    const isSelected = categoryFilter === cat.id;
+                    return (
                       <button
                         key={cat.id}
                         type="button"
                         onClick={() =>
                           setCategoryFilter(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
                         }
-                        className={`min-h-[36px] px-2.5 py-1.5 rounded-lg font-label-sm text-xs transition-colors cursor-pointer ${
-                          categoryFilter === cat.id
-                            ? 'bg-primary text-on-primary font-semibold'
-                            : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
+                        className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-[13px] font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
+                          isSelected
+                            ? 'bg-white text-emerald-950 shadow-md ring-2 ring-white/60'
+                            : 'bg-emerald-950/40 hover:bg-emerald-950/60 text-emerald-50 border border-emerald-500/30'
                         }`}
                       >
-                        {cat.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Daftar Pintasan Stan Kantin IBI KKG */}
-              <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-3">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex flex-col">
-                    <span className="font-label-sm text-xs text-primary font-bold uppercase tracking-wider">
-                      Area Kantin Hall D
-                    </span>
-                    <h3 className="font-headline-sm text-sm sm:text-base text-on-surface font-bold">
-                      Pintasan Stan Kantin
-                    </h3>
-                  </div>
-                  <span className="font-label-sm text-[11px] bg-surface-container px-2 py-0.5 rounded-md text-on-surface-variant">
-                    {stalls.length} Stan
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-1 gap-2">
-                  {stalls.map((stall, idx) => (
-                    <button
-                      key={stall.id}
-                      type="button"
-                      onClick={() => onSelectStall(stall.id)}
-                      className="min-h-[48px] p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high active:scale-[0.99] transition-all flex items-center justify-between gap-2 text-left border border-outline-variant/20 cursor-pointer group"
-                    >
-                      <div className="flex flex-col min-w-0">
-                        <span className="font-label-sm text-xs text-on-surface group-hover:text-primary font-bold truncate transition-colors">
-                          Stan 0{idx + 1} • {stall.name}
+                        <span className="material-symbols-outlined text-[17px]">
+                          {cat.icon}
                         </span>
-                        <span className="font-body-sm text-[11px] text-on-surface-variant truncate">
-                          {stall.specialty} •{' '}
-                          <strong className={stall.isOpen ? 'text-secondary' : 'text-error'}>
-                            {stall.isOpen ? 'Buka' : 'Tutup'}
-                          </strong>
-                        </span>
-                      </div>
-                      <span className="material-symbols-outlined text-[16px] text-on-surface-variant group-hover:text-primary group-hover:translate-x-0.5 transition-all shrink-0">
-                        arrow_forward
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </aside>
-
-            {/* RIGHT MAIN CONTENT (9 cols on Desktop, Full Width on Mobile/Tablet) */}
-            <div className="lg:col-span-9 flex flex-col gap-5 min-w-0 order-1 lg:order-2">
-              {/* Hero Welcome + Search Bar Banner */}
-              <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-                  <div className="flex flex-col gap-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-label-sm text-xs text-secondary font-semibold inline-flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                        <span>
-                          {stalls.filter((s) => s.isOpen).length}/{stalls.length} Kantin Buka Sekarang
-                        </span>
-                      </span>
-                      <span className="text-outline-variant">•</span>
-                      <span className="font-label-sm text-xs text-on-surface-variant">
-                        Gedung Kampus IBI KKG (Dekat Hall D)
-                      </span>
-                    </div>
-                    <h1 className="fluid-headline-md sm:text-2xl text-on-surface font-bold tracking-tight">
-                      Mau Makan di Mana Hari Ini?
-                    </h1>
-                  </div>
-
-                  {/* Quick GPS Radar Shortcut & Filter Reset on Desktop */}
-                  <div className="flex flex-wrap items-center gap-2 self-start">
-                    <button
-                      type="button"
-                      onClick={() => onChangeSubTab('peta-gps')}
-                      className="min-h-[40px] px-3.5 py-2 rounded-xl bg-secondary text-on-secondary font-label-sm text-xs font-bold inline-flex items-center gap-1.5 cursor-pointer shadow-xs hover:opacity-95"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">my_location</span>
-                      <span>Buka Peta GPS Penjual &amp; Rute Arah</span>
-                    </button>
-                    {hasActiveFilters && (
-                      <button
-                        type="button"
-                        onClick={resetAllFilters}
-                        className="hidden lg:inline-flex min-h-[38px] px-3.5 py-1.5 rounded-xl bg-error-container/60 text-on-error-container font-label-sm text-xs font-semibold items-center gap-1.5 cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-                        <span>Reset Filter ({activeFilterCount})</span>
+                        <span>{cat.label}</span>
                       </button>
-                    )}
-                  </div>
-                </div>
+                    );
+                  })}
 
-                {/* Search Input Bar */}
-                <form
-                  className="flex flex-wrap sm:flex-nowrap gap-2.5 w-full"
-                  onSubmit={(e) => e.preventDefault()}
-                >
-                  <div className="relative flex-grow min-w-0 w-full">
-                    <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-on-surface-variant text-[20px]">
-                      search
-                    </span>
-                    <input
-                      className="w-full h-11 sm:h-12 pl-11 pr-4 rounded-xl bg-surface-container-low text-on-surface placeholder:text-outline font-body-md text-body-md focus:outline-none focus:ring-2 focus:ring-primary border border-outline-variant/20"
-                      id="menuSearchInput"
-                      placeholder="Cari 'Nasi goreng', 'Ayam geprek', 'Es teh', atau nama kantin..."
-                      type="search"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
-                  {/* Mobile/Tablet Filter Drawer Button (Hidden on Desktop lg+ since Desktop has Left Sidebar) */}
-                  <div className="flex lg:hidden items-center gap-2 w-full sm:w-auto shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                      className={`min-h-[44px] flex-1 sm:flex-initial px-3.5 rounded-xl font-label-md text-label-md flex items-center justify-center gap-1.5 transition-colors cursor-pointer ${
-                        showAdvancedFilters || activeFilterCount > 0
-                          ? 'bg-primary-fixed text-on-primary-fixed font-semibold'
-                          : 'bg-surface-container-high text-on-surface'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[18px]">tune</span>
-                      <span>Filter{activeFilterCount > 0 ? ` (${activeFilterCount})` : ''}</span>
-                    </button>
-                    {hasActiveFilters && (
-                      <button
-                        type="button"
-                        onClick={resetAllFilters}
-                        className="min-h-[44px] px-3.5 rounded-xl bg-surface-container text-error font-label-md text-label-md flex items-center justify-center cursor-pointer"
-                      >
-                        Reset
-                      </button>
-                    )}
-                  </div>
-                </form>
+                  <div className="w-[1px] h-6 bg-emerald-500/40 shrink-0 mx-1"></div>
 
-                {/* Mobile/Tablet Quick Filter Row */}
-                <div className="flex lg:hidden items-center gap-2 overflow-x-auto md:overflow-visible md:flex-wrap no-scrollbar py-0.5">
+                  {/* Quick Budget Filters with 44px Touch Targets */}
                   {[
-                    { id: 'all', label: 'Semua Budget' },
-                    { id: '<=10000', label: '≤ Rp10.000' },
-                    { id: '<=15000', label: 'Harga ≤ Rp15.000' },
-                    { id: '10000-15000', label: 'Rp10rb–Rp15rb' },
-                    { id: '15000-20000', label: 'Rp15rb–Rp20rb' },
-                  ].map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      onClick={() => setPriceFilter(p.id)}
-                      className={`min-h-[44px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
-                        priceFilter === p.id
-                          ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                          : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high'
-                      }`}
-                    >
-                      {p.label}
-                    </button>
-                  ))}
+                    { id: '<=10000', label: 'Hemat ≤ Rp10rb' },
+                    { id: '<=15000', label: 'Populer ≤ Rp15rb' },
+                  ].map((p) => {
+                    const isSelected = priceFilter === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setPriceFilter(isSelected ? 'all' : p.id)}
+                        className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1 whitespace-nowrap shrink-0 transition-all cursor-pointer active:scale-95 ${
+                          isSelected
+                            ? 'bg-amber-400 text-slate-950 shadow-md font-bold'
+                            : 'bg-emerald-950/40 text-emerald-100 border border-emerald-500/30 hover:bg-emerald-950/60'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">savings</span>
+                        <span>{p.label}</span>
+                      </button>
+                    );
+                  })}
 
+                  {/* Open Now Toggle Button with 44px Touch Target */}
                   <button
                     type="button"
                     onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
-                    className={`min-h-[44px] px-3.5 rounded-lg font-label-sm text-label-sm whitespace-nowrap flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 active:scale-[0.98] ${
+                    className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer active:scale-95 ${
                       onlyOpenFilter
-                        ? 'bg-secondary text-on-secondary font-semibold shadow-xs'
-                        : 'bg-surface-container-low text-secondary hover:bg-surface-container-high'
+                        ? 'bg-white text-emerald-950 shadow-md font-bold'
+                        : 'bg-emerald-950/40 text-emerald-100 border border-emerald-500/30 hover:bg-emerald-950/60'
                     }`}
                   >
-                    <span
-                      className={`w-2 h-2 rounded-full ${
-                        onlyOpenFilter ? 'bg-on-secondary' : 'bg-secondary'
-                      }`}
-                    ></span>
-                    <span>Buka sekarang</span>
+                    <span>{onlyOpenFilter ? '✓ Buka Sekarang' : 'Buka Sekarang'}</span>
                   </button>
                 </div>
+              </div>
+            </section>
 
-                {/* Mobile/Tablet Collapsible Category Drawer */}
-                {(showAdvancedFilters || distanceFilter !== 'all' || categoryFilter !== 'all') && (
-                  <div className="lg:hidden pt-3 border-t border-outline-variant/25 flex flex-col gap-2">
-                    <span className="font-label-sm text-xs text-on-surface-variant font-semibold">
-                      Filter Kategori Hidangan:
-                    </span>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {/* 4. EXPANDABLE FILTER ROW & STATUS HEADER (Selector 1) - Mobile Responsive & Zero-Pill */}
+            <div className="bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+              <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap text-xs text-slate-600 min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                  <span className="font-semibold text-slate-900 shrink-0">Filter:</span>
+                  <span className="truncate">
+                    {categoryFilter === 'all' ? 'Semua Menu' : categoryFilter}
+                  </span>
+                  {priceFilter !== 'all' && (
+                    <>
+                      <span aria-hidden="true" className="text-slate-300">·</span>
+                      <span className="tabular-nums font-medium text-emerald-800">
+                        {priceFilter === '<=10000'
+                          ? '≤ Rp10rb'
+                          : priceFilter === '10000-15000'
+                          ? 'Rp10rb–15rb'
+                          : priceFilter === '<=15000'
+                          ? '≤ Rp15rb'
+                          : 'Rp15rb–20rb'}
+                      </span>
+                    </>
+                  )}
+                  {onlyOpenFilter && (
+                    <>
+                      <span aria-hidden="true" className="text-slate-300">·</span>
+                      <span className="text-emerald-700 font-semibold">Buka Saja</span>
+                    </>
+                  )}
+                </div>
+
+                {hasActiveFilters && (
+                  <button
+                    type="button"
+                    onClick={resetAllFilters}
+                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer min-h-[36px] sm:min-h-[44px] flex items-center px-1 shrink-0 ml-auto sm:ml-1"
+                  >
+                    Reset Filter
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  className="w-full sm:w-auto min-h-[40px] sm:min-h-[44px] px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                >
+                  <span className="material-symbols-outlined text-[16px] text-slate-600">tune</span>
+                  <span>{showAdvancedFilters ? 'Tutup Filter Detail' : 'Filter Detail & Jarak'}</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Advanced Filters Drawer (Distance & Detail Budget) */}
+            {showAdvancedFilters && (
+              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Distance Filter */}
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-slate-700">
+                      Jarak dari Kampus IBI KKG:
+                    </label>
+                    <div className="flex gap-1.5 flex-wrap">
                       {[
-                        { id: 'all', label: 'Semua Kategori' },
-                        { id: 'makanan', label: 'Makanan' },
-                        { id: 'minuman', label: 'Minuman' },
-                        { id: 'snack', label: 'Snack' },
-                      ].map((cat) => (
+                        { id: 'all', label: 'Semua Jarak' },
+                        { id: '<100m', label: '< 100m' },
+                        { id: '<500m', label: '< 500m' },
+                      ].map((d) => (
                         <button
-                          key={cat.id}
+                          key={d.id}
                           type="button"
-                          onClick={() =>
-                            setCategoryFilter(
-                              cat.id as 'all' | 'makanan' | 'minuman' | 'snack'
-                            )
-                          }
-                          className={`min-h-[44px] px-3 py-2 rounded-xl font-label-sm text-xs transition-colors cursor-pointer ${
-                            categoryFilter === cat.id
-                              ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                              : 'bg-surface-container-low text-on-surface hover:bg-surface-container-high border border-outline-variant/20'
+                          onClick={() => setDistanceFilter(d.id)}
+                          className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer ${
+                            distanceFilter === d.id
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-slate-50 text-slate-700 border-slate-200'
                           }`}
                         >
-                          {cat.label}
+                          {d.label}
                         </button>
                       ))}
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* KATEGORI VIEW OR STALL DIRECTORY GRID */}
-              {activeSubTab === 'kategori' ? (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="fluid-headline-md text-on-surface">
-                      Daftar Menu Berdasarkan Kategori &amp; Harga
-                    </h2>
-                    <span className="font-label-sm text-label-sm text-on-surface-variant shrink-0">
-                      {allMatchingMenuItems.length} Menu Sesuai
-                    </span>
+                  {/* Price Bounds Filter */}
+                  <div className="flex flex-col gap-1.5 sm:col-span-2">
+                    <label className="text-xs font-bold text-slate-700">
+                      Batas Budget Kantong Mahasiswa:
+                    </label>
+                    <div className="flex gap-1.5 flex-wrap">
+                      {[
+                        { id: 'all', label: 'Semua Harga' },
+                        { id: '<=10000', label: '≤ Rp10.000' },
+                        { id: '10000-15000', label: 'Rp10.000 – Rp15.000' },
+                        { id: '<=15000', label: '≤ Rp15.000' },
+                        { id: '15000-20000', label: 'Rp15.000 – Rp20.000' },
+                      ].map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => setPriceFilter(p.id)}
+                          className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer ${
+                            priceFilter === p.id
+                              ? 'bg-emerald-600 text-white border-emerald-600'
+                              : 'bg-slate-50 text-slate-700 border-slate-200'
+                          }`}
+                        >
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {allMatchingMenuItems.map(({ item, stall }) => (
-                      <div
-                        key={`${stall.id}-${item.id}`}
-                        onClick={() => onSelectStall(stall.id)}
-                        className="bg-surface-container-lowest rounded-xl p-3.5 shadow-sm border border-outline-variant/25 flex items-center justify-between gap-3 cursor-pointer hover:bg-surface-container-low active:scale-[0.99] transition-all min-w-0"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <img
-                            src={item.imageCatalog}
-                            alt={item.altCatalog}
-                            referrerPolicy="no-referrer"
-                            className={`w-16 h-16 rounded-lg object-cover shrink-0 ${
-                              item.status === 'habis' ? 'grayscale opacity-75' : ''
-                            }`}
-                          />
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="font-label-sm text-[11px] uppercase tracking-wider px-1.5 py-0.5 rounded bg-surface-container-high text-on-surface-variant">
-                                {item.category}
-                              </span>
-                              <span className="font-label-sm text-label-sm text-secondary truncate">
-                                {stall.distanceMeters} m • {stall.name}
-                              </span>
-                            </div>
-                            <h3
-                              className={`font-label-lg text-label-lg text-on-surface truncate mt-0.5 ${
-                                item.status === 'habis' ? 'line-through' : ''
-                              }`}
-                            >
-                              {item.name}
-                            </h3>
-                            <span className="font-body-sm text-xs text-on-surface-variant">
-                              Diperbarui: <strong>{item.lastUpdated}</strong>
-                            </span>
+                </div>
+              </div>
+            )}
+
+            {/* 5. VIEW TOGGLE: KATEGORI EXPLORE VS STALL DIRECTORY */}
+            {activeSubTab === 'kategori' ? (
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                    Jelajah Menu &amp; Makanan ({allMatchingMenuItems.length} Menu Ditemukan)
+                  </h2>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {allMatchingMenuItems.map(({ item, stall }) => (
+                    <div
+                      key={`${stall.id}-${item.id}`}
+                      onClick={() => onSelectStall(stall.id)}
+                      className="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 hover:shadow-md hover:border-emerald-300 transition-all flex gap-3.5 cursor-pointer group"
+                    >
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative">
+                        <img
+                          src={item.imageCatalog}
+                          alt={item.altCatalog}
+                          referrerPolicy="no-referrer"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {item.status === 'habis' && (
+                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[10px] font-bold uppercase">
+                            Habis
                           </div>
-                        </div>
-                        <div className="flex flex-col items-end shrink-0">
-                          <span className="font-headline-md text-[16px] text-primary font-bold">
-                            Rp{item.price.toLocaleString('id-ID')}
+                        )}
+                      </div>
+
+                      <div className="flex flex-col justify-between flex-grow min-w-0">
+                        <div>
+                          <span className="text-[11px] font-bold text-emerald-700 truncate block">
+                            {stall.name}
                           </span>
-                          <span
-                            className={`font-label-sm text-xs px-2 py-0.5 rounded mt-1 inline-flex items-center gap-1 ${
-                              item.status === 'ready'
-                                ? 'bg-secondary-container text-on-secondary-container'
-                                : 'bg-error-container text-on-error-container'
-                            }`}
-                          >
-                            <span
-                              className={`w-1.5 h-1.5 rounded-full ${
-                                item.status === 'ready' ? 'bg-secondary' : 'bg-error'
-                              }`}
-                            />
-                            {item.status === 'ready' ? 'Tersedia' : 'Habis'}
+                          <h4 className="text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-1">
+                            {item.name}
+                          </h4>
+                          <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">
+                            {item.description}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center justify-between pt-1">
+                          <span className="text-sm font-black text-emerald-700">
+                            Rp {item.price.toLocaleString('id-ID')}
+                          </span>
+                          <span className="text-[11px] font-semibold text-slate-400 group-hover:text-emerald-700 flex items-center gap-0.5">
+                            Pesan
+                            <span className="material-symbols-outlined text-[14px]">chevron_right</span>
                           </span>
                         </div>
                       </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <>
-                  {/* Section Header */}
-                  <div className="flex items-center justify-between gap-2">
-                    <h2 className="fluid-headline-md text-on-surface">
-                      {activeSubTab === 'favorit'
-                        ? 'Kantin Favorit Tersimpan'
-                        : 'Daftar Kantin IBI KKG'}
-                    </h2>
-                    <span className="font-body-sm text-body-sm text-on-surface-variant shrink-0">
-                      {filteredStalls.length} Kantin Ditemukan
-                    </span>
-                  </div>
-
-                  {/* 3-State Responsive Stall Cards Grid: 1 col on mobile, 2 cols on md/xl */}
-                  {filteredStalls.length === 0 ? (
-                    <div className="bg-surface-container-lowest rounded-xl p-6 text-center flex flex-col items-center gap-2 shadow-sm border border-outline-variant/25">
-                      <span className="material-symbols-outlined text-[36px] text-on-surface-variant">
-                        search_off
-                      </span>
-                      <p className="fluid-headline-md text-on-surface">
-                        {activeSubTab === 'favorit'
-                          ? 'Belum Ada Kantin Favorit'
-                          : 'Kantin atau Menu Tidak Ditemukan'}
-                      </p>
-                      <p className="font-body-sm text-body-sm text-on-surface-variant max-w-md">
-                        {activeSubTab === 'favorit'
-                          ? 'Tekan tombol simpan pada kartu kantin untuk menyimpan ke daftar favorit Anda.'
-                          : 'Tidak ada kantin yang sesuai dengan kombinasi filter saat ini. Coba tekan tombol Reset Filter.'}
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (activeSubTab === 'favorit') onChangeSubTab('kantin');
-                          else resetAllFilters();
-                        }}
-                        className="mt-2 min-h-[44px] px-5 py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md cursor-pointer"
-                      >
-                        {activeSubTab === 'favorit' ? 'Lihat Semua Kantin' : 'Reset Filter'}
-                      </button>
                     </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {filteredStalls.map((rawStall, idx) => {
-                        const stall = normalizeStallLocation(rawStall, idx);
-                        const isFav = favoriteStallIds.includes(stall.id);
-                        const matchingMenus = stall.menuItems.filter((item) => {
-                          const catMatch =
-                            categoryFilter === 'all' || item.category === categoryFilter;
-                          let priceMatch = true;
-                          if (priceFilter === '<=10000') priceMatch = item.price <= 10000;
-                          else if (priceFilter === '10000-15000')
-                            priceMatch = item.price >= 10000 && item.price <= 15000;
-                          else if (priceFilter === '<=15000') priceMatch = item.price <= 15000;
-                          else if (priceFilter === '15000-20000')
-                            priceMatch = item.price >= 15000 && item.price <= 20000;
-                          return catMatch && priceMatch;
-                        });
-                        const displayMenus =
-                          matchingMenus.length > 0 ? matchingMenus : stall.menuItems;
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* STALLS DIRECTORY GRID */
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">
+                    {activeSubTab === 'favorit'
+                      ? `Stan Favorit Anda (${filteredStalls.length})`
+                      : `Daftar Stan Kantin IBI KKG (${filteredStalls.length} Tersedia)`}
+                  </h2>
+                </div>
 
-                        return (
-                          <article
-                            key={stall.id}
-                            className="w-full bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/25 overflow-hidden flex flex-col justify-between min-w-0"
-                          >
-                            <div>
-                              <div className="relative w-full h-44 bg-surface-container">
-                                <img
-                                  className="w-full h-full object-cover"
-                                  alt={stall.bannerAlt}
-                                  src={stall.bannerImage}
-                                  referrerPolicy="no-referrer"
-                                />
-                                <div className="absolute top-2.5 left-2.5 flex flex-wrap items-center gap-1.5 pr-14">
-                                  <span
-                                    className={`px-2.5 py-1 rounded-md bg-surface-container-lowest/95 backdrop-blur-sm ${
-                                      stall.isOpen ? 'text-secondary' : 'text-error'
-                                    } font-label-sm text-label-sm flex items-center gap-1.5 shadow-xs`}
-                                  >
-                                    <span
-                                      className={`w-2 h-2 rounded-full ${
-                                        stall.isOpen ? 'bg-secondary' : 'bg-error'
-                                      }`}
-                                    />
-                                    <span>{stall.isOpen ? 'Buka' : 'Tutup'}</span>
-                                    <span>• {stall.hours}</span>
-                                  </span>
-                                  <span className="px-2.5 py-1 rounded-md bg-surface-container-lowest/95 backdrop-blur-sm text-on-surface font-label-sm text-label-sm shadow-xs">
-                                    {stall.distanceMeters} m
-                                  </span>
-                                </div>
-                                <button
-                                  type="button"
-                                  aria-label="Simpan Favorit"
-                                  onClick={() => onToggleFavoriteStall(stall.id)}
-                                  className="absolute top-2 right-2 w-11 h-11 rounded-xl bg-surface-container-lowest/95 backdrop-blur-sm flex items-center justify-center text-primary shadow-sm cursor-pointer active:scale-95 transition-transform"
+                {filteredStalls.length === 0 ? (
+                  <div className="bg-white rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-3 shadow-sm border border-slate-200">
+                    <span className="material-symbols-outlined text-[48px] text-slate-300">
+                      search_off
+                    </span>
+                    <h3 className="text-lg font-bold text-slate-800">
+                      Tidak Ada Stan yang Sesuai
+                    </h3>
+                    <p className="text-sm text-slate-500 max-w-md">
+                      Coba ubah kata kunci pencarian atau bersihkan filter budget harga.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={resetAllFilters}
+                      className="mt-2 min-h-[42px] px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs cursor-pointer shadow-sm active:scale-95"
+                    >
+                      Reset Semua Filter
+                    </button>
+                  </div>
+                ) : (
+                  /* 6. SHOPEEFOOD / GOJEK GRADE STALL CARD GRID (Responsive Mobile Website) */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5 sm:gap-6">
+                    {filteredStalls.map((rawStall, idx) => {
+                      const stall = normalizeStallLocation(rawStall, idx);
+                      const isFav = favoriteStallIds.includes(stall.id);
+                      const matchingMenus = stall.menuItems.filter((item) => {
+                        const catMatch =
+                          categoryFilter === 'all' || item.category === categoryFilter;
+                        let priceMatch = true;
+                        if (priceFilter === '<=10000') priceMatch = item.price <= 10000;
+                        else if (priceFilter === '10000-15000')
+                          priceMatch = item.price >= 10000 && item.price <= 15000;
+                        else if (priceFilter === '<=15000') priceMatch = item.price <= 15000;
+                        else if (priceFilter === '15000-20000')
+                          priceMatch = item.price >= 15000 && item.price <= 20000;
+                        return catMatch && priceMatch;
+                      });
+                      const displayMenus =
+                        matchingMenus.length > 0 ? matchingMenus : stall.menuItems;
+
+                      return (
+                        <article
+                          key={stall.id}
+                          className="group bg-white rounded-2xl sm:rounded-3xl shadow-xs hover:shadow-lg border border-slate-200/90 overflow-hidden flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1"
+                        >
+                          <div>
+                            {/* Card Hero Image with Floating Glass Affordances */}
+                            <div className="relative w-full h-44 sm:h-48 bg-slate-100 overflow-hidden">
+                              <img
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                                alt={stall.bannerAlt}
+                                src={stall.bannerImage}
+                                referrerPolicy="no-referrer"
+                              />
+
+                              {/* Subtle bottom gradient overlay for readability */}
+                              <div className="absolute inset-0 bg-linear-to-t from-slate-950/75 via-transparent to-black/20"></div>
+
+                              {/* Top Left Status Indicator - Clean without fake pulse dots */}
+                              <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                                <span
+                                  className={`px-3 py-1 rounded-xl text-xs font-semibold shadow-md backdrop-blur-md ${
+                                    stall.isOpen
+                                      ? 'bg-emerald-600 text-white'
+                                      : 'bg-slate-800/90 text-slate-200'
+                                  }`}
                                 >
-                                  <span
-                                    className="material-symbols-outlined text-[22px]"
-                                    style={{
-                                      fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0",
-                                    }}
-                                  >
-                                    favorite
+                                  {stall.isOpen ? 'Buka' : 'Tutup'}
+                                </span>
+
+                                <span className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-black/60 backdrop-blur-md text-white shadow-md flex items-center gap-1">
+                                  <span className="material-symbols-outlined text-[13px] text-amber-400">
+                                    timer
                                   </span>
-                                </button>
+                                  <span>~10-15 mnt</span>
+                                </span>
                               </div>
 
-                              <div className="p-4 flex flex-col gap-3">
-                                <div className="flex flex-col gap-1">
-                                  <div className="flex items-start justify-between gap-2">
-                                    <h3 className="fluid-headline-md text-on-surface min-w-0">
-                                      {stall.name}
-                                    </h3>
-                                    <span className="font-label-sm text-label-sm px-2 py-1 rounded bg-surface-container-high text-on-surface font-semibold shrink-0 inline-flex items-center gap-1">
-                                      <span className="material-symbols-outlined text-[14px] text-tertiary">
-                                        star
-                                      </span>
-                                      <span>
-                                        {stall.rating} ({stall.reviewCount})
-                                      </span>
-                                    </span>
-                                  </div>
-                                  <div className="flex items-center gap-1 font-body-sm text-body-sm text-on-surface-variant">
-                                    <span className="material-symbols-outlined text-[15px] text-secondary shrink-0">
-                                      location_on
-                                    </span>
-                                    <span className="truncate">
-                                      {stall.code} • {stall.locationDetail}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* FITUR SANGAT PENTING: "Harga terakhir diperbarui: 8 Oktober 2026" */}
-                                <div className="px-3 py-2 rounded-lg bg-secondary-container/40 border border-secondary/20 flex flex-wrap items-center justify-between gap-1">
-                                  <div className="flex items-center gap-1.5">
-                                    <span className="material-symbols-outlined text-[16px] text-secondary shrink-0">
-                                      verified
-                                    </span>
-                                    <span className="font-label-sm text-label-sm text-on-surface">
-                                      Harga terakhir diperbarui:
-                                    </span>
-                                  </div>
-                                  <span className="font-label-sm text-label-sm text-secondary font-bold">
-                                    {stall.lastUpdatedDate} ({stall.lastUpdatedTime})
-                                  </span>
-                                </div>
-
-                                {/* Highlight Menu */}
-                                <div className="flex flex-col gap-1.5">
-                                  <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider font-semibold">
-                                    Menu &amp; Harga ({displayMenus.length} Menu):
-                                  </span>
-                                  <div className="flex flex-col gap-1.5">
-                                    {displayMenus.slice(0, 3).map((item) => (
-                                      <div
-                                        key={item.id}
-                                        className="flex items-center justify-between gap-2 p-2 rounded-lg bg-surface-container-low min-w-0"
-                                      >
-                                        <div className="flex items-center gap-2 min-w-0">
-                                          <span className="material-symbols-outlined text-[16px] text-primary shrink-0">
-                                            {item.icon}
-                                          </span>
-                                          <span
-                                            className={`font-body-sm text-body-sm text-on-surface truncate ${
-                                              item.status === 'habis'
-                                                ? 'line-through opacity-70'
-                                                : ''
-                                            }`}
-                                          >
-                                            {item.name}
-                                          </span>
-                                        </div>
-                                        <span className="font-label-md text-label-md text-primary font-bold shrink-0">
-                                          Rp{item.price.toLocaleString('id-ID')}
-                                        </span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Action Button (min-h 44px) */}
-                            <div className="px-4 pb-4">
+                              {/* Favorite Heart Button with 44px Touch Target */}
                               <button
                                 type="button"
-                                onClick={() => onSelectStall(stall.id)}
-                                className="w-full min-h-[44px] rounded-lg bg-primary text-on-primary font-label-md text-label-md flex items-center justify-center gap-1.5 active:scale-[0.99] hover:opacity-95 transition-all cursor-pointer"
+                                aria-label={`Simpan favorit ${stall.name}`}
+                                onClick={() => onToggleFavoriteStall(stall.id)}
+                                className="absolute top-2.5 right-2.5 min-h-[44px] min-w-[44px] rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-rose-500 flex items-center justify-center shadow-md cursor-pointer active:scale-90 transition-all"
                               >
-                                <span>Lihat Menu &amp; Detail Kantin</span>
-                                <span className="material-symbols-outlined text-[18px]">
-                                  arrow_forward
+                                <span
+                                  className="material-symbols-outlined text-[20px]"
+                                  style={{
+                                    fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0",
+                                  }}
+                                >
+                                  favorite
                                 </span>
                               </button>
-                            </div>
-                          </article>
-                        );
-                      })}
-                    </div>
-                  )}
-                </>
-              )}
 
-              {/* Banner Komitmen Transparansi Harga Resmi */}
-              <div className="bg-surface-container-high rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary text-on-primary flex items-center justify-center shrink-0">
-                    <span className="material-symbols-outlined text-[22px]">policy</span>
+                              {/* Bottom Overlay Info on Image */}
+                              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white text-xs">
+                                <span className="flex items-center gap-1 bg-black/55 backdrop-blur-xs px-2.5 py-1 rounded-lg font-medium">
+                                  <span className="material-symbols-outlined text-[14px] text-emerald-400">
+                                    location_on
+                                  </span>
+                                  <span>{stall.locationDetail} · <span className="tabular-nums">{stall.distanceMeters}m</span></span>
+                                </span>
+
+                                <span className="flex items-center gap-1 bg-amber-400 text-slate-950 font-bold px-2 py-0.5 rounded-lg shadow-xs tabular-nums">
+                                  <span className="material-symbols-outlined text-[14px]">star</span>
+                                  <span>{stall.rating}</span>
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Card Body (Selector 9) - Clean Whitespace, No Nested Card Clutter */}
+                            <div className="p-4 sm:p-5 flex flex-col gap-3">
+                              <div className="flex flex-col gap-0.5">
+                                <div className="flex items-center gap-1.5">
+                                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                                    {stall.name}
+                                  </h3>
+                                  <span
+                                    className="material-symbols-outlined text-[17px] text-emerald-600 shrink-0"
+                                    title="Mitra Resmi Kantin IBI KKG"
+                                  >
+                                    verified
+                                  </span>
+                                </div>
+                                <p className="text-xs text-slate-500 line-clamp-1">
+                                  {stall.specialty}
+                                </p>
+                              </div>
+
+                              {/* Price Transparency Quiet Text Row */}
+                              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
+                                <span className="flex items-center gap-1 text-slate-600 font-medium">
+                                  <span className="material-symbols-outlined text-[15px] text-emerald-600">
+                                    verified_user
+                                  </span>
+                                  Tarif resmi stan
+                                </span>
+                                <span className="font-semibold text-slate-700 tabular-nums">
+                                  {stall.lastUpdatedDate}
+                                </span>
+                              </div>
+
+                              {/* Popular Menu Preview - Clean Hairline Rows, No Nested Box Clutter */}
+                              <div className="flex flex-col gap-1.5 pt-1">
+                                <span className="text-xs font-semibold text-slate-700">
+                                  Menu Andalan
+                                </span>
+                                <div className="flex flex-col divide-y divide-slate-100">
+                                  {displayMenus.slice(0, 2).map((item) => (
+                                    <div
+                                      key={item.id}
+                                      className="flex items-center justify-between text-xs py-1.5"
+                                    >
+                                      <span className="text-slate-800 font-medium truncate pr-2">
+                                        {item.name}
+                                      </span>
+                                      <span className="font-semibold text-emerald-700 shrink-0 tabular-nums">
+                                        Rp {item.price.toLocaleString('id-ID')}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Card Footer Action with 44px Touch Target */}
+                          <div className="p-4 sm:p-5 pt-0">
+                            <button
+                              type="button"
+                              onClick={() => onSelectStall(stall.id)}
+                              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95 transition-all"
+                            >
+                              <span>Lihat Menu &amp; Pesan</span>
+                              <span className="material-symbols-outlined text-[18px]">
+                                arrow_forward
+                              </span>
+                            </button>
+                          </div>
+                        </article>
+                      );
+                    })}
                   </div>
-                  <div className="flex flex-col gap-0.5">
-                    <h3 className="font-label-lg text-label-lg text-on-surface">
-                      Dikelola Langsung oleh Penjual Kantin IBI KKG
-                    </h3>
-                    <p className="font-body-sm text-body-sm text-on-surface-variant">
-                      Harga dan status makanan diupdate langsung oleh pemilik kantin tanpa mark-up aplikasi.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={onOpenReportModal}
-                  className="min-h-[44px] px-4 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold shadow-xs hover:bg-surface shrink-0 cursor-pointer"
-                >
-                  Lapor Selisih Harga →
-                </button>
+                )}
               </div>
-            </div>
+            )}
           </div>
         )}
       </div>
 
-      {/* MODAL NOTA PESANAN MAHASISWA */}
+      {/* 7. DIGITAL RECEIPT MODAL */}
       {selectedReceiptOrder && (
         <OrderReceiptModal
           order={selectedReceiptOrder}
-          stall={stalls.find((s) => s.id === selectedReceiptOrder.stallId)}
           onClose={() => setSelectedReceiptOrder(null)}
           onShowToast={onShowToast}
         />

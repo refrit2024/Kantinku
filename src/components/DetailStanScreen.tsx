@@ -13,7 +13,6 @@ import {
 } from '../data/kantinData';
 import { StallQrModal } from './StallQrModal';
 import { OrderReceiptModal } from './OrderReceiptModal';
-import { LiveGpsTrackerMap } from './LiveGpsTrackerMap';
 import {
   checkActionCooldown,
   isValidPersonName,
@@ -52,7 +51,6 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   isFavorite,
   onToggleFavorite,
   onPlaceOrder,
-  onUpdateOrderStatus,
   onAddReview,
   onBackToKatalog,
   onOpenReportModal,
@@ -157,7 +155,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     QRCode.toDataURL(stallUrl, {
       width: 360,
       margin: 2,
-      color: { dark: '#131B2E', light: '#FFFFFF' },
+      color: { dark: '#0f172a', light: '#ffffff' },
       errorCorrectionLevel: 'H',
     })
       .then((url) => {
@@ -181,7 +179,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     QRCode.toDataURL(qrisPayload, {
       width: 360,
       margin: 2,
-      color: { dark: '#181C22', light: '#FFFFFF' },
+      color: { dark: '#0f172a', light: '#ffffff' },
       errorCorrectionLevel: 'M',
     })
       .then((url) => {
@@ -193,14 +191,6 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       mounted = false;
     };
   }, [paymentConfig.qrisNmid, paymentConfig.qrisMerchantName, stall.name, cartTotalAmount]);
-
-  // Active orders for this stall (completed/rejected automatically disappear from live board)
-  const stallOrders = orders.filter(
-    (o) =>
-      o.stallId === stall.id &&
-      o.status !== 'completed' &&
-      o.status !== 'rejected'
-  );
 
   const handleCopyText = (text: string, label: string) => {
     if (navigator.clipboard) {
@@ -284,7 +274,6 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       // ignore
     }
 
-    // If Payment Gateway Sandbox is selected, open the interactive Midtrans Snap Sandbox Modal
     if (selectedPaymentMethod === 'gateway') {
       const generatedTx = `SANDBOX-SNAP-${Date.now().toString().slice(-6)}`;
       setSnapTxId(generatedTx);
@@ -356,49 +345,61 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     onAddReview(stall.id, revName.trim(), revMajor.trim(), revRating, revComment.trim());
     setRevName('');
     setRevComment('');
+    if (onShowToast) {
+      onShowToast('Terima kasih! Ulasan mahasiswa berhasil ditambahkan.', false);
+    }
   };
 
   return (
-    <div className="flex flex-col w-full pb-12">
-      {/* Breadcrumb Bar */}
-      <div className="w-full bg-surface-container-low border-b border-outline-variant/25 px-4 sm:px-6 lg:px-8 py-2">
-        <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-2">
+    <div className="flex flex-col w-full pb-24 min-h-screen bg-slate-50/70">
+      {/* 1. TOP BREADCRUMB & QUICK ACTIONS BAR */}
+      <nav aria-label="Navigasi Halaman Stan" className="sticky top-0 z-30 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-3 sm:px-6 shadow-xs">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 py-2.5">
           <button
             type="button"
             onClick={onBackToKatalog}
-            className="min-h-[44px] inline-flex items-center gap-1.5 text-on-surface-variant hover:text-primary font-label-md text-label-md transition-colors cursor-pointer"
+            className="min-h-[40px] px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 hover:text-emerald-700 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
-            <span>Kembali ke Direktori Kantin • Dekat Hall D ({stall.code})</span>
+            <span>Kembali ke Katalog</span>
           </button>
+
           <div className="flex items-center gap-2">
             <button
               type="button"
               onClick={() => setIsQrModalOpen(true)}
-              className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest text-on-surface hover:text-primary border border-outline-variant/30 font-label-sm text-label-sm shadow-xs cursor-pointer active:scale-95 transition-all"
+              className="min-h-[38px] px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
             >
-              <span className="material-symbols-outlined text-[18px] text-primary">
+              <span className="material-symbols-outlined text-[17px] text-emerald-600">
                 qr_code_2
               </span>
-              <span>QR Stan</span>
+              <span className="hidden sm:inline">QR Etalase</span>
             </button>
+
             <button
               type="button"
               onClick={onToggleFavorite}
-              className="min-h-[44px] inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm shadow-xs cursor-pointer active:scale-95 transition-transform"
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all border ${
+                isFavorite
+                  ? 'bg-rose-50 text-rose-600 border-rose-200'
+                  : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
+              }`}
             >
               <span
-                className="material-symbols-outlined text-[18px]"
+                className="material-symbols-outlined text-[18px] text-rose-500"
                 style={{ fontVariationSettings: isFavorite ? "'FILL' 1" : "'FILL' 0" }}
               >
                 favorite
               </span>
-              <span>{isFavorite ? 'Tersimpan di Favorit' : 'Simpan Favorit'}</span>
+              <span className="hidden sm:inline">
+                {isFavorite ? 'Favorit' : 'Simpan'}
+              </span>
             </button>
           </div>
         </div>
-      </div>
+      </nav>
 
+      {/* QR Code Modal */}
       {isQrModalOpen && (
         <StallQrModal
           stall={stall}
@@ -408,157 +409,121 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
         />
       )}
 
-      {/* Main Responsive Container */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 flex flex-col gap-5">
+      {/* 2. MAIN STOREFRONT CONTAINER */}
+      <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 flex flex-col gap-5">
         {isOpenedFromQrScan && (
-          <div className="rounded-xl bg-secondary text-on-secondary px-4 py-3 shadow-sm flex flex-wrap items-center justify-between gap-2">
+          <div className="rounded-2xl bg-emerald-600 text-white px-4 py-3 shadow-sm flex items-center justify-between gap-2">
             <div className="flex items-center gap-2.5">
-              <span className="material-symbols-outlined text-[20px]">qr_code_scanner</span>
-              <span className="font-label-md text-xs sm:text-sm font-bold">
-                Akses Langsung via Scan QR Etalase Aktif — Anda berada di menu resmi{' '}
-                <span className="underline">{stall.name}</span> ({stall.code})
+              <span className="material-symbols-outlined text-[20px] text-amber-300">
+                qr_code_scanner
+              </span>
+              <span className="text-xs sm:text-sm font-bold">
+                Scan QR Berhasil! Anda berada di menu resmi {stall.name} ({stall.code})
               </span>
             </div>
             <button
               type="button"
               onClick={() => setIsOpenedFromQrScan(false)}
-              className="min-h-[38px] px-3 py-1.5 rounded-lg bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary text-xs font-semibold cursor-pointer"
+              className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 cursor-pointer"
             >
-              Tutup Info
+              Tutup
             </button>
           </div>
         )}
 
-        {/* Hero Profile Banner */}
-        <section className="flex flex-col w-full rounded-xl overflow-hidden shadow-sm border border-outline-variant/25 bg-surface-container-lowest">
-          <div className="relative w-full h-52 sm:h-64 bg-surface-container-high overflow-hidden">
+        {/* 3. SHOPEEFOOD / GOJEK STYLE STOREFRONT HERO HEADER */}
+        <header className="relative w-full rounded-3xl overflow-hidden shadow-sm border border-slate-200/90 bg-white">
+          {/* Banner cover */}
+          <div className="relative w-full h-48 sm:h-64 bg-slate-900 overflow-hidden">
             <img
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover opacity-90"
               alt={stall.bannerAlt}
               src={stall.heroImage}
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-on-surface/90 via-on-surface/35 to-transparent flex items-end p-4 sm:p-6">
-              <div className="flex flex-col gap-1.5 max-w-2xl">
-                <div className="inline-flex items-center gap-1.5 bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md w-fit">
-                  <span className="material-symbols-outlined text-[14px]">verified</span>
-                  <span className="font-label-sm text-label-sm">
-                    Dikelola Langsung oleh Penjual • {stall.code} (Dekat Hall D)
+            <div className="absolute inset-0 bg-linear-to-t from-slate-950/80 via-slate-950/20 to-black/30"></div>
+
+            {/* Top Badges */}
+            <div className="absolute top-4 left-4 flex items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-emerald-600/95 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 shadow-md">
+                <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping"></span>
+                <span>{stall.isOpen ? 'Buka Sekarang' : 'Tutup'}</span>
+              </span>
+              <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-semibold">
+                {stall.hours} WIB
+              </span>
+            </div>
+          </div>
+
+          {/* Floating Profile Info Overlap */}
+          <div className="p-4 sm:p-6 flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                    {stall.name}
+                  </h1>
+                  <span
+                    className="material-symbols-outlined text-[22px] text-emerald-600"
+                    title="Mitra Resmi Terverifikasi Kampus IBI KKG"
+                  >
+                    verified
                   </span>
                 </div>
-                <h2 className="fluid-headline-xl text-surface-bright tracking-tight">
-                  {stall.name}
-                </h2>
-                <p className="font-body-md text-body-md text-surface-container-high">
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
                   {stall.specialty}
                 </p>
               </div>
-            </div>
-          </div>
 
-          <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3 bg-surface-container-lowest">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <span className="font-label-lg text-label-lg text-on-surface flex items-center gap-1">
-                <span className="material-symbols-outlined text-[18px] text-tertiary">star</span>
-                <span>{stall.rating}</span>
-                <span className="font-body-sm text-body-sm text-on-surface-variant">
-                  ({stall.reviewCount} ulasan)
-                </span>
-              </span>
-              <span className="text-outline-variant">•</span>
-              <span className="font-label-md text-label-md text-on-surface flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px] text-secondary">
-                  location_on
-                </span>
-                <span>{stall.distanceMeters} m</span>
-              </span>
-              <span className="text-outline-variant">•</span>
-              <span
-                className={`font-label-md text-label-md font-semibold inline-flex items-center gap-1.5 ${
-                  stall.isOpen ? 'text-secondary' : 'text-error'
-                }`}
-              >
-                <span
-                  className={`w-2 h-2 rounded-full ${
-                    stall.isOpen ? 'bg-secondary' : 'bg-error'
-                  }`}
-                />
-                <span>{stall.isOpen ? 'Buka' : 'Tutup'}</span>
-              </span>
-            </div>
-            <div className="font-label-sm text-label-sm bg-surface-container-low text-on-surface px-3 py-1.5 rounded-lg">
-              {stall.daysOpen} • {stall.hours} WIB
-            </div>
-          </div>
-        </section>
-
-        {/* 3-State Responsive Content Split:
-            - Mobile (<1024px): Stacked cleanly
-            - Desktop (>=1024px): Left 8 cols Menu (2-col grid) & Reviews, Right 4 cols sticky Info, Location & Budget Calculator
-        */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* LEFT / MAIN COLUMN (8 cols on Desktop) */}
-          <div className="lg:col-span-8 flex flex-col gap-5 min-w-0">
-            {/* Banner "Harga terakhir diperbarui: 8 Oktober 2026" */}
-            <div className="bg-secondary-container/45 border border-secondary/25 rounded-xl p-4 sm:p-5 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div className="flex flex-col gap-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <div className="flex items-center gap-1.5 text-secondary">
-                    <span className="material-symbols-outlined text-[20px] shrink-0">update</span>
-                    <span className="font-label-lg text-label-lg font-bold">
-                      Harga terakhir diperbarui: {stall.lastUpdatedDate}
-                    </span>
-                  </div>
-                  <span className="font-label-sm text-label-sm bg-surface-container-lowest text-secondary px-2.5 py-0.5 rounded font-semibold">
-                    Pukul {stall.lastUpdatedTime}
+              {/* Rating & Distance Badges */}
+              <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
+                <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-2xl font-black text-sm">
+                  <span className="material-symbols-outlined text-[17px] text-amber-500">
+                    star
+                  </span>
+                  <span>{stall.rating}</span>
+                  <span className="font-normal text-xs text-amber-700">
+                    ({stall.reviewCount} ulasan)
                   </span>
                 </div>
-                <p className="font-body-sm text-body-sm text-on-surface leading-relaxed">
-                  Informasi menu, ketersediaan, dan harga diinput langsung oleh <strong>{stall.name}</strong> tanpa biaya mark-up.
-                </p>
+
+                <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1.5 rounded-2xl font-bold text-xs">
+                  <span className="material-symbols-outlined text-[16px] text-emerald-600">
+                    location_on
+                  </span>
+                  <span>{stall.distanceMeters} meter</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Price Transparency Banner */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[20px] text-emerald-700 shrink-0">
+                  verified_user
+                </span>
+                <span className="text-xs font-semibold text-emerald-900">
+                  Harga resmi dari pengelola stan: <strong>{stall.lastUpdatedDate}</strong> ({stall.lastUpdatedTime} WIB) • Bebas biaya tambahan markup.
+                </span>
               </div>
               <button
                 type="button"
                 onClick={onOpenReportModal}
-                className="min-h-[40px] px-3.5 py-2 rounded-lg bg-surface-container-lowest text-primary font-label-sm text-label-sm font-semibold hover:bg-surface shadow-xs inline-flex items-center gap-1.5 shrink-0 cursor-pointer self-start sm:self-center"
+                className="text-xs font-bold text-emerald-800 hover:text-emerald-950 underline cursor-pointer self-start sm:self-auto shrink-0"
               >
-                <span>Lapor Selisih Harga</span>
-                <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                Lapor Selisih Harga
               </button>
             </div>
+          </div>
+        </header>
 
-            {/* Menu Section Header & Controls */}
-            <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="fluid-headline-md text-on-surface">Daftar Menu &amp; Harga</h3>
-                <div className="flex items-center gap-1 bg-surface-container p-1 rounded-lg">
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('cards')}
-                    className={`min-h-[38px] px-3 py-1.5 rounded-md text-label-sm font-label-sm cursor-pointer transition-colors ${
-                      viewMode === 'cards'
-                        ? 'bg-surface-container-lowest text-on-surface shadow-xs font-semibold'
-                        : 'text-on-surface-variant'
-                    }`}
-                  >
-                    Foto &amp; Kartu
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setViewMode('table')}
-                    className={`min-h-[38px] px-3 py-1.5 rounded-md text-label-sm font-label-sm cursor-pointer transition-colors ${
-                      viewMode === 'table'
-                        ? 'bg-surface-container-lowest text-on-surface shadow-xs font-semibold'
-                        : 'text-on-surface-variant'
-                    }`}
-                  >
-                    Tabel Ringkas
-                  </button>
-                </div>
-              </div>
-
-              {/* Category Filter Buttons */}
-              <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-0.5">
+        {/* 4. CONTENT GRID: MENU LIST (LEFT) & STALL INFO / REVIEWS (RIGHT) */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* LEFT COLUMN: MENU ITEMS */}
+          <section aria-label="Daftar Menu Stan" className="lg:col-span-8 flex flex-col gap-4 min-w-0">
+            {/* Category Navigation Bar & View Mode */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                 {[
                   { id: 'all', label: `Semua (${safeMenuItems.length})` },
                   { id: 'makanan', label: `Makanan (${makananCount})` },
@@ -571,600 +536,507 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     onClick={() =>
                       setSelectedCategory(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
                     }
-                    className={`min-h-[42px] px-4 py-2 rounded-xl font-label-md text-label-md whitespace-nowrap shadow-xs cursor-pointer transition-colors shrink-0 ${
+                    className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap cursor-pointer transition-all ${
                       selectedCategory === cat.id
-                        ? 'bg-primary text-on-primary font-semibold'
-                        : 'bg-surface-container-lowest text-on-surface-variant hover:text-on-surface border border-outline-variant/20'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
                     }`}
                   >
                     {cat.label}
                   </button>
                 ))}
               </div>
+
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shrink-0 self-end sm:self-auto">
+                <button
+                  type="button"
+                  onClick={() => setViewMode('cards')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                    viewMode === 'cards'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Kartu Foto
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                    viewMode === 'table'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-500 hover:text-slate-900'
+                  }`}
+                >
+                  Tabel Ringkas
+                </button>
+              </div>
             </div>
 
-            {/* Menu List / Table (2 columns on Desktop & Tablet, 1 column on Mobile) */}
-            <div className="flex flex-col gap-3" id="menu-container">
-              {viewMode === 'table' ? (
-                <div className="bg-surface-container-lowest rounded-xl shadow-sm overflow-x-auto border border-outline-variant/30">
-                  <table className="w-full text-left border-collapse">
-                    <thead>
-                      <tr className="bg-surface-container-high text-on-surface font-label-md text-label-md">
-                        <th className="py-3 px-4">Menu</th>
-                        <th className="py-3 px-3">Status</th>
-                        <th className="py-3 px-4 text-right">Harga</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-outline-variant/30 font-body-md text-body-md">
-                      {visibleMenu.map((item) => (
-                        <tr key={item.id} className="hover:bg-surface-container-low">
+            {/* MENU DISPLAY */}
+            {viewMode === 'table' ? (
+              <div className="bg-white rounded-2xl shadow-xs overflow-x-auto border border-slate-200">
+                <table className="w-full text-left border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
+                      <th className="py-3 px-4">Menu Makanan / Minuman</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-4 text-right">Harga</th>
+                      <th className="py-3 px-4 text-center">Aksi</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {visibleMenu.map((item) => {
+                      const isAvailable = item.status === 'ready';
+                      const inCartQty = cartQuantities[item.id] || 0;
+                      return (
+                        <tr key={item.id} className="hover:bg-slate-50/80">
                           <td className="py-3 px-4">
-                            <div
-                              className={`font-semibold text-on-surface ${
-                                item.status === 'habis' ? 'line-through opacity-70' : ''
-                              }`}
-                            >
+                            <span className={`font-bold text-slate-900 block ${!isAvailable ? 'line-through text-slate-400' : ''}`}>
                               {item.name}
-                            </div>
-                            <div className="text-[11px] text-on-surface-variant">
-                              Update: {item.lastUpdated}
-                            </div>
+                            </span>
+                            <span className="text-xs text-slate-500">
+                              {item.description}
+                            </span>
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
                             <span
-                              className={`font-label-sm text-label-sm px-2 py-0.5 rounded inline-flex items-center gap-1.5 ${
-                                item.status === 'ready'
-                                  ? 'bg-secondary-container text-on-secondary-container'
-                                  : 'bg-error-container text-on-error-container'
+                              className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                                isAvailable
+                                  ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                                  : 'bg-slate-100 text-slate-500'
                               }`}
                             >
-                              <span
-                                className={`w-1.5 h-1.5 rounded-full ${
-                                  item.status === 'ready' ? 'bg-secondary' : 'bg-error'
-                                }`}
-                              />
-                              <span>{item.status === 'ready' ? 'Tersedia' : 'Habis'}</span>
+                              {isAvailable ? 'Tersedia' : 'Habis'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-right font-label-lg text-primary font-bold whitespace-nowrap">
-                            Rp{item.price.toLocaleString('id-ID')}
+                          <td className="py-3 px-4 text-right font-black text-emerald-700 whitespace-nowrap">
+                            Rp {item.price.toLocaleString('id-ID')}
                           </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {visibleMenu.map((item) => {
-                    const isAvailable = item.status === 'ready';
-                    return (
-                      <article
-                        key={item.id}
-                        className={`menu-card bg-surface-container-lowest rounded-xl p-3.5 shadow-sm border border-outline-variant/25 flex gap-3.5 min-w-0 ${
-                          !isAvailable ? 'opacity-80' : ''
-                        }`}
-                      >
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden shrink-0 bg-surface-container-high relative">
-                          <img
-                            className={`w-full h-full object-cover ${
-                              !isAvailable ? 'grayscale' : ''
-                            }`}
-                            alt={item.altCatalog}
-                            src={item.imageCatalog}
-                            referrerPolicy="no-referrer"
-                          />
-                          {!isAvailable && (
-                            <div className="absolute inset-0 bg-on-surface/55 flex items-center justify-center p-1 text-center">
-                              <span className="font-label-sm text-[10px] leading-tight text-surface font-bold uppercase">
-                                Habis
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex flex-col justify-between flex-grow min-w-0">
-                          <div>
-                            <h4
-                              className={`font-headline-md text-[15px] sm:text-[16px] leading-snug text-on-surface font-semibold break-words ${
-                                !isAvailable ? 'line-through' : ''
-                              }`}
-                            >
-                              {item.name}
-                            </h4>
-                            <p className="font-body-sm text-body-sm text-on-surface-variant line-clamp-2 mt-0.5">
-                              {item.description}
-                            </p>
-                          </div>
-                          <div className="flex items-end justify-between gap-2 pt-2.5 mt-1 border-t border-outline-variant/15">
-                            <div className="flex flex-col min-w-0">
-                              <span
-                                className={`font-headline-md text-[15px] sm:text-[16px] font-bold whitespace-nowrap ${
-                                  isAvailable ? 'text-primary' : 'text-on-surface-variant'
-                                }`}
-                              >
-                                Rp {item.price.toLocaleString('id-ID')}
-                              </span>
-                              <span className="text-[11px] text-on-surface-variant truncate">
-                                Update: {item.lastUpdated}
-                              </span>
-                            </div>
+                          <td className="py-3 px-4 text-center">
                             {isAvailable ? (
-                              <div className="flex items-center shrink-0">
-                                {(cartQuantities[item.id] || 0) > 0 ? (
-                                  <div className="flex items-center gap-1 bg-primary-fixed text-on-primary-fixed p-1 rounded-xl border border-primary/30">
-                                    <button
-                                      type="button"
-                                      aria-label={`Kurangi ${item.name}`}
-                                      onClick={() => updateCartQty(item, -1)}
-                                      className="w-9 h-9 rounded-lg bg-surface-container-lowest text-primary font-bold flex items-center justify-center cursor-pointer active:scale-95"
-                                    >
-                                      -
-                                    </button>
-                                    <span className="font-label-md font-bold min-w-[24px] text-center">
-                                      {cartQuantities[item.id]}
-                                    </span>
-                                    <button
-                                      type="button"
-                                      aria-label={`Tambah ${item.name}`}
-                                      onClick={() => updateCartQty(item, 1)}
-                                      className="w-9 h-9 rounded-lg bg-primary text-on-primary font-bold flex items-center justify-center cursor-pointer active:scale-95"
-                                    >
-                                      +
-                                    </button>
-                                  </div>
-                                ) : (
+                              inCartQty > 0 ? (
+                                <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 p-1 rounded-xl border border-emerald-200">
+                                  <button
+                                    type="button"
+                                    onClick={() => updateCartQty(item, -1)}
+                                    className="w-7 h-7 rounded-lg bg-white font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                                  >
+                                    -
+                                  </button>
+                                  <span className="font-bold text-xs px-1">{inCartQty}</span>
                                   <button
                                     type="button"
                                     onClick={() => updateCartQty(item, 1)}
-                                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95 whitespace-nowrap"
+                                    className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center cursor-pointer shadow-2xs"
                                   >
-                                    <span className="material-symbols-outlined text-[16px]">
-                                      add_shopping_cart
-                                    </span>
-                                    <span>+ Pesan</span>
+                                    +
                                   </button>
-                                )}
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => updateCartQty(item, 1)}
+                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer"
+                                >
+                                  + Tambah
+                                </button>
+                              )
+                            ) : (
+                              <span className="text-xs text-slate-400">Habis</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              /* 5. SHOPEEFOOD / GOJEK GRADE 2-COLUMN MENU CARD GRID */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {visibleMenu.map((item) => {
+                  const isAvailable = item.status === 'ready';
+                  const inCartQty = cartQuantities[item.id] || 0;
+
+                  return (
+                    <article
+                      key={item.id}
+                      className={`group bg-white rounded-2xl p-3.5 shadow-xs hover:shadow-md border border-slate-200/90 flex gap-3.5 min-w-0 transition-all duration-200 ${
+                        !isAvailable ? 'opacity-70 bg-slate-50' : 'hover:border-emerald-300'
+                      }`}
+                    >
+                      {/* Left: Text & Price */}
+                      <div className="flex flex-col justify-between flex-grow min-w-0">
+                        <div>
+                          <h4
+                            className={`text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 ${
+                              !isAvailable ? 'line-through text-slate-400' : ''
+                            }`}
+                          >
+                            {item.name}
+                          </h4>
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">
+                            {item.description}
+                          </p>
+                        </div>
+
+                        <div className="flex items-end justify-between gap-2 pt-2 mt-2 border-t border-slate-100">
+                          <div className="flex flex-col">
+                            <span
+                              className={`text-base sm:text-lg font-black ${
+                                isAvailable ? 'text-emerald-700' : 'text-slate-400'
+                              }`}
+                            >
+                              Rp {item.price.toLocaleString('id-ID')}
+                            </span>
+                            <span className="text-[10px] text-slate-400">
+                              Update: {item.lastUpdated}
+                            </span>
+                          </div>
+
+                          {/* Stepper / Add Button */}
+                          {isAvailable ? (
+                            inCartQty > 0 ? (
+                              <div className="flex items-center gap-1 bg-emerald-50 text-emerald-900 p-1 rounded-xl border border-emerald-300 shadow-xs">
+                                <button
+                                  type="button"
+                                  aria-label={`Kurangi ${item.name}`}
+                                  onClick={() => updateCartQty(item, -1)}
+                                  className="w-8 h-8 rounded-lg bg-white text-emerald-800 font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs"
+                                >
+                                  -
+                                </button>
+                                <span className="font-bold text-xs min-w-[20px] text-center">
+                                  {inCartQty}
+                                </span>
+                                <button
+                                  type="button"
+                                  aria-label={`Tambah ${item.name}`}
+                                  onClick={() => updateCartQty(item, 1)}
+                                  className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs"
+                                >
+                                  +
+                                </button>
                               </div>
                             ) : (
-                              <span className="font-label-sm text-xs bg-error-container text-on-error-container px-2.5 py-1 rounded-lg shrink-0 whitespace-nowrap">
-                                Habis
-                              </span>
-                            )}
-                          </div>
+                              <button
+                                type="button"
+                                onClick={() => updateCartQty(item, 1)}
+                                className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95 transition-all"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">add</span>
+                                <span>Tambah</span>
+                              </button>
+                            )
+                          ) : (
+                            <span className="text-xs font-bold text-slate-400 px-2.5 py-1 rounded-lg bg-slate-200">
+                              Habis
+                            </span>
+                          )}
                         </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+                      </div>
 
-            {/* Rating & Review Mahasiswa IBI KKG */}
-            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
-              <div className="flex items-center justify-between gap-2">
-                <div>
-                  <h3 className="fluid-headline-md text-on-surface">
-                    Rating &amp; Ulasan Mahasiswa
-                  </h3>
-                  <span className="font-body-sm text-body-sm text-on-surface-variant">
-                    Pengalaman makan langsung di {stall.name}
+                      {/* Right: Square Food Thumbnail */}
+                      <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative">
+                        <img
+                          src={item.imageCatalog}
+                          alt={item.altCatalog}
+                          referrerPolicy="no-referrer"
+                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
+                            !isAvailable ? 'grayscale' : ''
+                          }`}
+                        />
+                        {!isAvailable && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-[10px] font-bold uppercase">
+                            Habis
+                          </div>
+                        )}
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* RATINGS & REVIEWS SECTION */}
+            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-200 mt-2 flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-amber-500 text-[24px]">
+                    reviews
                   </span>
+                  <h3 className="text-lg font-bold text-slate-900">
+                    Ulasan Mahasiswa IBI KKG
+                  </h3>
                 </div>
-                <div className="flex items-center gap-1 bg-tertiary-fixed text-on-tertiary-fixed px-3 py-1.5 rounded-lg font-label-md font-bold shrink-0">
-                  <span className="material-symbols-outlined text-[16px]">star</span>
-                  <span>{stall.rating}</span>
-                </div>
+                <span className="text-xs text-slate-500 font-semibold">
+                  {stall.reviewCount} Mahasiswa telah menilai
+                </span>
               </div>
 
-              <div className="flex flex-col gap-3">
-                {(Array.isArray(stall.reviews) ? stall.reviews : []).map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-1.5"
-                  >
-                    <div className="flex flex-wrap items-center justify-between gap-1">
-                      <div>
-                        <span className="font-label-md text-label-md text-on-surface font-bold">
-                          {rev.studentName}
-                        </span>
-                        <span className="font-body-sm text-xs text-on-surface-variant ml-1.5">
-                          • {rev.majorAndYear}
-                        </span>
-                      </div>
-                      <span className="font-label-sm text-label-sm text-tertiary font-bold">
-                        {Math.max(1, Math.min(5, Number(rev.rating) || 5))}/5 Bintang
-                      </span>
-                    </div>
-                    <p className="font-body-sm text-body-sm text-on-surface leading-relaxed">
-                      {rev.comment}
-                    </p>
-                    <span className="text-[11px] text-on-surface-variant">{rev.date}</span>
-                    {rev.reply && (
-                      <div className="mt-1 p-2.5 rounded bg-surface-container-lowest border-l-2 border-primary text-body-sm text-on-surface-variant">
-                        <strong className="text-on-surface">Balasan Penjual:</strong> {rev.reply}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              <form
-                onSubmit={handleReviewSubmit}
-                className="pt-3 border-t border-outline-variant/30 flex flex-col gap-2.5"
-              >
-                <span className="font-label-md text-label-md text-on-surface">
-                  Tulis Ulasan Singkat Anda
+              {/* Review Input Form */}
+              <form onSubmit={handleReviewSubmit} className="flex flex-col gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100">
+                <span className="text-xs font-bold text-slate-700">
+                  Tulis Ulasan Makanan &amp; Layanan Stan:
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                   <input
                     type="text"
                     required
-                    placeholder="Nama Anda"
+                    placeholder="Nama Anda (Mahasiswa)"
                     value={revName}
                     onChange={(e) => setRevName(e.target.value)}
-                    className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                    className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <select
                     value={revRating}
                     onChange={(e) => setRevRating(Number(e.target.value))}
-                    className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                    className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
-                    <option value={5}>5/5 — Sangat Puas</option>
-                    <option value={4}>4/5 — Sesuai Harga</option>
-                    <option value={3}>3/5 — Cukup</option>
+                    <option value={5}>⭐⭐⭐⭐⭐ (5/5) Sangat Enak &amp; Cepat</option>
+                    <option value={4}>⭐⭐⭐⭐ (4/5) Enak &amp; Porsi Pas</option>
+                    <option value={3}>⭐⭐⭐ (3/5) Cukup Sesuai</option>
                   </select>
                 </div>
-                <input
-                  type="text"
-                  placeholder="Bagaimana kesesuaian harga dan rasa makanannya?"
-                  required
-                  value={revComment}
-                  onChange={(e) => setRevComment(e.target.value)}
-                  className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                />
-                <button
-                  type="submit"
-                  className="w-full min-h-[44px] py-2.5 rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer active:scale-[0.99]"
-                >
-                  Kirim Ulasan Mahasiswa
-                </button>
-              </form>
-            </div>
-          </div>
-
-          {/* RIGHT SIDEBAR COLUMN (2-col side-by-side on Tablet md, 4 cols vertical on Desktop lg) */}
-          <div className="lg:col-span-4 grid grid-cols-1 md:grid-cols-2 lg:flex lg:flex-col gap-5 min-w-0 items-start">
-            {/* Profil Informasi Kantin Lengkap */}
-            <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-xl shadow-sm border border-outline-variant/25 flex flex-col gap-3.5">
-              <h3 className="fluid-headline-md text-on-surface">Informasi &amp; Lokasi Kantin</h3>
-              <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                {stall.description}
-              </p>
-
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">location_on</span>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Komentar Anda tentang rasa makanan atau kecepatan pembuatan..."
+                    value={revComment}
+                    onChange={(e) => setRevComment(e.target.value)}
+                    className="flex-grow h-10 px-3 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs active:scale-95"
+                  >
+                    Kirim
+                  </button>
                 </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                    Lokasi &amp; Jarak Kampus
-                  </span>
-                  <span className="font-label-lg text-label-lg text-on-surface">
-                    {stall.fullLocation} (±{stall.distanceMeters} meter)
+              </form>
+
+              {/* Existing Reviews List */}
+              <div className="flex flex-col gap-3">
+                {stall.reviews && stall.reviews.length > 0 ? (
+                  stall.reviews.map((rev) => (
+                    <div
+                      key={rev.id}
+                      className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 flex flex-col gap-1.5"
+                    >
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-slate-800">{rev.studentName}</span>
+                          <span className="text-slate-400">• {rev.majorAndYear}</span>
+                        </div>
+                        <div className="flex items-center text-amber-500 font-bold">
+                          {'★'.repeat(rev.rating)}
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-600">{rev.comment}</p>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-xs text-slate-400 text-center py-2">
+                    Belum ada ulasan untuk stan ini. Jadilah yang pertama memberikan ulasan!
+                  </p>
+                )}
+              </div>
+            </div>
+          </section>
+
+          {/* RIGHT SIDEBAR: STALL INFO & CAMPUS GUIDE */}
+          <aside aria-label="Informasi dan Lokasi Stan" className="lg:col-span-4 flex flex-col gap-4 min-w-0">
+            {/* Stall Information Card */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col gap-4">
+              <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2">
+                Informasi &amp; Lokasi Stan
+              </h3>
+
+              <div className="flex items-start gap-3 text-xs">
+                <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">
+                  location_on
+                </span>
+                <div className="flex flex-col">
+                  <span className="font-bold text-slate-900">{stall.fullLocation}</span>
+                  <span className="text-slate-500 mt-0.5">
+                    ±{stall.distanceMeters} meter dari lobby utama
                   </span>
                 </div>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">schedule</span>
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                    Jam Operasional
-                  </span>
-                  <span className="font-body-md text-body-md text-on-surface">
+              <div className="flex items-start gap-3 text-xs">
+                <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">
+                  schedule
+                </span>
+                <div className="flex flex-col">
+                  <span className="font-bold text-slate-900">
                     {stall.daysOpen} • {stall.hours} WIB
                   </span>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-lg bg-surface-container flex items-center justify-center text-primary shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">payments</span>
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                    Metode Pembayaran Langsung (Tanpa Biaya Admin)
-                  </span>
-                  <div className="flex flex-wrap gap-1.5 mt-1">
-                    {paymentConfig.qrisEnabled && (
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-semibold">
-                        QRIS (Semua Bank &amp; E-Wallet)
-                      </span>
-                    )}
-                    {paymentConfig.ewalletEnabled && (
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-primary-fixed text-on-primary-fixed font-semibold">
-                        {paymentConfig.ewalletProviders}
-                      </span>
-                    )}
-                    {paymentConfig.bankEnabled && (
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-surface-container-high text-on-surface font-semibold">
-                        Transfer {paymentConfig.bankName}
-                      </span>
-                    )}
-                    {paymentConfig.cashEnabled && (
-                      <span className="text-[11px] px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-semibold">
-                        Tunai di Kasir
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Petunjuk Arah Lokasi Fisik & Live GPS Penjual */}
-              <div className="p-3.5 rounded-lg bg-surface-container-low flex flex-col gap-2">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 text-on-surface">
-                    <span className="material-symbols-outlined text-primary text-[18px]">
-                      explore
-                    </span>
-                    <span className="font-label-md text-label-md font-bold">
-                      Panduan Jalan Kaki ke {stall.name}
-                    </span>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-bold">
-                    GPS Aktif
+                  <span className="text-slate-500 mt-0.5">
+                    {stall.isOpen ? 'Sedang buka melayani pesanan' : 'Sedang istirahat/tutup'}
                   </span>
                 </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  {stall.walkingGuide}
-                </p>
               </div>
 
-              {/* QR Code Etalase Stan Langsung Terlihat */}
-              <div className="p-3.5 rounded-xl bg-primary-fixed/35 border border-primary/25 flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3 min-w-0">
-                  {stallQrDataUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setIsQrModalOpen(true)}
-                      title="Klik untuk perbesar Poster QR Code Stan"
-                      className="w-16 h-16 rounded-lg bg-white p-1 border border-primary/30 shadow-xs shrink-0 cursor-pointer hover:scale-105 transition-transform"
-                    >
-                      <img
-                        src={stallQrDataUrl}
-                        alt={`QR Code ${stall.name}`}
-                        className="w-full h-full object-contain"
-                      />
-                    </button>
+              {/* Walking Guide */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1 text-xs">
+                <span className="font-bold text-slate-800 flex items-center gap-1">
+                  <span className="material-symbols-outlined text-[16px] text-emerald-600">
+                    directions_walk
+                  </span>
+                  Panduan Jalan Kaki:
+                </span>
+                <p className="text-slate-600 leading-relaxed">{stall.walkingGuide}</p>
+              </div>
+
+              {/* Payment Methods Pill Badges */}
+              <div className="flex flex-col gap-1.5 pt-2 border-t border-slate-100 text-xs">
+                <span className="font-bold text-slate-700">Metode Bayar Didukung:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {paymentConfig.qrisEnabled && (
+                    <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">
+                      QRIS Semua Bank
+                    </span>
                   )}
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-label-sm text-xs font-bold text-on-surface">
-                      QR Code Etalase {stall.name}
+                  {paymentConfig.ewalletEnabled && (
+                    <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[11px]">
+                      DANA / GoPay
                     </span>
-                    <span className="text-[11px] text-on-surface-variant leading-snug">
-                      Scan atau bagikan QR ini agar teman langsung membuka menu {stall.code}
+                  )}
+                  {paymentConfig.cashEnabled && (
+                    <span className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[11px]">
+                      Tunai di Stan
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* QR Code Etalase Preview */}
+              {stallQrDataUrl && (
+                <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80 flex items-center gap-3">
+                  <img
+                    src={stallQrDataUrl}
+                    alt={`QR Stan ${stall.name}`}
+                    className="w-14 h-14 object-contain rounded-lg bg-white p-1 border border-emerald-200 shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                    onClick={() => setIsQrModalOpen(true)}
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs text-emerald-950">
+                      QR Code Menu {stall.code}
+                    </span>
+                    <span className="text-[11px] text-emerald-800">
+                      Klik untuk memperbesar atau scan langsung untuk bagikan ke teman.
                     </span>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setIsQrModalOpen(true)}
-                  className="min-h-[38px] px-3 py-1.5 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-semibold flex items-center gap-1 shrink-0 cursor-pointer shadow-xs"
-                >
-                  <span className="material-symbols-outlined text-[16px]">qr_code_2</span>
-                  <span>Perbesar</span>
-                </button>
-              </div>
+              )}
             </div>
-
-            {/* PETA LIVE GPS PENJUAL & PANDUAN ARAH PEMBELI */}
-            <div className="md:col-span-2 lg:col-span-1 w-full">
-              <LiveGpsTrackerMap
-                stalls={[stall]}
-                selectedStallId={stall.id}
-                mode="student-detail"
-                onShowToast={onShowToast}
-              />
-            </div>
-
-            {/* LIVE TRACKER PESANAN MAHASISWA DI KANTIN INI */}
-            {stallOrders.length > 0 && (
-              <div className="md:col-span-2 lg:col-span-1 bg-surface-container-lowest rounded-xl p-4 sm:p-5 shadow-sm border-2 border-primary/35 flex flex-col gap-3 w-full">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 text-primary">
-                    <span className="material-symbols-outlined text-[20px]">receipt_long</span>
-                    <h3 className="font-headline-md text-[16px] text-on-surface font-bold">
-                      Status Pesanan Live ({stallOrders.length})
-                    </h3>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-semibold">
-                    Real-Time Sync
-                  </span>
-                </div>
-
-                <div className="flex flex-col gap-2.5">
-                  {stallOrders.slice(0, 4).map((ord) => (
-                    <div
-                      key={ord.id}
-                      className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-1.5"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-label-sm text-on-surface font-bold">
-                          {ord.studentName} ({ord.studentNim})
-                        </span>
-                        <span
-                          className={`text-[11px] px-2 py-0.5 rounded font-bold ${
-                            ord.status === 'ready_pickup'
-                              ? 'bg-secondary text-on-secondary'
-                              : ord.status === 'cooking'
-                              ? 'bg-primary-fixed text-on-primary-fixed'
-                              : ord.status === 'completed'
-                              ? 'bg-secondary-container text-on-secondary-container'
-                              : ord.status === 'rejected'
-                              ? 'bg-error-container text-on-error-container'
-                              : 'bg-tertiary-fixed text-on-tertiary-fixed'
-                          }`}
-                        >
-                          {ord.status === 'waiting_payment_verification'
-                            ? 'Menunggu Konfirmasi Penjual'
-                            : ord.status === 'cooking'
-                            ? 'Sedang Disiapkan / Dibungkus'
-                            : ord.status === 'ready_pickup'
-                            ? 'SIAP DIAMBIL DI STAN'
-                            : ord.status === 'completed'
-                            ? 'Selesai Diambil'
-                            : 'Dibatalkan / Revisi'}
-                        </span>
-                      </div>
-                      <div className="text-[12px] text-on-surface-variant">
-                        {ord.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}
-                      </div>
-                      <div className="flex flex-wrap items-center justify-between gap-1 pt-1 border-t border-outline-variant/20 text-[11px]">
-                        <span className="text-on-surface-variant">{ord.paymentProviderLabel}</span>
-                        <strong className="text-primary">
-                          Rp {ord.totalAmount.toLocaleString('id-ID')}
-                        </strong>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        <button
-                          type="button"
-                          onClick={() => setReceiptOrder(ord)}
-                          className="flex-1 min-h-[44px] px-3 py-2 rounded-lg bg-surface-container hover:bg-surface-container-high text-primary font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">
-                            receipt_long
-                          </span>
-                          <span>Lihat Nota</span>
-                        </button>
-                        {ord.status === 'ready_pickup' && onUpdateOrderStatus && (
-                          <button
-                            type="button"
-                            onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
-                            className="flex-1 min-h-[44px] px-3 py-2 rounded-lg bg-secondary text-on-secondary hover:opacity-95 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs cursor-pointer active:scale-[0.99]"
-                          >
-                            <span className="material-symbols-outlined text-[16px]">task_alt</span>
-                            <span>Sudah Diambil</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
+          </aside>
         </div>
       </div>
 
-      {/* FLOATING STICKY CART BAR (Appears when student selects >= 1 item) */}
+      {/* 6. SHOPEEFOOD / GOJEK STYLE FLOATING BOTTOM CART BAR (Appears when items in cart) */}
       {cartTotalItems > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 z-40 max-w-3xl mx-auto">
-          <div className="bg-on-surface text-surface rounded-2xl p-3.5 sm:p-4 shadow-xl flex flex-wrap items-center justify-between gap-3 border border-outline-variant/30">
+        <div className="fixed bottom-4 left-3 right-3 sm:left-6 sm:right-6 z-40 max-w-4xl mx-auto">
+          <div className="bg-slate-900 text-white rounded-3xl p-3.5 sm:p-4 shadow-2xl flex items-center justify-between gap-3 border border-slate-800 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md font-bold shrink-0">
-                {cartTotalItems}
+              <div className="relative w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-md shrink-0">
+                <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
+                <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center">
+                  {cartTotalItems}
+                </span>
               </div>
               <div className="flex flex-col">
-                <span className="font-label-sm text-[11px] text-surface/80">
-                  Total Pesanan di {stall.name} (Rp 0 Biaya Admin)
+                <span className="text-[11px] text-slate-300 font-medium">
+                  {cartTotalItems} menu di {stall.name}
                 </span>
-                <span className="font-headline-md text-[18px] text-surface font-bold">
+                <span className="text-base sm:text-lg font-black text-white">
                   Rp {cartTotalAmount.toLocaleString('id-ID')}
                 </span>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+            <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setCartQuantities({})}
-                className="min-h-[42px] px-3 py-2 rounded-xl bg-surface/15 hover:bg-surface/25 text-surface font-label-sm text-label-sm cursor-pointer"
+                className="hidden sm:inline-flex min-h-[42px] px-3 py-1.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => setCheckoutModalOpen(true)}
-                className="flex-1 sm:flex-initial min-h-[44px] px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-95"
+                className="min-h-[46px] px-5 sm:px-6 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/40 cursor-pointer active:scale-95 transition-all"
               >
-                <span>Pilih Pembayaran &amp; Checkout</span>
-                <span className="material-symbols-outlined text-[18px]">payments</span>
+                <span>Checkout Pesanan</span>
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL CHECKOUT TRANSAKSI DIRECT-TO-MERCHANT (QRIS / DANA / GOPAY / OVO / BANK / TUNAI) */}
+      {/* 7. SHOPEEFOOD-STYLE CHECKOUT SHEET / MODAL */}
       {checkoutModalOpen && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
           <form
             onSubmit={handleCheckoutSubmit}
-            className="bg-surface-container-lowest rounded-2xl p-4 sm:p-6 w-full max-w-lg shadow-xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-outline-variant/30"
+            className="bg-white rounded-3xl p-4 sm:p-6 w-full max-w-lg shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-200"
           >
-            <div className="flex items-start justify-between gap-2 border-b border-outline-variant/25 pb-3">
+            <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
-                <span className="font-label-sm text-[11px] text-secondary font-bold uppercase tracking-wider">
-                  Transaksi Langsung ke Penjual • Rp 0 Biaya Admin
+                <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">
+                  Pesanan Kampus • Langsung ke Pedagang
                 </span>
-                <h3 className="fluid-headline-md text-on-surface">
-                  Checkout Pesanan — {stall.name}
+                <h3 className="text-xl font-bold text-slate-900 mt-0.5">
+                  Checkout — {stall.name}
                 </h3>
               </div>
               <button
                 type="button"
                 aria-label="Tutup Checkout"
                 onClick={() => setCheckoutModalOpen(false)}
-                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+                className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
             </div>
 
-            {/* Ringkasan Item Pesanan */}
-            <div className="p-3.5 rounded-xl bg-surface-container-low flex flex-col gap-2">
-              <div className="flex items-center justify-between text-label-sm text-on-surface-variant font-semibold">
-                <span>Rincian Menu ({cartTotalItems} item)</span>
-                <span>Subtotal</span>
-              </div>
+            {/* Cart Summary */}
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col gap-2 text-xs">
+              <span className="font-bold text-slate-700">Rincian Menu ({cartTotalItems} item):</span>
               {cartItems.map((item) => (
-                <div
-                  key={item.menuItemId}
-                  className="flex items-center justify-between text-body-sm text-on-surface"
-                >
+                <div key={item.menuItemId} className="flex justify-between text-slate-800">
                   <span>
                     <strong>{item.quantity}x</strong> {item.name}
                   </span>
-                  <span className="font-semibold">
+                  <span className="font-bold">
                     Rp {(item.price * item.quantity).toLocaleString('id-ID')}
                   </span>
                 </div>
               ))}
               {selectedPaymentMethod === 'gateway' && (
-                <div className="flex items-center justify-between text-xs text-secondary pt-1 border-t border-outline-variant/20">
-                  <span>Biaya Layanan Platform &amp; Payment Gateway</span>
-                  <span className="font-semibold">
-                    +Rp {PLATFORM_SERVICE_FEE.toLocaleString('id-ID')}
-                  </span>
+                <div className="flex justify-between text-emerald-700 pt-1 border-t border-slate-200/60">
+                  <span>Biaya Layanan Platform Gateway:</span>
+                  <span className="font-bold">+Rp {PLATFORM_SERVICE_FEE.toLocaleString('id-ID')}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between pt-2 border-t border-outline-variant/30">
-                <span className="font-label-md text-on-surface font-bold">
-                  Total Pembayaran
-                </span>
-                <span className="font-headline-md text-[18px] text-primary font-bold">
+              <div className="flex justify-between text-sm font-black text-slate-900 pt-2 border-t border-slate-200">
+                <span>Total Pembayaran:</span>
+                <span className="text-emerald-700">
                   Rp {cartTotalAmount.toLocaleString('id-ID')}
                 </span>
               </div>
             </div>
 
-            {/* Data Pemesan Mahasiswa */}
+            {/* Student Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
-                  Nama Mahasiswa <span className="text-error">*</span>
+                <label className="text-xs font-bold text-slate-700">
+                  Nama Mahasiswa <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1172,12 +1044,12 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   placeholder="Contoh: Kevin Pratama"
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
-                  className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                  className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
-                  NIM Mahasiswa <span className="text-error">*</span>
+                <label className="text-xs font-bold text-slate-700">
+                  NIM Mahasiswa <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -1185,20 +1057,19 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   placeholder="Contoh: 32230104"
                   value={studentNim}
                   onChange={(e) => setStudentNim(e.target.value)}
-                  className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                  className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
 
+            {/* Pickup Time & Notes */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
-                  Waktu Ambil di Stan
-                </label>
+                <label className="text-xs font-bold text-slate-700">Waktu Ambil di Stan:</label>
                 <select
                   value={pickupTime}
                   onChange={(e) => setPickupTime(e.target.value)}
-                  className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                  className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 >
                   <option value="Sekarang (Langsung Ambil)">Sekarang (Langsung Ambil)</option>
                   <option value="Istirahat Pagi (09.45 WIB)">Istirahat Pagi (09.45 WIB)</option>
@@ -1207,60 +1078,48 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
-                  Catatan Pesanan (Opsional)
-                </label>
+                <label className="text-xs font-bold text-slate-700">Catatan Pesanan:</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Sambal pisah / tidak pedas"
+                  placeholder="Contoh: Sambal pisah / jangan pedas"
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
-                  className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                  className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
             </div>
 
-            {/* PILIH METODE PEMBAYARAN (PAYMENT GATEWAY SANDBOX VS DIRECT) */}
+            {/* Payment Method Selector */}
             <div className="flex flex-col gap-2">
-              <label className="font-label-sm text-label-sm text-on-surface font-bold">
-                Pilih Metode Pembayaran:
-              </label>
+              <label className="text-xs font-bold text-slate-700">Metode Pembayaran:</label>
 
-              {/* Featured Option: Payment Gateway Otomatis (Simulasi Sandbox) */}
+              {/* Gateway Sandbox */}
               <button
                 type="button"
                 onClick={() => setSelectedPaymentMethod('gateway')}
-                className={`w-full p-3 rounded-xl flex items-center justify-between gap-3 border text-left transition-all cursor-pointer ${
+                className={`w-full p-3 rounded-2xl flex items-center justify-between gap-3 border text-left transition-all cursor-pointer ${
                   selectedPaymentMethod === 'gateway'
-                    ? 'bg-primary text-on-primary border-primary shadow-sm'
-                    : 'bg-surface-container-low text-on-surface border-outline-variant/40 hover:bg-surface-container'
+                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
+                    : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
                 }`}
               >
                 <div className="flex items-center gap-2.5">
                   <span className="material-symbols-outlined text-[24px]">bolt</span>
                   <div className="flex flex-col">
-                    <span className="font-label-md font-bold flex items-center gap-1.5">
+                    <span className="text-xs font-bold">
                       Payment Gateway Otomatis (Simulasi Sandbox)
                     </span>
                     <span
                       className={`text-[11px] ${
-                        selectedPaymentMethod === 'gateway'
-                          ? 'text-on-primary/90'
-                          : 'text-on-surface-variant'
+                        selectedPaymentMethod === 'gateway' ? 'text-emerald-100' : 'text-slate-500'
                       }`}
                     >
-                      QRIS Dinamis, GoPay, DANA, OVO &amp; Virtual Account • Otomatis Lunas!
+                      QRIS Dinamis, DANA, GoPay &amp; VA • Otomatis Lunas!
                     </span>
                   </div>
                 </div>
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded font-bold shrink-0 ${
-                    selectedPaymentMethod === 'gateway'
-                      ? 'bg-secondary-container text-on-secondary-container'
-                      : 'bg-primary-fixed text-on-primary-fixed'
-                  }`}
-                >
-                  Rekomendasi
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black">
+                  Cepat
                 </span>
               </button>
 
@@ -1269,10 +1128,10 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedPaymentMethod('qris')}
-                    className={`min-h-[46px] p-2 rounded-xl font-label-sm text-label-sm flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
+                    className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
                       selectedPaymentMethod === 'qris'
-                        ? 'bg-primary text-on-primary border-primary font-bold shadow-xs'
-                        : 'bg-surface-container-low text-on-surface border-outline-variant/30'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-slate-50 text-slate-800 border-slate-200'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>
@@ -1284,16 +1143,16 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedPaymentMethod('ewallet')}
-                    className={`min-h-[46px] p-2 rounded-xl font-label-sm text-label-sm flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
+                    className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
                       selectedPaymentMethod === 'ewallet'
-                        ? 'bg-primary text-on-primary border-primary font-bold shadow-xs'
-                        : 'bg-surface-container-low text-on-surface border-outline-variant/30'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-slate-50 text-slate-800 border-slate-200'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[18px]">
                       account_balance_wallet
                     </span>
-                    <span>DANA / E-Wallet</span>
+                    <span>DANA / GoPay</span>
                   </button>
                 )}
 
@@ -1301,10 +1160,10 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedPaymentMethod('bank')}
-                    className={`min-h-[46px] p-2 rounded-xl font-label-sm text-label-sm flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
+                    className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
                       selectedPaymentMethod === 'bank'
-                        ? 'bg-primary text-on-primary border-primary font-bold shadow-xs'
-                        : 'bg-surface-container-low text-on-surface border-outline-variant/30'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-slate-50 text-slate-800 border-slate-200'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[18px]">account_balance</span>
@@ -1316,10 +1175,10 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setSelectedPaymentMethod('tunai')}
-                    className={`min-h-[46px] p-2 rounded-xl font-label-sm text-label-sm flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
+                    className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
                       selectedPaymentMethod === 'tunai'
-                        ? 'bg-primary text-on-primary border-primary font-bold shadow-xs'
-                        : 'bg-surface-container-low text-on-surface border-outline-variant/30'
+                        ? 'bg-emerald-600 text-white border-emerald-600'
+                        : 'bg-slate-50 text-slate-800 border-slate-200'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[18px]">payments</span>
@@ -1329,446 +1188,174 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
             </div>
 
-            {/* INSTRUKSI PEMBAYARAN SESUAI METODE YANG DIPILIH */}
-            {selectedPaymentMethod === 'gateway' && (
-              <div className="p-3.5 rounded-xl bg-secondary-container/40 border border-secondary/30 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-label-sm text-secondary font-bold flex items-center gap-1">
-                    <span className="material-symbols-outlined text-[16px]">verified_user</span>
-                    Mode Simulasi Payment Gateway (Midtrans Snap Sandbox)
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-surface-container-lowest text-secondary font-bold">
-                    Saldo Aman Rp 0
-                  </span>
-                </div>
-                <p className="font-body-sm text-[12px] text-on-surface leading-relaxed">
-                  Klik tombol di bawah untuk membuka jendela simulasi pembayaran otomatis. Begitu Anda klik <strong>&ldquo;Simulasikan Pembayaran Berhasil&rdquo;</strong>, status pesanan otomatis <strong>LUNAS TERVERIFIKASI</strong> dan saldo penjual langsung bertambah!
-                </p>
-              </div>
-            )}
-
+            {/* Direct QRIS Image Box */}
             {selectedPaymentMethod === 'qris' && (
-              <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 flex flex-col items-center text-center gap-2.5">
-                <div className="flex items-center justify-between w-full text-left">
-                  <span className="font-label-sm text-on-surface font-bold">
-                    Scan QRIS Resmi {paymentConfig.qrisMerchantName}
-                  </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-bold">
-                    NMID: {paymentConfig.qrisNmid}
-                  </span>
-                </div>
-
-                {/* Visual QRIS Box */}
-                <div className="bg-white p-3.5 rounded-xl border-2 border-primary/30 flex flex-col items-center gap-1.5 shadow-xs">
+              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center gap-2">
+                <span className="text-xs font-bold text-slate-800">
+                  Scan QRIS Resmi {paymentConfig.qrisMerchantName}
+                </span>
+                <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col items-center gap-1">
                   {paymentConfig.qrisImage || paymentQrisDataUrl ? (
                     <img
                       src={paymentConfig.qrisImage || paymentQrisDataUrl}
                       alt="QRIS Kantin"
-                      className="w-44 h-44 object-contain rounded"
+                      className="w-40 h-40 object-contain rounded"
                     />
-                  ) : (
-                    <div className="w-40 h-40 rounded-lg bg-surface-container flex flex-col items-center justify-center p-2 border-2 border-dashed border-on-surface/30">
-                      <span className="material-symbols-outlined text-[64px] text-on-surface">
-                        qr_code_2
-                      </span>
-                      <span className="text-[10px] font-bold text-on-surface">
-                        QRIS STANDAR NASIONAL
-                      </span>
-                    </div>
-                  )}
-                  <span className="text-[10px] font-mono font-bold text-slate-600">
-                    QRIS STANDAR NASIONAL • {paymentConfig.qrisNmid}
-                  </span>
-                  <span className="font-label-md text-primary font-bold">
+                  ) : null}
+                  <span className="text-xs font-bold text-emerald-700">
                     Nominal: Rp {cartTotalAmount.toLocaleString('id-ID')}
                   </span>
                 </div>
-
-                <div className="flex flex-wrap items-center justify-center gap-1.5 w-full">
-                  {(['DANA', 'GoPay', 'OVO', 'ShopeePay'] as const).map((prov) => (
-                    <button
-                      key={prov}
-                      type="button"
-                      onClick={() => setSelectedEwalletProvider(prov)}
-                      className={`px-2.5 py-1 rounded-md text-[11px] font-semibold cursor-pointer border ${
-                        selectedEwalletProvider === prov
-                          ? 'bg-secondary text-on-secondary border-secondary'
-                          : 'bg-surface-container-lowest text-on-surface border-outline-variant/30'
-                      }`}
-                    >
-                      Bayar pakai {prov}
-                    </button>
-                  ))}
-                </div>
               </div>
             )}
 
+            {/* E-Wallet Direct Info */}
             {selectedPaymentMethod === 'ewallet' && (
-              <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 flex flex-col gap-2.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-label-sm text-on-surface font-bold">
-                    Transfer Langsung ke E-Wallet Penjual
+              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-slate-500 block">
+                    {selectedEwalletProvider} ({paymentConfig.ewalletAccountName}):
                   </span>
-                  <span className="text-[11px] text-secondary font-semibold">
-                    Bebas Biaya Admin
+                  <span className="font-mono text-base font-bold text-slate-900">
+                    {paymentConfig.ewalletNumber}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-1.5">
-                  {(['DANA', 'GoPay', 'OVO', 'ShopeePay'] as const).map((prov) => (
-                    <button
-                      key={prov}
-                      type="button"
-                      onClick={() => setSelectedEwalletProvider(prov)}
-                      className={`px-3 py-1 rounded-lg text-label-sm font-semibold cursor-pointer border ${
-                        selectedEwalletProvider === prov
-                          ? 'bg-primary text-on-primary border-primary'
-                          : 'bg-surface-container-lowest text-on-surface border-outline-variant/30'
-                      }`}
-                    >
-                      {prov}
-                    </button>
-                  ))}
-                </div>
-                <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/30 flex items-center justify-between gap-2">
-                  <div className="flex flex-col">
-                    <span className="text-[11px] text-on-surface-variant">
-                      Nomor {selectedEwalletProvider} ({paymentConfig.ewalletAccountName}):
-                    </span>
-                    <span className="font-headline-md text-[17px] text-on-surface font-bold tracking-wide">
-                      {paymentConfig.ewalletNumber}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopyText(
-                        paymentConfig.ewalletNumber,
-                        `Nomor ${selectedEwalletProvider}`
-                      )
-                    }
-                    className="min-h-[36px] px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold cursor-pointer"
-                  >
-                    Salin Nomor
-                  </button>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => handleCopyText(paymentConfig.ewalletNumber, 'Nomor E-Wallet')}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold cursor-pointer"
+                >
+                  Salin
+                </button>
               </div>
             )}
 
-            {selectedPaymentMethod === 'bank' && (
-              <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/40 flex flex-col gap-2">
-                <span className="font-label-sm text-on-surface font-bold">
-                  Transfer Rekening Bank Penjual ({paymentConfig.bankName})
-                </span>
-                <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/30 flex items-center justify-between gap-2">
-                  <div className="flex flex-col">
-                    <span className="text-[11px] text-on-surface-variant">
-                      A.n. {paymentConfig.bankAccountName}
-                    </span>
-                    <span className="font-headline-md text-[17px] text-on-surface font-bold tracking-wide">
-                      {paymentConfig.bankAccountNumber}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopyText(paymentConfig.bankAccountNumber, 'Nomor Rekening')
-                    }
-                    className="min-h-[36px] px-3 py-1.5 rounded-lg bg-secondary-container text-on-secondary-container font-label-sm text-label-sm font-semibold cursor-pointer"
-                  >
-                    Salin Rekening
-                  </button>
-                </div>
-              </div>
-            )}
-
+            {/* Cash note */}
             {selectedPaymentMethod === 'tunai' && (
-              <div className="p-3.5 rounded-xl bg-tertiary-fixed/40 border border-tertiary/40 text-on-surface flex items-center gap-2.5">
-                <span className="material-symbols-outlined text-[22px] text-tertiary">
-                  point_of_sale
-                </span>
-                <span className="font-body-sm text-[12px] leading-relaxed">
-                  Pesanan Anda akan langsung dikirim ke layar <strong>{stall.name}</strong>. Silakan siapkan uang tunai pas sebesar{' '}
-                  <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong> saat mengambil makanan di stan.
-                </span>
+              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+                Silakan siapkan uang pas <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong> saat mengambil pesanan di stan.
               </div>
             )}
 
-            {selectedPaymentMethod !== 'tunai' && selectedPaymentMethod !== 'gateway' && (
-              <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
-                  Catatan / Nama Pengirim di {selectedEwalletProvider} / M-Banking (Untuk Dicek Penjual)
-                </label>
-                <input
-                  type="text"
-                  placeholder={`Contoh: Sudah transfer dari ${selectedEwalletProvider} a.n. ${
-                    studentName || 'Kevin'
-                  }`}
-                  value={paymentReference}
-                  onChange={(e) => setPaymentReference(e.target.value)}
-                  className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
-                />
-              </div>
-            )}
-
-            <div className="flex gap-2.5 pt-1">
+            <div className="flex gap-2.5 pt-2">
               <button
                 type="button"
                 onClick={() => setCheckoutModalOpen(false)}
-                className="w-1/3 min-h-[48px] rounded-xl bg-surface-container text-on-surface font-label-md text-label-md font-semibold cursor-pointer"
+                className="w-1/3 min-h-[46px] rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="w-2/3 min-h-[48px] rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+                className="w-2/3 min-h-[46px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-95"
               >
-                <span className="material-symbols-outlined text-[20px]">
-                  {selectedPaymentMethod === 'gateway' ? 'bolt' : 'check_circle'}
-                </span>
                 <span>
                   {selectedPaymentMethod === 'gateway'
-                    ? 'Lanjut ke Payment Gateway (Simulasi)'
-                    : selectedPaymentMethod === 'tunai'
-                    ? 'Kirim Pesanan ke Stan'
-                    : 'Konfirmasi Sudah Bayar'}
+                    ? 'Lanjut ke Sandbox Gateway'
+                    : 'Konfirmasi & Kirim Pesanan'}
                 </span>
+                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* POP-UP SIMULASI PAYMENT GATEWAY OTOMATIS (MIDTRANS SNAP SANDBOX) */}
+      {/* 8. PAYMENT GATEWAY SANDBOX SIMULATION MODAL */}
       {snapGatewayOpen && (
-        <div className="fixed inset-0 z-[60] bg-on-surface/75 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-2xl w-full max-w-md shadow-2xl overflow-hidden border border-outline-variant/40 flex flex-col">
-            {/* Top Sandbox Header Bar */}
-            <div className="bg-primary text-on-primary px-5 py-4 flex items-center justify-between">
-              <div className="flex flex-col">
-                <div className="flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 rounded bg-tertiary-fixed text-on-tertiary-fixed font-mono text-[10px] font-bold uppercase">
-                    SANDBOX SIMULATOR
-                  </span>
-                  <span className="text-[11px] text-on-primary/80 font-medium">
-                    KantinKu Pay • Midtrans Snap
-                  </span>
-                </div>
-                <span className="font-headline-md text-[17px] font-bold mt-0.5">
-                  {stall.name} — IBI KKG
+        <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 flex flex-col">
+            <div className="bg-emerald-700 text-white px-5 py-4 flex items-center justify-between">
+              <div>
+                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase">
+                  Sandbox Simulation
                 </span>
+                <h4 className="text-base font-bold mt-1">Pembayaran — {stall.name}</h4>
               </div>
               <button
                 type="button"
-                aria-label="Tutup Simulator"
                 onClick={() => setSnapGatewayOpen(false)}
-                className="w-11 h-11 rounded-full bg-on-primary/15 text-on-primary flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
 
-            {/* Amount & Order ID Banner */}
-            <div className="bg-surface-container-low px-5 py-3 border-b border-outline-variant/30 flex items-center justify-between">
-              <div className="flex flex-col">
-                <span className="text-[11px] text-on-surface-variant">Total Tagihan</span>
-                <span className="font-headline-md text-[20px] text-primary font-bold">
+            <div className="bg-slate-50 px-5 py-3 border-b border-slate-200 flex items-center justify-between text-xs">
+              <div>
+                <span className="text-slate-500 block">Total Tagihan</span>
+                <span className="text-lg font-black text-emerald-700">
                   Rp {cartTotalAmount.toLocaleString('id-ID')}
                 </span>
               </div>
-              <div className="flex flex-col text-right">
-                <span className="text-[10px] text-on-surface-variant">ID Transaksi Sandbox</span>
-                <span className="font-mono text-xs font-bold text-on-surface">{snapTxId}</span>
-              </div>
+              <span className="font-mono text-slate-500 text-[11px]">{snapTxId}</span>
             </div>
 
-            {/* Body Step: Select Channel / Processing / Success */}
             <div className="p-5 flex flex-col gap-4">
               {snapStep === 'select' && (
                 <>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="font-label-sm text-on-surface font-bold">
-                      Pilih Kanal Pembayaran Otomatis:
-                    </span>
-                    <div className="grid grid-cols-2 gap-2">
-                      {[
-                        {
-                          id: 'qris_snap',
-                          label: 'QRIS Dinamis',
-                          sub: 'DANA, GoPay, OVO, M-Banking',
-                          icon: 'qr_code_2',
-                        },
-                        {
-                          id: 'gopay_dana',
-                          label: 'GoPay / DANA Instant',
-                          sub: 'Auto-Debit E-Wallet',
-                          icon: 'account_balance_wallet',
-                        },
-                        {
-                          id: 'bca_va',
-                          label: 'BCA Virtual Account',
-                          sub: 'Cek Otomatis',
-                          icon: 'account_balance',
-                        },
-                        {
-                          id: 'mandiri_va',
-                          label: 'Mandiri Bill / Livin',
-                          sub: 'Cek Otomatis',
-                          icon: 'credit_card',
-                        },
-                      ].map((ch) => (
-                        <button
-                          key={ch.id}
-                          type="button"
-                          onClick={() =>
-                            setSnapChannel(
-                              ch.id as 'qris_snap' | 'gopay_dana' | 'bca_va' | 'mandiri_va'
-                            )
-                          }
-                          className={`p-2.5 rounded-xl border text-left flex flex-col gap-0.5 cursor-pointer transition-all ${
-                            snapChannel === ch.id
-                              ? 'bg-primary-fixed/60 border-primary text-on-primary-fixed font-bold'
-                              : 'bg-surface-container-low border-outline-variant/30 text-on-surface'
-                          }`}
-                        >
-                          <div className="flex items-center gap-1.5">
-                            <span className="material-symbols-outlined text-[16px] text-primary">
-                              {ch.icon}
-                            </span>
-                            <span className="text-xs font-bold">{ch.label}</span>
-                          </div>
-                          <span className="text-[10px] text-on-surface-variant">{ch.sub}</span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Visual Preview inside Snap */}
-                  {snapChannel === 'qris_snap' && (
-                    <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col items-center text-center gap-2">
-                      <div className="rounded-xl bg-white border-2 border-primary/30 flex flex-col items-center justify-center p-3 shadow-xs gap-1">
-                        {paymentQrisDataUrl ? (
-                          <img
-                            src={paymentQrisDataUrl}
-                            alt="QRIS Dinamis"
-                            className="w-40 h-40 object-contain"
-                          />
-                        ) : (
-                          <span className="material-symbols-outlined text-[72px] text-on-surface">
-                            qr_code_2
-                          </span>
-                        )}
-                        <span className="text-[9px] font-mono font-bold text-primary">
-                          QRIS DINAMIS • {snapTxId}
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    {[
+                      { id: 'qris_snap', label: 'QRIS Otomatis', icon: 'qr_code_2' },
+                      { id: 'gopay_dana', label: 'DANA / GoPay', icon: 'account_balance_wallet' },
+                      { id: 'bca_va', label: 'BCA Virtual Account', icon: 'account_balance' },
+                      { id: 'mandiri_va', label: 'Mandiri Livin', icon: 'credit_card' },
+                    ].map((ch) => (
+                      <button
+                        key={ch.id}
+                        type="button"
+                        onClick={() =>
+                          setSnapChannel(
+                            ch.id as 'qris_snap' | 'gopay_dana' | 'bca_va' | 'mandiri_va'
+                          )
+                        }
+                        className={`p-3 rounded-2xl border text-left flex items-center gap-2 cursor-pointer transition-all ${
+                          snapChannel === ch.id
+                            ? 'bg-emerald-50 border-emerald-600 text-emerald-950 font-bold'
+                            : 'bg-white border-slate-200 text-slate-700'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[20px] text-emerald-600">
+                          {ch.icon}
                         </span>
-                      </div>
-                      <span className="text-[11px] text-on-surface-variant">
-                        Nominal <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong> sudah terkunci otomatis di dalam kode QRIS ini.
-                      </span>
-                    </div>
-                  )}
-
-                  {snapChannel === 'gopay_dana' && (
-                    <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-2">
-                      <span className="text-xs font-bold text-on-surface">
-                        Pilih Aplikasi E-Wallet Simulasi:
-                      </span>
-                      <div className="flex gap-2">
-                        {(['DANA', 'GoPay', 'OVO', 'ShopeePay'] as const).map((prov) => (
-                          <button
-                            key={prov}
-                            type="button"
-                            onClick={() => setSelectedEwalletProvider(prov)}
-                            className={`flex-1 py-1.5 rounded-lg text-xs font-bold border cursor-pointer ${
-                              selectedEwalletProvider === prov
-                                ? 'bg-secondary text-on-secondary border-secondary'
-                                : 'bg-surface-container-lowest text-on-surface border-outline-variant/30'
-                            }`}
-                          >
-                            {prov}
-                          </button>
-                        ))}
-                      </div>
-                      <span className="text-[11px] text-on-surface-variant">
-                        Klik tombol hijau di bawah untuk menyimulasikan pelunasan instan via{' '}
-                        <strong>{selectedEwalletProvider}</strong>.
-                      </span>
-                    </div>
-                  )}
-
-                  {(snapChannel === 'bca_va' || snapChannel === 'mandiri_va') && (
-                    <div className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-1.5">
-                      <span className="text-[11px] text-on-surface-variant">
-                        Nomor Virtual Account Simulasi ({snapChannel === 'bca_va' ? 'BCA' : 'Mandiri'}):
-                      </span>
-                      <div className="flex items-center justify-between bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/30">
-                        <span className="font-mono text-base font-bold text-on-surface tracking-wider">
-                          {snapChannel === 'bca_va' ? '88012 0812 9000 198' : '70014 0812 9000 198'}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleCopyText('8801208129000198', 'Nomor Virtual Account')
-                          }
-                          className="text-xs text-primary font-bold cursor-pointer"
-                        >
-                          Salin
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Rincian Aliran Dana */}
-                  <div className="p-3 rounded-xl bg-surface-container text-[11px] text-on-surface-variant flex flex-col gap-1">
-                    <div className="flex justify-between">
-                      <span>Hak Bersih Penjual ({stall.name}):</span>
-                      <strong className="text-on-surface">
-                        Rp {cartSubtotalAmount.toLocaleString('id-ID')}
-                      </strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Pendapatan Platform (Biaya Layanan):</span>
-                      <strong className="text-secondary">
-                        Rp {PLATFORM_SERVICE_FEE.toLocaleString('id-ID')}
-                      </strong>
-                    </div>
+                        <span>{ch.label}</span>
+                      </button>
+                    ))}
                   </div>
 
                   <button
                     type="button"
                     onClick={handleSimulateGatewaySuccess}
-                    className="w-full min-h-[48px] py-3 rounded-xl bg-secondary hover:opacity-95 text-on-secondary font-label-lg text-label-lg font-bold flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-[0.99]"
+                    className="w-full min-h-[46px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-md"
                   >
                     <span className="material-symbols-outlined text-[20px]">verified</span>
-                    <span>Simulasikan Pembayaran Berhasil (Lunas)</span>
+                    <span>Simulasikan Pembayaran Berhasil</span>
                   </button>
                 </>
               )}
 
               {snapStep === 'processing' && (
                 <div className="py-8 flex flex-col items-center text-center gap-3">
-                  <span className="material-symbols-outlined text-[44px] text-primary animate-spin">
+                  <span className="material-symbols-outlined text-[44px] text-emerald-600 animate-spin">
                     sync
                   </span>
-                  <h4 className="font-headline-md text-[17px] text-on-surface font-bold">
-                    Memverifikasi Callback Payment Gateway...
-                  </h4>
-                  <p className="font-body-sm text-xs text-on-surface-variant max-w-xs">
-                    Menghubungkan ke server Sandbox &amp; meneruskan notifikasi lunas otomatis ke Dashboard {stall.name}.
-                  </p>
+                  <span className="text-sm font-bold text-slate-800">
+                    Memverifikasi Callback Gateway...
+                  </span>
                 </div>
               )}
 
               {snapStep === 'success' && (
                 <div className="py-6 flex flex-col items-center text-center gap-3">
-                  <div className="w-14 h-14 rounded-full bg-secondary-container text-secondary flex items-center justify-center">
-                    <span className="material-symbols-outlined text-[34px]">check_circle</span>
-                  </div>
-                  <h4 className="font-headline-md text-[18px] text-secondary font-bold">
-                    Pembayaran Berhasil &amp; Terverifikasi!
-                  </h4>
-                  <p className="font-body-sm text-xs text-on-surface-variant max-w-xs">
-                    Dana Rp {cartSubtotalAmount.toLocaleString('id-ID')} telah masuk ke saldo {stall.name}. Pesanan Anda sedang disiapkan!
-                  </p>
+                  <span className="material-symbols-outlined text-[48px] text-emerald-600">
+                    check_circle
+                  </span>
+                  <span className="text-base font-bold text-slate-900">
+                    Pembayaran Berhasil!
+                  </span>
+                  <span className="text-xs text-slate-500">
+                    Pesanan Anda telah diteruskan ke dapur stan {stall.name}.
+                  </span>
                 </div>
               )}
             </div>
@@ -1776,7 +1363,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
         </div>
       )}
 
-      {/* MODAL NOTA PESANAN MAHASISWA */}
+      {/* 9. ORDER RECEIPT MODAL */}
       {receiptOrder && (
         <OrderReceiptModal
           order={receiptOrder}

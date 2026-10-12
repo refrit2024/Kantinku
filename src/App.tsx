@@ -1314,64 +1314,55 @@ export default function App() {
           </div>
         )}
         {/* SINGLE COMPACT STICKY HEADER */}
-        <header className="sticky top-0 left-0 right-0 w-full z-40 bg-surface/95 backdrop-blur-xl border-b border-outline-variant/30 pt-safe">
-        <div className="max-w-7xl mx-auto h-14 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 lg:gap-4">
-          {/* Left Zone: Brand Identity */}
-          <div className="flex items-center gap-2.5 min-w-0">
+        <header className="sticky top-0 left-0 right-0 w-full z-40 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 pt-safe">
+        <div className="max-w-7xl mx-auto h-14 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
+          {/* Left Zone: Brand Wordmark (Single Text Element Contract) */}
+          <div className="flex items-center gap-3 shrink-0">
             <button
               type="button"
               onClick={() => setCurrentScreen('katalog')}
-              className="flex items-center gap-2.5 text-left cursor-pointer min-w-0 group"
+              className="flex items-center gap-2.5 text-left cursor-pointer min-h-[44px] group"
+              aria-label="KantinKu IBI KKG Beranda"
             >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md text-headline-md font-bold shrink-0 shadow-xs group-hover:opacity-95 transition-opacity">
-                K
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+                <span className="material-symbols-outlined text-[20px] sm:text-[22px]">restaurant</span>
               </div>
-              <div className="flex flex-col min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-headline-md text-[17px] sm:text-headline-md text-on-surface leading-none tracking-tight whitespace-nowrap">
-                    KantinKu IBI KKG
-                  </span>
-                  <span className="hidden sm:inline-flex lg:hidden xl:inline-flex items-center gap-1 text-[11px] font-label-sm text-on-surface-variant bg-surface-container px-2 py-0.5 rounded-md">
-                    <span className="material-symbols-outlined text-[13px] text-primary">
-                      location_on
-                    </span>
-                    Dekat Hall D
-                  </span>
-                </div>
-              </div>
+              <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
+                KantinKu <span className="text-emerald-700">IBI KKG</span>
+              </span>
             </button>
           </div>
 
-          {/* Center Zone: Horizontal Navigation ONLY on Desktop (lg: >= 1024px) */}
+          {/* Center Zone: Clean Single-Line Text Links on Desktop (lg: >= 1024px) */}
           <nav
             aria-label="Pilih Halaman & Peran"
-            className="hidden lg:flex items-center gap-1 bg-surface-container-low p-1 rounded-xl border border-outline-variant/25 shrink-0"
+            className="hidden lg:flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 shrink-0"
           >
             <button
               type="button"
               onClick={() => navigateTo('katalog')}
-              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-label-sm text-xs flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                 currentScreen === 'katalog' || currentScreen === 'detail-stan'
-                  ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">storefront</span>
-              <span>Direktori Kantin</span>
+              <span>Katalog Kantin</span>
             </button>
 
             {loggedInSeller && (
               <button
                 type="button"
                 onClick={() => navigateTo('kelola-menu')}
-                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-label-sm text-xs flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                   currentScreen === 'kelola-menu'
-                    ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px]">space_dashboard</span>
-                <span>Dashboard Penjual ({loggedInSeller.stallName})</span>
+                <span>Dashboard ({loggedInSeller.stallName})</span>
               </button>
             )}
 
@@ -1379,10 +1370,10 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => navigateTo('admin-portal')}
-                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-label-sm text-xs flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                   currentScreen === 'admin-portal'
-                    ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                    : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                    ? 'bg-emerald-600 text-white shadow-xs'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px]">
@@ -1395,32 +1386,31 @@ export default function App() {
             <button
               type="button"
               onClick={() => setCurrentScreen('auth-portal')}
-              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg font-label-sm text-xs flex items-center gap-1.5 whitespace-nowrap transition-colors cursor-pointer ${
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                 currentScreen === 'auth-portal'
-                  ? 'bg-primary text-on-primary font-semibold shadow-xs'
-                  : 'text-on-surface-variant hover:text-on-surface hover:bg-surface-container'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">login</span>
               <span>
-                {loggedInSeller || isAdminLoggedIn ? 'Pindah Peran / Akun' : 'Portal Mitra Kantin'}
+                {loggedInSeller || isAdminLoggedIn ? 'Pindah Akun' : 'Portal Mitra Kantin'}
               </span>
             </button>
           </nav>
 
-          {/* Right Zone: Tablet & Desktop Action Buttons + Hamburger on Mobile & Tablet (< 1024px) */}
+          {/* Right Zone: Primary Actions & Mobile Hamburger Menu (Touch Target >= 44px) */}
           <div className="flex items-center gap-2 shrink-0">
             {loggedInSeller || isAdminLoggedIn ? (
-              <div className="hidden md:flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-xl border border-outline-variant/30">
-                <span className="w-2 h-2 rounded-full bg-secondary"></span>
-                <span className="font-label-sm text-label-sm text-on-surface font-semibold max-w-[140px] truncate">
+              <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80 text-xs">
+                <span className="text-emerald-950 font-semibold max-w-[140px] truncate">
                   {loggedInSeller ? loggedInSeller.stallName : 'Admin Sarpras'}
                 </span>
-                <span className="text-outline-variant">|</span>
+                <span className="text-emerald-300">·</span>
                 <button
                   type="button"
                   onClick={handleLogoutSession}
-                  className="text-error hover:underline font-label-sm text-[11px] font-semibold cursor-pointer"
+                  className="text-rose-600 hover:text-rose-700 hover:underline text-xs font-semibold cursor-pointer"
                 >
                   Keluar
                 </button>
@@ -1430,21 +1420,21 @@ export default function App() {
             <button
               type="button"
               onClick={() => setReportModalOpen(true)}
-              className="hidden sm:inline-flex min-h-[38px] px-3.5 py-1.5 rounded-xl bg-surface-container-low hover:bg-error-container/30 text-error border border-error/25 font-label-sm text-xs font-semibold items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              className="hidden sm:inline-flex min-h-[44px] px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold items-center gap-1.5 transition-colors cursor-pointer shrink-0"
             >
-              <span className="material-symbols-outlined text-[16px]">gavel</span>
+              <span className="material-symbols-outlined text-[16px] text-rose-600">gavel</span>
               <span>Lapor Harga</span>
             </button>
 
-            {/* Hamburger Menu Button for Mobile & Tablet (< 1024px / lg:hidden) */}
+            {/* Hamburger Menu Button for Mobile & Tablet (< 1024px / lg:hidden) with 44px Touch Target */}
             <button
               aria-label="Buka Menu Navigasi & Peran"
               onClick={() => setNavDrawerOpen(true)}
-              className="lg:hidden h-10 sm:h-11 px-3 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95"
+              className="lg:hidden min-h-[44px] min-w-[44px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95 border border-slate-200/80"
               type="button"
             >
               <span className="material-symbols-outlined text-[22px]">menu</span>
-              <span className="hidden sm:inline font-label-sm text-xs font-semibold">Menu</span>
+              <span className="hidden sm:inline text-xs font-semibold">Menu</span>
             </button>
           </div>
         </div>
@@ -1568,23 +1558,22 @@ export default function App() {
         )}
       </main>
 
-      {/* FOOTER */}
-      <footer className="w-full bg-surface-container-low border-t border-outline-variant/25 text-on-surface-variant pb-safe mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 flex flex-col gap-8">
-          {/* Top Section: 1 Col Mobile, 2 Cols Tablet (md), 3 Cols Desktop (lg:grid-cols-12) */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
-            {/* Column 1 (md:col-span-2 lg:col-span-5): Brand & Mission */}
-            <div className="md:col-span-2 lg:col-span-5 flex flex-col gap-3">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md font-bold shadow-xs shrink-0">
-                  K
+      {/* FOOTER - MODERN CLEAN FOOD APP (SHOPEEFOOD / GOJEK STYLE) */}
+      <footer className="w-full bg-white border-t border-slate-200/80 text-slate-600 pb-safe mt-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-8 flex flex-col gap-6 sm:gap-8">
+          {/* Main Grid: Responsive Mobile to Desktop Columns */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+            {/* Column 1 (lg:col-span-4): Brand Identity & Campus Note */}
+            <div className="lg:col-span-4 flex flex-col gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shadow-sm shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">restaurant</span>
                 </div>
                 <div className="flex flex-col">
                   <div className="flex items-center gap-2">
-                    <span className="font-headline-sm text-base sm:text-lg text-on-surface font-bold tracking-tight leading-none">
-                      KantinKu IBI KKG
+                    <span className="text-lg font-bold text-slate-900 tracking-tight leading-none">
+                      KantinKu <span className="text-emerald-700">IBI KKG</span>
                     </span>
-                    <span className="text-outline-variant">·</span>
                     <button
                       type="button"
                       onClick={() => {
@@ -1598,131 +1587,212 @@ export default function App() {
                           setFooterSecretTap(next);
                         }
                       }}
-                      className="font-label-sm text-xs text-secondary font-semibold select-none cursor-default"
+                      className="text-xs font-medium text-slate-600 hover:text-emerald-700 select-none cursor-pointer"
+                      title="Klik 5x untuk akses cepat admin"
                     >
-                      Pilot Tahap 1
+                      v1.0
                     </button>
                   </div>
+                  <span className="text-xs text-slate-500 font-medium mt-1">
+                    Kampus Sunter · Hall D & Wing C
+                  </span>
                 </div>
               </div>
 
-              <p className="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                Platform direktori &amp; pemesanan digital khusus kantin{' '}
-                <strong className="text-on-surface font-semibold">
-                  Institut Bisnis dan Informatika Kwik Kian Gie (Kampus Sunter)
-                </strong>{' '}
-                untuk transparansi harga mahasiswa serta pengelolaan menu &amp; pencairan saldo langsung oleh mitra kantin.
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+                Platform direktori &amp; pemesanan digital resmi untuk transparansi menu kantin{' '}
+                <strong className="text-slate-900 font-semibold">
+                  Institut Bisnis dan Informatika Kwik Kian Gie
+                </strong>
+                . Memudahkan mahasiswa membandingkan tarif makanan &amp; membantu mitra kantin mengelola transaksi.
               </p>
 
-              <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-on-surface-variant pt-0.5">
-                <span>Area Kantin Dekat Hall D</span>
-                <span aria-hidden="true">·</span>
-                <span>Jl. Yos Sudarso Kav. 87, Sunter, Jakarta Utara</span>
+              <div className="flex items-start gap-2 text-xs text-slate-600 bg-slate-50 p-3 sm:p-3.5 rounded-xl border border-slate-200/80">
+                <span className="material-symbols-outlined text-emerald-600 text-[18px] shrink-0 mt-0.5">
+                  location_on
+                </span>
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-semibold text-slate-900">Lokasi Kantin Kampus</span>
+                  <span className="text-xs text-slate-500 leading-normal">
+                    Jl. Yos Sudarso Kav. 87, Sunter, Jakarta Utara · Gedung Utama Lantai Dasar
+                  </span>
+                </div>
               </div>
             </div>
 
-            {/* Column 2 (md:col-span-1 lg:col-span-3): Navigasi Cepat */}
-            <div className="md:col-span-1 lg:col-span-3 flex flex-col gap-2.5">
-              <span className="font-label-md text-xs text-on-surface font-bold uppercase tracking-wider">
-                Navigasi Cepat
-              </span>
-              <div className="flex flex-col gap-2 items-start text-body-sm">
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigateTo('katalog');
-                    setStudentSubTab('kantin');
-                  }}
-                  className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
-                >
-                  Direktori Stan Kantin
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigateTo('katalog');
-                    setStudentSubTab('kategori');
-                  }}
-                  className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
-                >
-                  Eksplorasi Menu &amp; Harga
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    navigateTo('katalog');
-                    setStudentSubTab('pesanan');
-                  }}
-                  className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
-                >
-                  Lacak Status Pesanan Saya
-                </button>
-                <button
-                  type="button"
-                  onClick={openPilotConceptModal}
-                  className="text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
-                >
-                  Tentang Konsep Pilot Tahap 1
-                </button>
+            {/* Column 2 & 3: Navigasi Mahasiswa & Akses (2-Col Grid on Mobile for compact thumb navigation) */}
+            <div className="lg:col-span-5 grid grid-cols-2 gap-4 sm:gap-6">
+              {/* Navigasi Mahasiswa */}
+              <div className="flex flex-col gap-2.5">
+                <h3 className="text-xs sm:text-sm font-semibold text-slate-900">
+                  Navigasi Mahasiswa
+                </h3>
+                <div className="flex flex-col gap-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigateTo('katalog');
+                      setStudentSubTab('kantin');
+                    }}
+                    className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-slate-600 group-hover:text-emerald-700 shrink-0">
+                      storefront
+                    </span>
+                    <span className="line-clamp-1">Semua Stan</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigateTo('katalog');
+                      setStudentSubTab('kategori');
+                    }}
+                    className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-slate-600 group-hover:text-emerald-700 shrink-0">
+                      restaurant_menu
+                    </span>
+                    <span className="line-clamp-1">Jelajah Menu</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigateTo('katalog');
+                      setStudentSubTab('peta-gps');
+                    }}
+                    className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-slate-600 group-hover:text-emerald-700 shrink-0">
+                      map
+                    </span>
+                    <span className="line-clamp-1">Peta &amp; Rute</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigateTo('katalog');
+                      setStudentSubTab('pesanan');
+                    }}
+                    className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-slate-600 group-hover:text-emerald-700 shrink-0">
+                      receipt_long
+                    </span>
+                    <span className="line-clamp-1">Pesanan Saya</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={openPilotConceptModal}
+                    className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-slate-600 group-hover:text-emerald-700 shrink-0">
+                      info
+                    </span>
+                    <span className="line-clamp-1">Konsep Kampus</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Akses & Tata Tertib */}
+              <div className="flex flex-col gap-2.5">
+                <h3 className="text-xs sm:text-sm font-semibold text-slate-900">
+                  Akses &amp; Tertib
+                </h3>
+                <div className="flex flex-col gap-0.5 text-xs">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentScreen('auth-portal')}
+                    className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-slate-600 group-hover:text-emerald-700 shrink-0">
+                      login
+                    </span>
+                    <span className="line-clamp-1">Portal Mitra</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCurrentScreen('auth-portal');
+                      window.location.hash = 'admin';
+                    }}
+                    className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                  >
+                    <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-slate-600 group-hover:text-emerald-700 shrink-0">
+                      shield_person
+                    </span>
+                    <span className="line-clamp-1">Admin Sarpras</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setReportModalOpen(true)}
+                    className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-rose-600 hover:text-rose-700 transition-colors text-left cursor-pointer group font-semibold"
+                  >
+                    <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-rose-500 shrink-0">
+                      gavel
+                    </span>
+                    <span className="line-clamp-1">Lapor Harga</span>
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Column 3 (md:col-span-1 lg:col-span-4): Akses Mitra & Pengawasan Harga */}
-            <div className="md:col-span-1 lg:col-span-4 flex flex-col gap-3">
-              <span className="font-label-md text-xs text-on-surface font-bold uppercase tracking-wider">
-                Mitra Kantin &amp; Transparansi
-              </span>
-              <p className="font-body-sm text-xs text-on-surface-variant leading-relaxed">
-                Pemilik stan dapat memperbarui harga menu &amp; menarik saldo penjualan kapan saja. Mahasiswa dapat melaporkan jika ada selisih harga di kasir.
-              </p>
-              <div className="grid grid-cols-2 gap-2 pt-0.5">
-                <button
-                  type="button"
-                  onClick={() => setCurrentScreen('auth-portal')}
-                  className="min-h-[40px] px-3 py-2 rounded-xl bg-primary text-on-primary font-label-sm text-xs font-semibold hover:opacity-95 transition-all flex items-center justify-center gap-1.5 shadow-xs cursor-pointer whitespace-nowrap"
-                >
-                  <span className="material-symbols-outlined text-[16px]">storefront</span>
-                  <span>Portal Mitra</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setReportModalOpen(true)}
-                  className="min-h-[40px] px-3 py-2 rounded-xl bg-surface-container-lowest border border-error/30 text-error hover:bg-error-container/30 font-label-sm text-xs font-semibold transition-colors flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap"
-                >
-                  <span className="material-symbols-outlined text-[16px]">gavel</span>
-                  <span>Lapor Harga</span>
-                </button>
+            {/* Column 4 (lg:col-span-3): Jam Operasional Card */}
+            <div className="lg:col-span-3 flex flex-col gap-3">
+              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-slate-900">
+                  <span className="material-symbols-outlined text-[18px] text-emerald-600">
+                    schedule
+                  </span>
+                  <span className="font-semibold text-xs">Jam Operasional Kantin</span>
+                </div>
+                <div className="flex flex-col gap-1 text-xs">
+                  <div className="flex justify-between items-center text-slate-700">
+                    <span className="font-medium">Senin – Jumat:</span>
+                    <span className="font-semibold text-slate-900 tabular-nums">07.30 – 17.00 WIB</span>
+                  </div>
+                  <div className="flex justify-between items-center text-slate-600">
+                    <span>Sabtu – Minggu:</span>
+                    <span className="font-medium text-rose-600">Libur Perkuliahan</span>
+                  </div>
+                </div>
+                <p className="text-[11px] sm:text-xs text-slate-500 pt-1 border-t border-slate-200/60 leading-normal">
+                  Pesan lebih awal via web untuk menghindari antrean di jam istirahat kuliah.
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Bottom Bar: Copyright & Operational Hours */}
-          <div className="pt-5 border-t border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-on-surface-variant/85">
-            <span>
-              © {new Date().getFullYear()} KantinKu IBI KKG · Inovasi Kampus IBI Kwik Kian Gie
-            </span>
-            <span>
-              Jam Operasional Kantin: Senin – Jumat (07.30 – 17.00 WIB)
-            </span>
+          {/* Bottom Bar: Copyright & Unboxed Information */}
+          <div className="pt-5 sm:pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 text-xs text-slate-500 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 flex-wrap">
+              <span>© {new Date().getFullYear()} KantinKu IBI KKG</span>
+              <span aria-hidden="true" className="text-slate-300">·</span>
+              <span>Institut Bisnis dan Informatika Kwik Kian Gie</span>
+            </div>
+            <div className="flex items-center justify-center sm:justify-end gap-2 text-xs text-slate-500">
+              <span>Kampus Sunter</span>
+              <span aria-hidden="true" className="text-slate-300">·</span>
+              <span className="text-emerald-700 font-semibold">Transparan &amp; Higienis</span>
+            </div>
           </div>
         </div>
       </footer>
 
-      {/* NAVIGATION DRAWER MODAL */}
+      {/* NAVIGATION DRAWER MODAL - MODERN CLEAN MOBILE SHEET */}
       {navDrawerOpen && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-5 w-full max-w-sm shadow-xl flex flex-col gap-3.5 max-h-[90dvh] overflow-y-auto border border-outline-variant/25">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-100 animate-in slide-in-from-bottom duration-300">
             {/* Header Drawer */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl bg-primary text-on-primary flex items-center justify-center font-headline-md font-bold shrink-0">
-                  K
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black shadow-sm shrink-0">
+                  <span className="material-symbols-outlined text-[22px]">restaurant</span>
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <h4 className="fluid-headline-md text-on-surface leading-none truncate">
-                    Menu &amp; Akun
+                  <h4 className="text-base font-black text-slate-900 leading-tight truncate">
+                    Menu &amp; Navigasi
                   </h4>
-                  <span className="font-label-sm text-label-sm text-on-surface-variant mt-1 truncate">
+                  <span className="text-xs text-slate-500 font-medium truncate">
                     KantinKu IBI KKG
                   </span>
                 </div>
@@ -1730,27 +1800,27 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setNavDrawerOpen(false)}
-                className="w-10 h-10 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface cursor-pointer shrink-0"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer shrink-0 transition-colors"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
 
             {/* Active Session Status Card */}
-            <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span
                   className={`w-2.5 h-2.5 rounded-full shrink-0 ${
                     loggedInSeller || isAdminLoggedIn
-                      ? 'bg-secondary'
-                      : 'bg-outline'
+                      ? 'bg-emerald-500 animate-pulse'
+                      : 'bg-slate-400'
                   }`}
                 ></span>
                 <div className="flex flex-col min-w-0">
-                  <span className="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider">
-                    Sesi Saat Ini
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                    Sesi Aktif
                   </span>
-                  <span className="font-label-md text-label-md text-on-surface font-bold truncate">
+                  <span className="text-xs font-bold text-slate-900 truncate">
                     {loggedInSeller
                       ? loggedInSeller.stallName
                       : isAdminLoggedIn
@@ -1758,8 +1828,8 @@ export default function App() {
                       : 'Mahasiswa / Pengunjung'}
                   </span>
                   {loggedInSeller && (
-                    <span className="text-[11px] text-on-surface-variant truncate">
-                      {loggedInSeller.email} (Tersimpan otomatis)
+                    <span className="text-[11px] text-emerald-800 font-medium truncate">
+                      {loggedInSeller.email}
                     </span>
                   )}
                 </div>
@@ -1771,7 +1841,7 @@ export default function App() {
                     setNavDrawerOpen(false);
                     handleLogoutSession();
                   }}
-                  className="min-h-[44px] px-3.5 py-2 rounded-lg bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold cursor-pointer shrink-0 hover:bg-error hover:text-on-primary transition-colors"
+                  className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold cursor-pointer shrink-0 border border-rose-200 transition-colors"
                 >
                   Keluar
                 </button>
@@ -1786,26 +1856,24 @@ export default function App() {
                   navigateTo('katalog');
                   setNavDrawerOpen(false);
                 }}
-                className={`min-h-[52px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-left transition-colors cursor-pointer ${
+                className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
                   currentScreen === 'katalog'
-                    ? 'bg-primary text-on-primary font-semibold'
-                    : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
+                    ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
+                    : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
-                  <span className="material-symbols-outlined text-[20px] shrink-0">map</span>
+                  <span className="material-symbols-outlined text-[20px] shrink-0">storefront</span>
                   <div className="min-w-0">
-                    <div className="font-label-md text-label-md">
+                    <div className="text-xs font-bold">
                       Katalog &amp; Peta Kantin
                     </div>
                     <div
-                      className={`font-body-sm text-[11px] truncate ${
-                        currentScreen === 'katalog'
-                          ? 'text-on-primary/85'
-                          : 'text-on-surface-variant'
+                      className={`text-[11px] truncate ${
+                        currentScreen === 'katalog' ? 'text-emerald-100' : 'text-slate-500'
                       }`}
                     >
-                      Halaman utama mahasiswa (tanpa login)
+                      Beranda mahasiswa (tanpa login)
                     </div>
                   </div>
                 </div>
@@ -1821,25 +1889,23 @@ export default function App() {
                     navigateTo('kelola-menu');
                     setNavDrawerOpen(false);
                   }}
-                  className={`min-h-[52px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-left transition-colors cursor-pointer ${
+                  className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
                     currentScreen === 'kelola-menu'
-                      ? 'bg-primary text-on-primary font-semibold'
-                      : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
+                      ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
+                      : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <span className="material-symbols-outlined text-[20px] shrink-0">
-                      storefront
+                      space_dashboard
                     </span>
                     <div className="min-w-0">
-                      <div className="font-label-md text-label-md">
+                      <div className="text-xs font-bold">
                         Dashboard Penjual Saya
                       </div>
                       <div
-                        className={`font-body-sm text-[11px] truncate ${
-                          currentScreen === 'kelola-menu'
-                            ? 'text-on-primary/85'
-                            : 'text-on-surface-variant'
+                        className={`text-[11px] truncate ${
+                          currentScreen === 'kelola-menu' ? 'text-emerald-100' : 'text-slate-500'
                         }`}
                       >
                         Kelola menu &amp; harga {loggedInSeller.stallName}
@@ -1859,10 +1925,10 @@ export default function App() {
                     navigateTo('admin-portal');
                     setNavDrawerOpen(false);
                   }}
-                  className={`min-h-[52px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-left transition-colors cursor-pointer ${
+                  className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
                     currentScreen === 'admin-portal'
-                      ? 'bg-primary text-on-primary font-semibold'
-                      : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
+                      ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
+                      : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -1870,14 +1936,12 @@ export default function App() {
                       admin_panel_settings
                     </span>
                     <div className="min-w-0">
-                      <div className="font-label-md text-label-md">
+                      <div className="text-xs font-bold">
                         Portal Admin Kampus
                       </div>
                       <div
-                        className={`font-body-sm text-[11px] truncate ${
-                          currentScreen === 'admin-portal'
-                            ? 'text-on-primary/85'
-                            : 'text-on-surface-variant'
+                        className={`text-[11px] truncate ${
+                          currentScreen === 'admin-portal' ? 'text-emerald-100' : 'text-slate-500'
                         }`}
                       >
                         Verifikasi penjual &amp; moderasi laporan
@@ -1896,10 +1960,10 @@ export default function App() {
                   setCurrentScreen('auth-portal');
                   setNavDrawerOpen(false);
                 }}
-                className={`min-h-[52px] px-3.5 py-2.5 rounded-xl flex items-center justify-between text-left transition-colors cursor-pointer ${
+                className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
                   currentScreen === 'auth-portal'
-                    ? 'bg-primary text-on-primary font-semibold'
-                    : 'bg-surface-container-low text-on-surface hover:bg-surface-container'
+                    ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
+                    : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -1907,19 +1971,17 @@ export default function App() {
                     login
                   </span>
                   <div className="min-w-0">
-                    <div className="font-label-md text-label-md">
+                    <div className="text-xs font-bold">
                       {loggedInSeller || isAdminLoggedIn
                         ? 'Ganti Peran / Pindah Akun'
                         : 'Login / Daftar Mitra Kantin'}
                     </div>
                     <div
-                      className={`font-body-sm text-[11px] truncate ${
-                        currentScreen === 'auth-portal'
-                          ? 'text-on-primary/85'
-                          : 'text-on-surface-variant'
+                      className={`text-[11px] truncate ${
+                        currentScreen === 'auth-portal' ? 'text-emerald-100' : 'text-slate-500'
                       }`}
                     >
-                      Akses khusus Mitra Penjual Kantin IBI KKG
+                      Akses mitra stan &amp; admin sarpras
                     </div>
                   </div>
                 </div>
@@ -1927,36 +1989,58 @@ export default function App() {
                   chevron_right
                 </span>
               </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setNavDrawerOpen(false);
+                  setReportModalOpen(true);
+                }}
+                className="min-h-[44px] px-3.5 py-2 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer bg-rose-50 hover:bg-rose-100/70 text-rose-700 border border-rose-200/80 mt-1"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="material-symbols-outlined text-[18px] text-rose-600">gavel</span>
+                  <span className="text-xs font-bold">Lapor Selisih Harga Kasir</span>
+                </div>
+                <span className="material-symbols-outlined text-[18px]">chevron_right</span>
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* REPORT PRICE DISCREPANCY MODAL */}
+      {/* REPORT PRICE DISCREPANCY MODAL - MODERN CLEAN REDESIGN */}
       {reportModalOpen && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <form
             onSubmit={handleReportSubmit}
-            className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 w-full max-w-md shadow-xl flex flex-col gap-3 max-h-[90dvh] overflow-y-auto"
+            className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-100"
           >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-error">
-                <span className="material-symbols-outlined text-[20px]">gavel</span>
-                <h4 className="fluid-headline-md text-on-surface">
-                  Lapor Ketidaksesuaian Harga
-                </h4>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
+                  <span className="material-symbols-outlined text-[20px]">gavel</span>
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-slate-900 leading-tight">
+                    Lapor Selisih Harga
+                  </h4>
+                  <span className="text-xs text-slate-500 font-medium">
+                    Transparansi Tarif KantinKu IBI KKG
+                  </span>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setReportModalOpen(false)}
-                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer transition-colors"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-700">
                 Kantin Terlapor
               </label>
               <select
@@ -1965,7 +2049,7 @@ export default function App() {
                   setReportStallId(e.target.value);
                   setReportMenuName('');
                 }}
-                className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {stalls.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -1975,9 +2059,9 @@ export default function App() {
               </select>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">
-                Pilih dari Daftar Menu Stan (Otomatis Isi Harga Katalog)
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Pilih dari Daftar Menu Stan
               </label>
               <select
                 value=""
@@ -1991,7 +2075,7 @@ export default function App() {
                     setReportChargedPrice(String(foundMenu.price + 2000));
                   }
                 }}
-                className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="">-- Pilih cepat menu atau ketik manual di bawah --</option>
                 {(stalls.find((s) => s.id === reportStallId)?.menuItems || []).map((m) => (
@@ -2002,8 +2086,8 @@ export default function App() {
               </select>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-700">
                 Nama Makanan / Minuman
               </label>
               <input
@@ -2012,13 +2096,13 @@ export default function App() {
                 placeholder="Contoh: Es Jeruk Peras / Nasi Goreng"
                 value={reportMenuName}
                 onChange={(e) => setReportMenuName(e.target.value)}
-                className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700">
                   Harga di Website (Rp)
                 </label>
                 <input
@@ -2026,25 +2110,25 @@ export default function App() {
                   required
                   value={reportCatalogPrice}
                   onChange={(e) => setReportCatalogPrice(e.target.value)}
-                  className="h-11 px-3 rounded-lg bg-surface-container-low text-secondary font-label-md text-label-md focus:outline-none"
+                  className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-emerald-700 font-bold text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="font-label-sm text-label-sm text-on-surface-variant">
-                  Harga Ditagih di Kasir (Rp)
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-slate-700">
+                  Harga Ditagih Kasir (Rp)
                 </label>
                 <input
                   type="number"
                   required
                   value={reportChargedPrice}
                   onChange={(e) => setReportChargedPrice(e.target.value)}
-                  className="h-11 px-3 rounded-lg bg-surface-container-low text-error font-label-md text-label-md focus:outline-none"
+                  className="h-11 px-3.5 rounded-xl bg-slate-50 border border-rose-200 text-rose-700 font-bold text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-700">
                 NIM Mahasiswa Pelapor
               </label>
               <input
@@ -2053,30 +2137,30 @@ export default function App() {
                 placeholder="Contoh: 32230104"
                 value={reportNim}
                 onChange={(e) => setReportNim(e.target.value)}
-                className="h-11 px-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">
-                Bukti Foto Struk / Nota Pembayaran (Opsional)
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-700">
+                Bukti Foto Struk / Kasir (Opsional)
               </label>
               <div className="flex items-center gap-3">
                 {reportProofImage && (
                   <img
                     src={reportProofImage}
                     alt="Pratinjau Bukti Struk"
-                    className="w-12 h-12 rounded-lg object-cover border border-outline-variant/40 shrink-0"
+                    className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
                   />
                 )}
-                <label className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/30 text-on-surface font-label-sm text-xs font-semibold flex items-center gap-2 cursor-pointer w-full justify-center">
-                  <span className="material-symbols-outlined text-[18px] text-primary">
+                <label className="min-h-[42px] px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 cursor-pointer w-full justify-center transition-colors">
+                  <span className="material-symbols-outlined text-[18px] text-emerald-600">
                     add_a_photo
                   </span>
                   <span>
                     {reportProofImage
                       ? 'Ganti Foto Bukti Struk'
-                      : 'Unggah Foto Struk / Nota Kasir'}
+                      : 'Unggah Foto Struk / Nota'}
                   </span>
                   <input
                     type="file"
@@ -2099,8 +2183,8 @@ export default function App() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="font-label-sm text-label-sm text-on-surface-variant">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-700">
                 Keterangan Singkat Kejadian
               </label>
               <textarea
@@ -2108,21 +2192,21 @@ export default function App() {
                 placeholder="Contoh: Kasir menyebutkan harga naik Rp 2.000 namun belum diubah di aplikasi..."
                 value={reportNote}
                 onChange={(e) => setReportNote(e.target.value)}
-                className="p-3 rounded-lg bg-surface-container-low text-on-surface font-body-sm text-body-sm focus:outline-none"
+                className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
-            <div className="flex gap-2.5 pt-1">
+            <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={() => setReportModalOpen(false)}
-                className="w-1/2 min-h-[44px] rounded-lg bg-surface-container text-on-surface font-label-md text-label-md font-semibold cursor-pointer"
+                className="w-1/2 min-h-[44px] rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="w-1/2 min-h-[44px] rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold cursor-pointer"
+                className="w-1/2 min-h-[44px] rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-md shadow-rose-600/20 cursor-pointer"
               >
                 Kirim ke Admin
               </button>
@@ -2131,25 +2215,25 @@ export default function App() {
         </div>
       )}
 
-      {/* GENERIC INFO MODAL */}
+      {/* GENERIC INFO MODAL - MODERN CLEAN */}
       {infoModal && (
-        <div className="fixed inset-0 z-50 bg-inverse-surface/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-5 w-full max-w-md shadow-xl flex flex-col gap-3 max-h-[90dvh] overflow-y-auto">
-            <div className="flex items-center justify-between">
-              <h4 className="fluid-headline-md text-on-surface">{infoModal.title}</h4>
+        <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto border border-slate-100">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+              <h4 className="text-base font-black text-slate-900">{infoModal.title}</h4>
               <button
                 type="button"
                 onClick={() => setInfoModal(null)}
-                className="w-11 h-11 rounded-full bg-surface-container flex items-center justify-center text-on-surface cursor-pointer"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer transition-colors"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
-            <div>{infoModal.content}</div>
+            <div className="text-xs text-slate-600 leading-relaxed">{infoModal.content}</div>
             <button
               type="button"
               onClick={() => setInfoModal(null)}
-              className="w-full min-h-[44px] rounded-lg bg-primary text-on-primary font-label-md text-label-md font-semibold mt-1 cursor-pointer"
+              className="w-full min-h-[44px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold mt-1 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
             >
               Tutup
             </button>
@@ -2157,22 +2241,26 @@ export default function App() {
         </div>
       )}
 
-      {/* GLOBAL NOTIFICATION TOAST */}
+      {/* GLOBAL NOTIFICATION TOAST - MODERN FLOATING CARD */}
       <div
-        className={`fixed bottom-6 left-4 right-4 max-w-md mx-auto z-50 bg-inverse-surface text-inverse-on-surface px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 transition-all duration-300 ${
+        className={`fixed bottom-6 left-4 right-4 max-w-md mx-auto z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 transition-all duration-300 border border-slate-800 ${
           toast.visible
-            ? 'translate-y-0 opacity-100'
-            : 'translate-y-24 opacity-0 pointer-events-none'
+            ? 'translate-y-0 opacity-100 scale-100'
+            : 'translate-y-16 opacity-0 scale-95 pointer-events-none'
         }`}
       >
-        <span
-          className={`material-symbols-outlined text-[20px] shrink-0 ${
-            toast.isError ? 'text-error' : 'text-secondary-fixed'
+        <div
+          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+            toast.isError
+              ? 'bg-rose-500/20 text-rose-400'
+              : 'bg-emerald-500/20 text-emerald-400'
           }`}
         >
-          {toast.isError ? 'warning' : 'check_circle'}
-        </span>
-        <span className="font-label-md text-label-md flex-grow">{toast.message}</span>
+          <span className="material-symbols-outlined text-[20px]">
+            {toast.isError ? 'warning' : 'check_circle'}
+          </span>
+        </div>
+        <span className="text-xs font-semibold flex-grow leading-tight">{toast.message}</span>
       </div>
       </div>
     </APIProvider>

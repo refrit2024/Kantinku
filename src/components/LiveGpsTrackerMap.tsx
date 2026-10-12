@@ -14,6 +14,14 @@ import {
 } from '../data/kantinData';
 import { UniversalLeafletMap } from './UniversalLeafletMap';
 
+declare const google: any;
+declare namespace google {
+  namespace maps {
+    type Polyline = any;
+    type MapMouseEvent = any;
+  }
+}
+
 // Exact verified coordinates of Kwik Kian Gie School of Business (IBI KKG)
 // Jl. Yos Sudarso Kav. 87, Sunter Jaya, Tanjung Priok, Jakarta Utara 14350
 // OpenStreetMap Way ID: 1334434680 (lat: -6.1513013, lon: 106.8868470)

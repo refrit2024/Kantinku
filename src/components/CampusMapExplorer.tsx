@@ -2,12 +2,41 @@ import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
-  CAMPUS_LANDMARKS,
-  CampusLandmark,
-  IBI_KKG_CAMPUS_CENTER,
   normalizeStallLocation,
   Stall,
 } from '../data/kantinData';
+import { IBI_KKG_CAMPUS_CENTER } from './LiveGpsTrackerMap';
+
+export interface CampusLandmark {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  category: string;
+  description: string;
+  shortLabel: string;
+}
+
+export const CAMPUS_LANDMARKS: CampusLandmark[] = [
+  {
+    id: 'hall-d',
+    name: 'Hall D Kantin IBI KKG',
+    lat: -6.151301,
+    lng: 106.886847,
+    category: 'canteen',
+    description: 'Pusat Kantin Mahasiswa & Dosen',
+    shortLabel: 'Hall D',
+  },
+  {
+    id: 'hall-a',
+    name: 'Lobi Utama Gedung A',
+    lat: -6.151759,
+    lng: 106.887494,
+    category: 'lobby',
+    description: 'Pintu Masuk Utama Kampus',
+    shortLabel: 'Lobi A',
+  },
+];
 
 export type MapStyleMode = 'osm_campus' | 'satellite_hd' | 'street_atlas';
 
@@ -154,9 +183,10 @@ export const CampusMapExplorer: React.FC<CampusMapExplorerProps> = ({
     ? userGpsLocation
     : { lat: activeLandmark.lat, lng: activeLandmark.lng };
 
+  const normalizedActiveStall = activeStall ? normalizeStallLocation(activeStall) : null;
   const routeDestination =
-    activeStall && activeStall.lat && activeStall.lng
-      ? { lat: activeStall.lat, lng: activeStall.lng }
+    normalizedActiveStall?.gpsLocation?.lat && normalizedActiveStall?.gpsLocation?.lng
+      ? { lat: normalizedActiveStall.gpsLocation.lat, lng: normalizedActiveStall.gpsLocation.lng }
       : IBI_KKG_CAMPUS_CENTER;
 
   const computedDistanceMeters = userGpsLocation
@@ -368,9 +398,10 @@ export const CampusMapExplorer: React.FC<CampusMapExplorerProps> = ({
     }
 
     // 8. Draw Canteen Stall Pins around Hall D & Canteen Wing
-    stalls.forEach((stall, idx) => {
-      const baseLat = stall.lat ?? IBI_KKG_CAMPUS_CENTER.lat;
-      const baseLng = stall.lng ?? IBI_KKG_CAMPUS_CENTER.lng;
+    stalls.forEach((rawStall, idx) => {
+      const stall = normalizeStallLocation(rawStall, idx);
+      const baseLat = stall.gpsLocation?.lat ?? IBI_KKG_CAMPUS_CENTER.lat;
+      const baseLng = stall.gpsLocation?.lng ?? IBI_KKG_CAMPUS_CENTER.lng;
       const lat = idx >= 5 ? baseLat + ((idx % 3) - 1) * 0.00014 : baseLat;
       const lng = idx >= 5 ? baseLng + ((idx % 2 === 0 ? 1 : -1) * 0.00016) : baseLng;
 

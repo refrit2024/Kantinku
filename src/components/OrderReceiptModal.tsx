@@ -313,20 +313,20 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-inverse-surface/70 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-surface-container-lowest rounded-2xl w-full max-w-xl shadow-2xl border border-outline-variant/30 overflow-hidden flex flex-col max-h-[92dvh]">
-        {/* Top Receipt Header */}
-        <div className="bg-primary text-on-primary px-5 py-4 flex items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-on-primary/15 flex items-center justify-center shrink-0">
-              <span className="material-symbols-outlined text-[22px]">local_shipping</span>
+    <div className="fixed inset-0 z-[70] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92dvh]">
+        {/* Top Receipt Header - Modern Emerald Gradient */}
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-4 flex items-center justify-between gap-3 shrink-0">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-inner">
+              <span className="material-symbols-outlined text-[22px]">receipt_long</span>
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="font-label-sm text-[10px] uppercase tracking-wider text-on-primary/80 font-semibold">
-                Lacak Rute Pengambilan &amp; Bukti Transaksi Resmi
+              <span className="text-[10px] uppercase tracking-wider text-emerald-100 font-bold">
+                Bukti Pesanan &amp; Antrean Resmi
               </span>
-              <h3 className="font-headline-md text-base sm:text-lg font-bold truncate">
-                Peta Rute &amp; Nota Pesanan #{order.id}
+              <h3 className="text-base sm:text-lg font-black truncate">
+                Nota Pesanan #{order.id}
               </h3>
             </div>
           </div>
@@ -334,28 +334,28 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
             type="button"
             aria-label="Tutup Nota"
             onClick={onClose}
-            className="w-11 h-11 rounded-full bg-on-primary/15 hover:bg-on-primary/25 text-on-primary flex items-center justify-center cursor-pointer shrink-0"
+            className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center cursor-pointer shrink-0 transition-colors"
           >
-            <span className="material-symbols-outlined text-[20px]">close</span>
+            <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
         </div>
 
         {/* Scrollable Receipt Body */}
         <div className="p-4 sm:p-5 overflow-y-auto flex flex-col gap-4">
-          {/* SHOPEE-STYLE AUTOMATIC LIVE MAP & ROUTE TRACKER AT TOP OF ORDER RECEIPT */}
+          {/* LIVE MAP & ROUTE TRACKER AT TOP OF ORDER RECEIPT */}
           {order.status !== 'rejected' && (
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
-                <span className="font-label-sm text-xs font-bold text-secondary flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-secondary animate-ping" />
-                  <span>Peta Rute Pengambilan Pesanan (Otomatis Aktif)</span>
+                <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  <span>Peta Rute Ambil Pesanan</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setShowLiveRouteMap((prev) => !prev)}
-                  className="text-xs font-semibold text-primary hover:underline cursor-pointer"
+                  className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
                 >
-                  {showLiveRouteMap ? 'Sembunyikan Peta' : 'Tampilkan Peta Rute'}
+                  {showLiveRouteMap ? 'Sembunyikan Peta' : 'Buka Peta Rute'}
                 </button>
               </div>
               {showLiveRouteMap && (
@@ -372,83 +372,83 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
           )}
 
           {/* Ticket Number & Status Highlight */}
-          <div className="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/30 flex items-center justify-between gap-2 flex-wrap">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex flex-col">
-              <span className="font-label-sm text-[10px] text-on-surface-variant uppercase tracking-wider">
-                Nomor Antrean / Kode Order
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                Nomor Antrean / Nota
               </span>
-              <span className="font-mono text-xl font-bold text-primary tracking-tight">
+              <span className="font-mono text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
                 {order.id}
               </span>
-              <span className="text-[11px] text-on-surface-variant">{order.createdAt}</span>
+              <span className="text-[11px] text-slate-500">{order.createdAt}</span>
             </div>
             <span
-              className={`px-2.5 py-1 rounded-lg font-label-sm text-[11px] font-bold ${statusMeta.badgeClass}`}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold ${statusMeta.badgeClass}`}
             >
               {statusMeta.label}
             </span>
           </div>
 
           {/* Stall & Student Details */}
-          <div className="flex flex-col gap-2 text-xs bg-surface-container-lowest p-3.5 rounded-xl border border-outline-variant/25">
-            <div className="flex justify-between gap-2 pb-2 border-b border-outline-variant/20">
-              <span className="text-on-surface-variant">Stan Kantin:</span>
+          <div className="flex flex-col gap-2.5 text-xs bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
+            <div className="flex justify-between gap-2 pb-2.5 border-b border-slate-200/70">
+              <span className="text-slate-500">Stan Kantin:</span>
               <div className="text-right">
-                <strong className="text-on-surface block">{order.stallName}</strong>
-                <span className="text-[11px] text-on-surface-variant">
+                <strong className="text-slate-900 block text-xs">{order.stallName}</strong>
+                <span className="text-[11px] text-slate-500">
                   {order.stallLocation}
                 </span>
               </div>
             </div>
             <div className="flex justify-between gap-2">
-              <span className="text-on-surface-variant">Pemesan:</span>
-              <strong className="text-on-surface text-right">
+              <span className="text-slate-500">Pemesan:</span>
+              <strong className="text-slate-900 text-right">
                 {order.studentName} (NIM: {order.studentNim})
               </strong>
             </div>
             <div className="flex justify-between gap-2">
-              <span className="text-on-surface-variant">Jadwal Ambil:</span>
-              <strong className="text-primary text-right">{order.pickupTime}</strong>
+              <span className="text-slate-500">Jadwal Ambil:</span>
+              <strong className="text-emerald-700 text-right">{order.pickupTime}</strong>
             </div>
             <div className="flex justify-between gap-2">
-              <span className="text-on-surface-variant">Metode Bayar:</span>
-              <strong className="text-on-surface text-right">
+              <span className="text-slate-500">Metode Bayar:</span>
+              <strong className="text-slate-900 text-right">
                 {order.paymentProviderLabel}
               </strong>
             </div>
             <div className="flex justify-between gap-2">
-              <span className="text-on-surface-variant">Status Bayar:</span>
-              <strong className="text-secondary text-right">{statusMeta.paidText}</strong>
+              <span className="text-slate-500">Status Bayar:</span>
+              <strong className="text-emerald-700 text-right">{statusMeta.paidText}</strong>
             </div>
             {order.paymentGatewayTxId && (
               <div className="flex justify-between gap-2">
-                <span className="text-on-surface-variant">Ref Gateway:</span>
-                <span className="font-mono text-[11px] text-on-surface font-semibold">
+                <span className="text-slate-500">Ref Gateway:</span>
+                <span className="font-mono text-[11px] text-slate-800 font-semibold">
                   {order.paymentGatewayTxId}
                 </span>
               </div>
             )}
-            <div className="flex justify-between gap-2 pt-1.5 border-t border-outline-variant/20">
-              <span className="text-on-surface-variant flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px] text-secondary">
+            <div className="flex justify-between gap-2 pt-2 border-t border-slate-200/70 items-center">
+              <span className="text-slate-500 flex items-center gap-1">
+                <span className="material-symbols-outlined text-[15px] text-emerald-600">
                   verified_user
                 </span>
-                Token Anti-Palsu:
+                <span>Token Keamanan Kasir:</span>
               </span>
-              <span className="font-mono text-xs font-bold text-secondary bg-secondary-container/40 px-2 py-0.5 rounded">
+              <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-lg border border-emerald-200">
                 {securityToken}
               </span>
             </div>
             {order.notes && (
-              <div className="pt-1.5 border-t border-outline-variant/20 text-on-surface-variant">
-                <strong className="text-on-surface">Catatan:</strong> &ldquo;{order.notes}&rdquo;
+              <div className="pt-2 border-t border-slate-200/70 text-slate-600">
+                <strong className="text-slate-900">Catatan:</strong> &ldquo;{order.notes}&rdquo;
               </div>
             )}
           </div>
 
           {/* Itemized Menu List */}
-          <div className="p-3.5 rounded-xl bg-surface-container-low border border-dashed border-outline-variant/50 flex flex-col gap-2">
-            <div className="flex items-center justify-between text-[11px] font-label-sm text-on-surface-variant uppercase tracking-wider pb-1 border-b border-outline-variant/25">
+          <div className="p-4 rounded-2xl bg-white border border-slate-200 flex flex-col gap-2.5 shadow-xs">
+            <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider pb-1.5 border-b border-slate-100">
               <span>Rincian Menu ({(order.items || []).reduce((s, i) => s + i.quantity, 0)} Porsi)</span>
               <span>Subtotal</span>
             </div>
@@ -456,75 +456,75 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
             {(order.items || []).map((it, idx) => (
               <div
                 key={`${order.id}-receipt-item-${idx}`}
-                className="flex items-center justify-between text-xs sm:text-sm text-on-surface"
+                className="flex items-center justify-between text-xs sm:text-sm text-slate-900"
               >
                 <div className="flex flex-col">
                   <span>
-                    <strong>{it.quantity}x</strong> {it.name}
+                    <strong className="font-bold">{it.quantity}x</strong> {it.name}
                   </span>
-                  <span className="text-[11px] text-on-surface-variant">
+                  <span className="text-[11px] text-slate-500">
                     @ Rp {it.price.toLocaleString('id-ID')}
                   </span>
                 </div>
-                <span className="font-semibold">
+                <span className="font-bold">
                   Rp {(it.price * it.quantity).toLocaleString('id-ID')}
                 </span>
               </div>
             ))}
 
             {serviceFee > 0 && (
-              <div className="flex items-center justify-between text-xs text-on-surface-variant pt-1.5 border-t border-outline-variant/20">
+              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
                 <span>Biaya Layanan Payment Gateway</span>
                 <span>Rp {serviceFee.toLocaleString('id-ID')}</span>
               </div>
             )}
 
-            <div className="flex items-center justify-between pt-2.5 border-t border-outline-variant/35">
-              <span className="font-label-md text-sm font-bold text-on-surface">
+            <div className="flex items-center justify-between pt-3 border-t border-slate-200">
+              <span className="text-xs sm:text-sm font-black text-slate-900">
                 TOTAL PEMBAYARAN
               </span>
-              <span className="font-headline-md text-lg font-bold text-primary">
+              <span className="text-lg sm:text-xl font-black text-emerald-600">
                 Rp {totalAmount.toLocaleString('id-ID')}
               </span>
             </div>
           </div>
 
           {/* QR Code Bukti Ambil di Kasir */}
-          <div className="p-3.5 rounded-xl bg-surface-container-lowest border border-outline-variant/25 flex items-center gap-3.5">
+          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-4">
             {qrDataUrl && (
               <img
                 src={qrDataUrl}
                 alt={`QR Nota ${order.id}`}
-                className="w-20 h-20 rounded-lg border border-outline-variant/30 shrink-0 object-contain bg-white p-1"
+                className="w-20 h-20 rounded-xl border border-slate-200 shrink-0 object-contain bg-white p-1 shadow-xs"
               />
             )}
             <div className="flex flex-col gap-1 text-xs">
-              <span className="font-label-sm font-bold text-on-surface">
+              <span className="font-bold text-slate-900">
                 Tunjukkan Nota Ini Saat Ambil Pesanan
               </span>
-              <span className="text-[11px] text-on-surface-variant leading-relaxed">
-                Penjual stan <strong>{order.stallName}</strong> dapat mencocokkan Kode{' '}
-                <strong>{order.id}</strong> atau memindai QR verifikasi di samping.
+              <span className="text-[11px] text-slate-500 leading-relaxed">
+                Penjual stan <strong>{order.stallName}</strong> dapat mencocokkan Kode Antrean{' '}
+                <strong>{order.id}</strong> atau memindai QR code verifikasi ini di kasir.
               </span>
             </div>
           </div>
         </div>
 
-        {/* Footer Action Buttons (min-h 44px) */}
-        <div className="p-4 bg-surface-container-low border-t border-outline-variant/25 flex flex-col sm:flex-row gap-2 shrink-0">
+        {/* Footer Action Buttons */}
+        <div className="p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-2 shrink-0">
           <button
             type="button"
             onClick={handleCopySummary}
-            className="min-h-[44px] px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-sm text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer"
+            className="min-h-[44px] px-4 py-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 transition-colors"
           >
             <span className="material-symbols-outlined text-[17px]">content_copy</span>
-            <span>Salin Teks</span>
+            <span>Salin Rincian</span>
           </button>
           <button
             type="button"
             disabled={isDownloading}
             onClick={handleDownloadReceiptPng}
-            className="flex-1 min-h-[44px] px-4 py-2 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-md text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+            className="flex-1 min-h-[44px] px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
             <span>{isDownloading ? 'Menyiapkan Nota...' : 'Unduh Gambar Nota (PNG)'}</span>
