@@ -499,6 +499,17 @@ export default function App() {
     const nextOrders = [newOrder, ...ordersRef.current].slice(0, 80);
     setOrders(nextOrders);
     ordersRef.current = nextOrders;
+    try {
+      const existingMyIds: string[] = JSON.parse(
+        localStorage.getItem('kantinku_my_order_ids_v1') || '[]'
+      );
+      const updatedMyIds = [newOrder.id, ...existingMyIds.filter((id) => id !== newOrder.id)];
+      localStorage.setItem('kantinku_my_order_ids_v1', JSON.stringify(updatedMyIds));
+      localStorage.setItem('kantinku_student_name_v1', newOrder.studentName);
+      localStorage.setItem('kantinku_student_nim_v1', newOrder.studentNim);
+    } catch {
+      // ignore storage error
+    }
     recordActionTimestamp('place_order');
     syncStateToCloud(
       stallsRef.current,

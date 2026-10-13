@@ -40,9 +40,96 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   const [orderLookupQuery, setOrderLookupQuery] = useState('');
   const [selectedReceiptOrder, setSelectedReceiptOrder] =
     useState<OrderTransaction | null>(null);
-  const [trackedOrderInMapId, setTrackedOrderInMapId] = useState<string | null>(null);
 
-  const filteredStudentOrders = orders.filter((ord) => {
+  // Student Identity & Order Ownership Isolation
+  const [currentStudentName, setCurrentStudentName] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kantinku_student_name_v1') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [currentStudentNim, setCurrentStudentNim] = useState<string>(() => {
+    try {
+      return localStorage.getItem('kantinku_student_nim_v1') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [myOrderIds] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('kantinku_my_order_ids_v1') || '[]');
+    } catch {
+      return [];
+    }
+  });
+  const [orderScopeTab, setOrderScopeTab] = useState<'my_orders' | 'all_orders'>('my_orders');
+  const [isEditingIdentity, setIsEditingIdentity] = useState(false);
+  const [tempNameInput, setTempNameInput] = useState(currentStudentName);
+  const [tempNimInput, setTempNimInput] = useState(currentStudentNim);
+
+  // Check if an order belongs to the currently logged in student / device
+  const isOrderOwnedByMe = (ord: OrderTransaction) => {
+    // 1. Matched by device order placement history
+    if (myOrderIds.includes(ord.id)) return true;
+    // 2. Matched by student name (case-insensitive substring)
+    if (
+      currentStudentName.trim() &&
+      ord.studentName.toLowerCase().includes(currentStudentName.trim().toLowerCase())
+    ) {
+      return true;
+    }
+    // 3. Matched by student NIM
+    if (
+      currentStudentNim.trim() &&
+      ord.studentNim.trim().toLowerCase() === currentStudentNim.trim().toLowerCase()
+    ) {
+      return true;
+    }
+    return false;
+  };
+
+  const handleSaveIdentity = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanName = tempNameInput.trim();
+    const cleanNim = tempNimInput.trim();
+    setCurrentStudentName(cleanName);
+    setCurrentStudentNim(cleanNim);
+    setIsEditingIdentity(false);
+    try {
+      if (cleanName) {
+        localStorage.setItem('kantinku_student_name_v1', cleanName);
+      } else {
+        localStorage.removeItem('kantinku_student_name_v1');
+      }
+      if (cleanNim) {
+        localStorage.setItem('kantinku_student_nim_v1', cleanNim);
+      } else {
+        localStorage.removeItem('kantinku_student_nim_v1');
+      }
+    } catch {
+      // ignore
+    }
+    if (onShowToast) {
+      onShowToast(
+        cleanName
+          ? `Nama pemesan diatur ke: "${cleanName}". Pesanan pribadi difilter otomatis.`
+          : 'Filter nama dibersihkan.'
+      );
+    }
+  };
+
+  const myOrdersList = orders.filter(isOrderOwnedByMe);
+  const myActiveOrdersCount = myOrdersList.filter(
+    (o) =>
+      o.status === 'waiting_payment_verification' ||
+      o.status === 'cooking' ||
+      o.status === 'ready_pickup'
+  ).length;
+
+  const scopedOrders = orderScopeTab === 'my_orders' ? myOrdersList : orders;
+
+  const filteredStudentOrders = scopedOrders.filter((ord) => {
     const q = orderLookupQuery.trim().toLowerCase();
     if (!q) return true;
     return (
@@ -52,13 +139,6 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
       ord.stallName.toLowerCase().includes(q)
     );
   });
-
-  const activeOrdersCount = orders.filter(
-    (o) =>
-      o.status === 'waiting_payment_verification' ||
-      o.status === 'cooking' ||
-      o.status === 'ready_pickup'
-  ).length;
 
   // Filter logic for Stalls & Menu Items
   const filteredStalls = stalls.filter((stall) => {
@@ -167,8 +247,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                 id: 'pesanan',
                 label: 'Pesanan Saya',
                 icon: 'receipt_long',
-                activeCount: activeOrdersCount,
-                totalCount: orders.length,
+                activeCount: myActiveOrdersCount,
+                totalCount: myOrdersList.length,
               },
             ].map((tab) => {
               const isActive = activeSubTab === tab.id;
@@ -234,22 +314,29 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
         ) : activeSubTab === 'pesanan' ? (
           /* SUB-TAB: PESANAN SAYA (ShopeeFood / Gojek Order Tracker) */
           <div className="flex flex-col gap-5">
-            {/* Header & Order Search Input */}
-            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            {/* Clean Unboxed Header & Search */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
               <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2 text-emerald-700">
-                  <span className="material-symbols-outlined text-[24px]">receipt_long</span>
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[22px] text-emerald-600">receipt_long</span>
                   <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                    Lacak Pesanan Saya (Real-Time)
+                    {orderScopeTab === 'my_orders' ? 'Pesanan Saya' : 'Papan Antrean Kantin (Semua Stan)'}
                   </h2>
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 tabular-nums">
+                    {filteredStudentOrders.length}
+                  </span>
                 </div>
-                <p className="text-sm text-slate-600 max-w-2xl">
-                  Pantau langsung proses antrean dapur dan siap ambil pesanan Anda di kantin IBI KKG. Masukkan <strong>NIM</strong> atau <strong>Nama</strong> untuk memfilter.
+                <p className="text-xs sm:text-sm text-slate-500">
+                  {orderScopeTab === 'my_orders'
+                    ? currentStudentName
+                      ? `Menampilkan khusus pesanan atas nama "${currentStudentName}". Pesanan mahasiswa lain tidak dicampur.`
+                      : 'Lacak pesanan pribadi Anda. Masukkan nama Anda agar riwayat pesanan otomatis terfilter.'
+                    : 'Transparansi antrean dapur & nomor antrean pesanan seluruh mahasiswa di kantin IBI KKG.'}
                 </p>
               </div>
 
-              <div className="relative w-full md:w-80 shrink-0">
-                <span className="material-symbols-outlined absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
+              <div className="relative w-full sm:w-72 shrink-0">
+                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
                   search
                 </span>
                 <input
@@ -257,108 +344,195 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   value={orderLookupQuery}
                   onChange={(e) => setOrderLookupQuery(e.target.value)}
                   placeholder="Cari NIM, Nama, atau ID..."
-                  className="w-full h-11 pl-10 pr-3 rounded-xl bg-slate-50 text-slate-900 placeholder:text-slate-400 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-slate-200"
+                  className="w-full h-10 pl-9 pr-8 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-slate-200 shadow-xs"
                 />
+                {orderLookupQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setOrderLookupQuery('')}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                    aria-label="Bersihkan pencarian"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">close</span>
+                  </button>
+                )}
               </div>
             </div>
+
+            {/* Scope Switcher & Identity Bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-slate-200/60">
+              <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-xl self-start">
+                <button
+                  type="button"
+                  onClick={() => setOrderScopeTab('my_orders')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    orderScopeTab === 'my_orders'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Pesanan Saya ({myOrdersList.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderScopeTab('all_orders')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                    orderScopeTab === 'all_orders'
+                      ? 'bg-white text-slate-900 shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Semua Antrean Stan ({orders.length})
+                </button>
+              </div>
+
+              {/* Student Identity Pill */}
+              <div className="flex items-center gap-2 self-start sm:self-auto">
+                {currentStudentName ? (
+                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs text-xs">
+                    <span className="material-symbols-outlined text-[16px] text-emerald-600">person</span>
+                    <span className="text-slate-600">
+                      Pemesan: <strong className="text-slate-900">{currentStudentName}</strong>
+                      {currentStudentNim && <span className="text-slate-500 font-mono ml-1">({currentStudentNim})</span>}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempNameInput(currentStudentName);
+                        setTempNimInput(currentStudentNim);
+                        setIsEditingIdentity(true);
+                      }}
+                      className="ml-1 text-[11px] font-bold text-emerald-700 hover:underline cursor-pointer"
+                    >
+                      Ganti
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempNameInput('');
+                      setTempNimInput('');
+                      setIsEditingIdentity(true);
+                    }}
+                    className="min-h-[32px] px-3 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 border border-emerald-200 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">person_add</span>
+                    <span>Atur Nama Pemesan (misal: Benedict)</span>
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Inline Identity Editor Drawer */}
+            {isEditingIdentity && (
+              <form
+                onSubmit={handleSaveIdentity}
+                className="bg-white rounded-2xl p-4 border border-emerald-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+              >
+                <div className="flex flex-col gap-1 flex-1">
+                  <label className="text-xs font-bold text-slate-700">Nama Mahasiswa Pemesan:</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Benedict"
+                    value={tempNameInput}
+                    onChange={(e) => setTempNameInput(e.target.value)}
+                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div className="flex flex-col gap-1 sm:w-48">
+                  <label className="text-xs font-bold text-slate-700">NIM Mahasiswa (Opsional):</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: 32230104"
+                    value={tempNimInput}
+                    onChange={(e) => setTempNimInput(e.target.value)}
+                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-2 sm:pt-4">
+                  <button
+                    type="submit"
+                    className="min-h-[40px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs"
+                  >
+                    Terapkan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingIdentity(false)}
+                    className="min-h-[40px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                  >
+                    Batal
+                  </button>
+                </div>
+              </form>
+            )}
 
             {filteredStudentOrders.length === 0 ? (
               <div className="bg-white rounded-2xl p-8 sm:p-12 text-center flex flex-col items-center gap-3 shadow-sm border border-slate-200/80">
                 <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[32px]">fastfood</span>
+                  <span className="material-symbols-outlined text-[32px]">
+                    {orderScopeTab === 'my_orders' ? 'person_search' : 'fastfood'}
+                  </span>
                 </div>
                 <div className="flex flex-col gap-1 max-w-md">
                   <h3 className="text-lg font-bold text-slate-900">
                     {orderLookupQuery.trim()
                       ? 'Pesanan Tidak Ditemukan'
-                      : 'Belum Ada Pesanan yang Berjalan'}
+                      : orderScopeTab === 'my_orders' && currentStudentName
+                      ? `Belum Ada Pesanan untuk "${currentStudentName}"`
+                      : orderScopeTab === 'my_orders'
+                      ? 'Belum Ada Pesanan di Perangkat Ini'
+                      : 'Belum Ada Antrean di Kantin'}
                   </h3>
                   <p className="text-sm text-slate-500">
                     {orderLookupQuery.trim()
                       ? `Tidak ada pesanan aktif dengan kata kunci "${orderLookupQuery}".`
-                      : 'Yuk pilih makanan favorit Anda dari katalog kantin IBI KKG dan pesan dengan mudah tanpa antre.'}
+                      : orderScopeTab === 'my_orders' && currentStudentName
+                      ? `Pesanan atas nama mahasiswa lain (seperti Aldo, dll.) tidak ditampilkan di sini agar pesanan pribadi Anda (${currentStudentName}) tidak tercampur.`
+                      : orderScopeTab === 'my_orders'
+                      ? 'Anda belum memiliki pesanan aktif di browser ini. Masukkan nama Anda (misal: Benedict) atau pesan langsung dari katalog stan.'
+                      : 'Saat ini belum ada pesanan aktif dari stan mana pun di kantin IBI KKG.'}
                   </p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (orderLookupQuery.trim()) setOrderLookupQuery('');
-                    else onChangeSubTab('kantin');
-                  }}
-                  className="mt-2 min-h-[44px] px-6 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm cursor-pointer shadow-sm shadow-emerald-600/30 hover:bg-emerald-700 active:scale-95 transition-all"
-                >
-                  {orderLookupQuery.trim() ? 'Tampilkan Semua Pesanan' : 'Buka Katalog Kantin'}
-                </button>
+                <div className="flex items-center gap-2 flex-wrap justify-center mt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (orderLookupQuery.trim()) setOrderLookupQuery('');
+                      else onChangeSubTab('kantin');
+                    }}
+                    className="min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm cursor-pointer shadow-sm hover:bg-emerald-700 active:scale-95 transition-all"
+                  >
+                    {orderLookupQuery.trim() ? 'Bersihkan Pencarian' : 'Buka Katalog Kantin'}
+                  </button>
+                  {orderScopeTab === 'my_orders' && orders.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setOrderScopeTab('all_orders')}
+                      className="min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs cursor-pointer active:scale-95 transition-all"
+                    >
+                      Lihat Semua Antrean ({orders.length})
+                    </button>
+                  )}
+                  {!currentStudentName && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempNameInput('');
+                        setTempNimInput('');
+                        setIsEditingIdentity(true);
+                      }}
+                      className="min-h-[44px] px-4 py-2.5 rounded-xl border border-emerald-300 text-emerald-800 font-semibold text-xs cursor-pointer hover:bg-emerald-50 active:scale-95 transition-all"
+                    >
+                      Atur Nama Pemesan
+                    </button>
+                  )}
+                </div>
               </div>
             ) : (
               <div className="flex flex-col gap-5">
-                {/* Embedded Live Map Tracking Top Drawer */}
-                {(() => {
-                  const activeOrderToTrack =
-                    filteredStudentOrders.find((o) => o.id === trackedOrderInMapId) ||
-                    filteredStudentOrders.find(
-                      (o) =>
-                        o.status === 'ready_pickup' ||
-                        o.status === 'cooking' ||
-                        o.status === 'waiting_payment_verification'
-                    ) ||
-                    filteredStudentOrders[0];
-
-                  if (!activeOrderToTrack) return null;
-
-                  return (
-                    <div className="flex flex-col gap-2">
-                      {filteredStudentOrders.length > 1 && (
-                        <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
-                          <span className="text-xs font-semibold text-slate-500 shrink-0">
-                            Pilih Pesanan di Peta Rute:
-                          </span>
-                          {filteredStudentOrders.map((o) => (
-                            <button
-                              key={`track-pill-${o.id}`}
-                              type="button"
-                              onClick={() => setTrackedOrderInMapId(o.id)}
-                              className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 shrink-0 cursor-pointer border transition-all ${
-                                o.id === activeOrderToTrack.id
-                                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                                  : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
-                              }`}
-                            >
-                              <span className="font-bold">{o.stallName}</span>
-                              <span className="opacity-75">#{o.id.slice(-4)}</span>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80 flex flex-col gap-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                            <span className="text-sm font-bold text-slate-800">
-                              Navigasi Rute Langsung ke {activeOrderToTrack.stallName}
-                            </span>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => setSelectedReceiptOrder(activeOrderToTrack)}
-                            className="text-xs font-bold text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">receipt</span>
-                            <span>Lihat Nota Digital</span>
-                          </button>
-                        </div>
-                        <LiveGpsTrackerMap
-                          stalls={stalls}
-                          order={activeOrderToTrack}
-                          mode="order-tracking"
-                          onShowToast={onShowToast}
-                        />
-                      </div>
-                    </div>
-                  );
-                })()}
-
                 {/* Orders List Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredStudentOrders.map((ord) => {
@@ -398,6 +572,17 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         <div className="flex flex-col gap-3">
                           <div className="flex items-start justify-between gap-2">
                             <div>
+                              <div className="flex items-center gap-1.5 mb-1">
+                                {isOrderOwnedByMe(ord) ? (
+                                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+                                    Pesanan Anda
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                                    Antrean Publik
+                                  </span>
+                                )}
+                              </div>
                               <h4 className="font-bold text-slate-900 text-base">
                                 {ord.stallName}
                               </h4>
@@ -459,15 +644,15 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => setSelectedReceiptOrder(ord)}
-                            className="min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+                            className="min-h-[40px] px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
                           >
-                            <span className="material-symbols-outlined text-[16px]">map</span>
-                            <span>Rute &amp; Nota</span>
+                            <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                            <span>Nota Digital</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => onSelectStall(ord.stallId)}
-                            className="min-h-[38px] px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                            className="min-h-[40px] px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                           >
                             <span className="material-symbols-outlined text-[16px]">storefront</span>
                             <span>Buka Stan</span>
