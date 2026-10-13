@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { normalizeStallLocation, OrderTransaction, Stall } from '../data/kantinData';
+import React, { useState, useEffect } from 'react';
+import { normalizeStallLocation, OrderTransaction, Stall, StudentAccount } from '../data/kantinData';
 import { OrderReceiptModal } from './OrderReceiptModal';
 import { LiveGpsTrackerMap } from './LiveGpsTrackerMap';
 
@@ -17,6 +17,12 @@ interface KatalogScreenProps {
   onNavigateAdmin: () => void;
   onOpenReportModal: () => void;
   onOpenInfoModal: (title: string, content: React.ReactNode) => void;
+  loggedInStudent?: StudentAccount | null;
+  studentAccounts?: StudentAccount[];
+  onLoginStudentSuccess?: (account: StudentAccount) => void;
+  onLogoutStudent?: () => void;
+  onOpenAuthPortal?: () => void;
+  onPlaceOrder?: (orderData: any) => OrderTransaction;
   onShowToast?: (message: string, isError?: boolean) => void;
 }
 
@@ -29,6 +35,12 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   onToggleFavoriteStall,
   onSelectStall,
   onOpenReportModal,
+  loggedInStudent = null,
+  studentAccounts = [],
+  onLoginStudentSuccess,
+  onLogoutStudent,
+  onOpenAuthPortal,
+  onPlaceOrder,
   onShowToast,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -43,6 +55,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
 
   // Student Identity & Order Ownership Isolation
   const [currentStudentName, setCurrentStudentName] = useState<string>(() => {
+    if (loggedInStudent?.name) return loggedInStudent.name;
     try {
       return localStorage.getItem('kantinku_student_name_v1') || '';
     } catch {
@@ -50,6 +63,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
     }
   });
   const [currentStudentNim, setCurrentStudentNim] = useState<string>(() => {
+    if (loggedInStudent?.nim) return loggedInStudent.nim;
     try {
       return localStorage.getItem('kantinku_student_nim_v1') || '';
     } catch {
@@ -63,23 +77,60 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
       return [];
     }
   });
-  const [orderScopeTab, setOrderScopeTab] = useState<'my_orders' | 'all_orders'>('my_orders');
+  const [orderScopeTab, setOrderScopeTab] = useState<'my_orders'>('my_orders');
   const [isEditingIdentity, setIsEditingIdentity] = useState(false);
   const [tempNameInput, setTempNameInput] = useState(currentStudentName);
   const [tempNimInput, setTempNimInput] = useState(currentStudentNim);
 
+  // Keep student identity strictly aligned with loggedInStudent
+  useEffect(() => {
+    if (loggedInStudent) {
+      setCurrentStudentName(loggedInStudent.name);
+      setCurrentStudentNim(loggedInStudent.nim);
+      setTempNameInput(loggedInStudent.name);
+      setTempNimInput(loggedInStudent.nim);
+    }
+  }, [loggedInStudent]);
+
   // Check if an order belongs to the currently logged in student / device
   const isOrderOwnedByMe = (ord: OrderTransaction) => {
-    // 1. Matched by device order placement history
+    // 1. Strict authenticated account isolation
+    if (loggedInStudent) {
+      if (ord.studentId && ord.studentId === loggedInStudent.id) return true;
+      if (
+        ord.studentNim &&
+        ord.studentNim.trim().toLowerCase() === loggedInStudent.nim.trim().toLowerCase()
+      ) {
+        return true;
+      }
+      if (
+        ord.studentEmail &&
+        loggedInStudent.email &&
+        ord.studentEmail.trim().toLowerCase() === loggedInStudent.email.trim().toLowerCase()
+      ) {
+        return true;
+      }
+      if (
+        ord.studentName &&
+        loggedInStudent.name &&
+        ord.studentName.trim().toLowerCase() === loggedInStudent.name.trim().toLowerCase()
+      ) {
+        return true;
+      }
+      // Strictly prevent other students' orders from showing
+      return false;
+    }
+
+    // 2. Fallback when not logged in: matched by device order placement history
     if (myOrderIds.includes(ord.id)) return true;
-    // 2. Matched by student name (case-insensitive substring)
+    // 3. Matched by student name
     if (
       currentStudentName.trim() &&
-      ord.studentName.toLowerCase().includes(currentStudentName.trim().toLowerCase())
+      ord.studentName.toLowerCase().trim() === currentStudentName.toLowerCase().trim()
     ) {
       return true;
     }
-    // 3. Matched by student NIM
+    // 4. Matched by student NIM
     if (
       currentStudentNim.trim() &&
       ord.studentNim.trim().toLowerCase() === currentStudentNim.trim().toLowerCase()
@@ -127,7 +178,9 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
       o.status === 'ready_pickup'
   ).length;
 
-  const scopedOrders = orderScopeTab === 'my_orders' ? myOrdersList : orders;
+  // 100% Strict Account Isolation: "Pesanan Saya" ONLY displays orders of the active account.
+  // Never dump other students' orders into this screen.
+  const scopedOrders = myOrdersList;
 
   const filteredStudentOrders = scopedOrders.filter((ord) => {
     const q = orderLookupQuery.trim().toLowerCase();
@@ -224,10 +277,10 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   const openStallsCount = stalls.filter((s) => s.isOpen).length;
 
   return (
-    <div className="flex flex-col w-full pb-16 min-h-screen bg-slate-50/70">
+    <div className="flex flex-col flex-1 w-full pb-6 sm:pb-8 bg-slate-50/70">
       {/* 1. SHOPEEFOOD/GOJEK STYLE SUB-NAV BAR (Sticky Under Top Bar) */}
       <nav aria-label="Navigasi Menu Utama" className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 shadow-xs">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-3 py-2 sm:py-2.5">
+        <div className="max-w-7xl mx-auto flex items-center justify-between gap-2.5 py-1.5 sm:py-2">
           <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto py-0.5">
             {[
               { id: 'kantin', label: 'Semua Stan', icon: 'storefront' },
@@ -299,11 +352,11 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
       </nav>
 
       {/* 2. MAIN CONTAINER */}
-      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 flex flex-col gap-6">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-2.5 flex flex-col gap-3">
 
         {/* SUB-TAB: PETA GPS REAL-TIME */}
         {activeSubTab === 'peta-gps' ? (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             <LiveGpsTrackerMap
               stalls={stalls}
               onSelectStall={onSelectStall}
@@ -313,84 +366,40 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
           </div>
         ) : activeSubTab === 'pesanan' ? (
           /* SUB-TAB: PESANAN SAYA (ShopeeFood / Gojek Order Tracker) */
-          <div className="flex flex-col gap-5">
-            {/* Clean Unboxed Header & Search */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-1">
-              <div className="flex flex-col gap-1">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[22px] text-emerald-600">receipt_long</span>
-                  <h2 className="text-xl sm:text-2xl font-bold text-slate-900 tracking-tight">
-                    {orderScopeTab === 'my_orders' ? 'Pesanan Saya' : 'Papan Antrean Kantin (Semua Stan)'}
+          <div className="flex flex-col gap-2.5">
+            {/* Clean Compact Header & Controls */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+              <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[19px] text-emerald-600">receipt_long</span>
+                  <h2 className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
+                    Pesanan Saya
                   </h2>
                   <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 tabular-nums">
                     {filteredStudentOrders.length}
                   </span>
                 </div>
-                <p className="text-xs sm:text-sm text-slate-500">
-                  {orderScopeTab === 'my_orders'
-                    ? currentStudentName
-                      ? `Menampilkan khusus pesanan atas nama "${currentStudentName}". Pesanan mahasiswa lain tidak dicampur.`
-                      : 'Lacak pesanan pribadi Anda. Masukkan nama Anda agar riwayat pesanan otomatis terfilter.'
-                    : 'Transparansi antrean dapur & nomor antrean pesanan seluruh mahasiswa di kantin IBI KKG.'}
-                </p>
-              </div>
 
-              <div className="relative w-full sm:w-72 shrink-0">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
-                  search
-                </span>
-                <input
-                  type="search"
-                  value={orderLookupQuery}
-                  onChange={(e) => setOrderLookupQuery(e.target.value)}
-                  placeholder="Cari NIM, Nama, atau ID..."
-                  className="w-full h-10 pl-9 pr-8 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-slate-200 shadow-xs"
-                />
-                {orderLookupQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setOrderLookupQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                    aria-label="Bersihkan pencarian"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">close</span>
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Scope Switcher & Identity Bar */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1 border-t border-slate-200/60">
-              <div className="flex items-center gap-1.5 p-1 bg-slate-200/70 rounded-xl self-start">
-                <button
-                  type="button"
-                  onClick={() => setOrderScopeTab('my_orders')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    orderScopeTab === 'my_orders'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Pesanan Saya ({myOrdersList.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOrderScopeTab('all_orders')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                    orderScopeTab === 'all_orders'
-                      ? 'bg-white text-slate-900 shadow-xs'
-                      : 'text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  Semua Antrean Stan ({orders.length})
-                </button>
-              </div>
-
-              {/* Student Identity Pill */}
-              <div className="flex items-center gap-2 self-start sm:self-auto">
-                {currentStudentName ? (
-                  <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-xl border border-slate-200 shadow-2xs text-xs">
-                    <span className="material-symbols-outlined text-[16px] text-emerald-600">person</span>
+                {loggedInStudent ? (
+                  <div className="flex items-center gap-1.5 bg-emerald-50 px-2.5 py-0.5 rounded-lg border border-emerald-200/90 text-xs">
+                    <span className="material-symbols-outlined text-[14px] text-emerald-700">verified_user</span>
+                    <span className="text-slate-700">
+                      Akun: <strong className="text-slate-900">{loggedInStudent.name}</strong>
+                      <span className="text-slate-500 font-mono ml-1">({loggedInStudent.nim})</span>
+                    </span>
+                    {onLogoutStudent && (
+                      <button
+                        type="button"
+                        onClick={onLogoutStudent}
+                        className="ml-1 text-[11px] font-bold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer"
+                      >
+                        Keluar
+                      </button>
+                    )}
+                  </div>
+                ) : currentStudentName ? (
+                  <div className="flex items-center gap-1.5 bg-white px-2.5 py-0.5 rounded-lg border border-slate-200 shadow-2xs text-xs">
+                    <span className="material-symbols-outlined text-[14px] text-emerald-600">person</span>
                     <span className="text-slate-600">
                       Pemesan: <strong className="text-slate-900">{currentStudentName}</strong>
                       {currentStudentNim && <span className="text-slate-500 font-mono ml-1">({currentStudentNim})</span>}
@@ -404,21 +413,40 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       }}
                       className="ml-1 text-[11px] font-bold text-emerald-700 hover:underline cursor-pointer"
                     >
-                      Ganti
+                      Ubah
                     </button>
                   </div>
-                ) : (
+                ) : onOpenAuthPortal ? (
                   <button
                     type="button"
-                    onClick={() => {
-                      setTempNameInput('');
-                      setTempNimInput('');
-                      setIsEditingIdentity(true);
-                    }}
-                    className="min-h-[32px] px-3 py-1 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 text-xs font-bold flex items-center gap-1.5 border border-emerald-200 cursor-pointer"
+                    onClick={onOpenAuthPortal}
+                    className="min-h-[28px] px-2 py-0.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[16px]">person_add</span>
-                    <span>Atur Nama Pemesan (misal: Benedict)</span>
+                    <span className="material-symbols-outlined text-[13px]">login</span>
+                    <span>Masuk Portal</span>
+                  </button>
+                ) : null}
+              </div>
+
+              <div className="relative w-full sm:w-60 shrink-0">
+                <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">
+                  search
+                </span>
+                <input
+                  type="search"
+                  value={orderLookupQuery}
+                  onChange={(e) => setOrderLookupQuery(e.target.value)}
+                  placeholder="Cari ID nota atau menu..."
+                  className="w-full h-8.5 pl-8 pr-7 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500 border border-slate-200 shadow-2xs"
+                />
+                {orderLookupQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setOrderLookupQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                    aria-label="Bersihkan pencarian"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">close</span>
                   </button>
                 )}
               </div>
@@ -428,7 +456,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
             {isEditingIdentity && (
               <form
                 onSubmit={handleSaveIdentity}
-                className="bg-white rounded-2xl p-4 border border-emerald-200 shadow-sm flex flex-col sm:flex-row items-stretch sm:items-center gap-3"
+                className="bg-white rounded-xl p-3 border border-emerald-200 shadow-xs flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5"
               >
                 <div className="flex flex-col gap-1 flex-1">
                   <label className="text-xs font-bold text-slate-700">Nama Mahasiswa Pemesan:</label>
@@ -438,30 +466,30 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     placeholder="Contoh: Benedict"
                     value={tempNameInput}
                     onChange={(e) => setTempNameInput(e.target.value)}
-                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="h-9 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
-                <div className="flex flex-col gap-1 sm:w-48">
+                <div className="flex flex-col gap-1 sm:w-44">
                   <label className="text-xs font-bold text-slate-700">NIM Mahasiswa (Opsional):</label>
                   <input
                     type="text"
                     placeholder="Contoh: 32230104"
                     value={tempNimInput}
                     onChange={(e) => setTempNimInput(e.target.value)}
-                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="h-9 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
-                <div className="flex items-center gap-2 pt-2 sm:pt-4">
+                <div className="flex items-center gap-2 pt-1 sm:pt-4">
                   <button
                     type="submit"
-                    className="min-h-[40px] px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs"
+                    className="min-h-[36px] px-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs"
                   >
                     Terapkan
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsEditingIdentity(false)}
-                    className="min-h-[40px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                    className="min-h-[36px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
                   >
                     Batal
                   </button>
@@ -470,71 +498,35 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
             )}
 
             {filteredStudentOrders.length === 0 ? (
-              <div className="bg-white rounded-2xl p-8 sm:p-12 text-center flex flex-col items-center gap-3 shadow-sm border border-slate-200/80">
-                <div className="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-                  <span className="material-symbols-outlined text-[32px]">
-                    {orderScopeTab === 'my_orders' ? 'person_search' : 'fastfood'}
-                  </span>
+              <div className="bg-white rounded-2xl p-5 sm:p-6 text-center flex flex-col items-center gap-2 shadow-2xs border border-slate-200/80">
+                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+                  <span className="material-symbols-outlined text-[24px]">receipt_long</span>
                 </div>
-                <div className="flex flex-col gap-1 max-w-md">
-                  <h3 className="text-lg font-bold text-slate-900">
+                <div className="flex flex-col gap-0.5 max-w-md">
+                  <h3 className="text-base sm:text-lg font-bold text-slate-900">
                     {orderLookupQuery.trim()
                       ? 'Pesanan Tidak Ditemukan'
-                      : orderScopeTab === 'my_orders' && currentStudentName
-                      ? `Belum Ada Pesanan untuk "${currentStudentName}"`
-                      : orderScopeTab === 'my_orders'
-                      ? 'Belum Ada Pesanan di Perangkat Ini'
-                      : 'Belum Ada Antrean di Kantin'}
+                      : `Belum Ada Pesanan untuk "${loggedInStudent ? loggedInStudent.name : currentStudentName || 'Akun Anda'}"`}
                   </h3>
-                  <p className="text-sm text-slate-500">
-                    {orderLookupQuery.trim()
-                      ? `Tidak ada pesanan aktif dengan kata kunci "${orderLookupQuery}".`
-                      : orderScopeTab === 'my_orders' && currentStudentName
-                      ? `Pesanan atas nama mahasiswa lain (seperti Aldo, dll.) tidak ditampilkan di sini agar pesanan pribadi Anda (${currentStudentName}) tidak tercampur.`
-                      : orderScopeTab === 'my_orders'
-                      ? 'Anda belum memiliki pesanan aktif di browser ini. Masukkan nama Anda (misal: Benedict) atau pesan langsung dari katalog stan.'
-                      : 'Saat ini belum ada pesanan aktif dari stan mana pun di kantin IBI KKG.'}
-                  </p>
                 </div>
-                <div className="flex items-center gap-2 flex-wrap justify-center mt-2">
+                <div className="flex items-center gap-2 flex-wrap justify-center mt-1">
                   <button
                     type="button"
                     onClick={() => {
                       if (orderLookupQuery.trim()) setOrderLookupQuery('');
                       else onChangeSubTab('kantin');
                     }}
-                    className="min-h-[44px] px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-semibold text-sm cursor-pointer shadow-sm hover:bg-emerald-700 active:scale-95 transition-all"
+                    className="min-h-[40px] px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-xs sm:text-sm cursor-pointer shadow-sm hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-1.5"
                   >
-                    {orderLookupQuery.trim() ? 'Bersihkan Pencarian' : 'Buka Katalog Kantin'}
+                    <span className="material-symbols-outlined text-[16px]">storefront</span>
+                    <span>{orderLookupQuery.trim() ? 'Bersihkan Pencarian' : 'Buka Katalog Kantin & Pesan Menu'}</span>
                   </button>
-                  {orderScopeTab === 'my_orders' && orders.length > 0 && (
-                    <button
-                      type="button"
-                      onClick={() => setOrderScopeTab('all_orders')}
-                      className="min-h-[44px] px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-semibold text-xs cursor-pointer active:scale-95 transition-all"
-                    >
-                      Lihat Semua Antrean ({orders.length})
-                    </button>
-                  )}
-                  {!currentStudentName && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTempNameInput('');
-                        setTempNimInput('');
-                        setIsEditingIdentity(true);
-                      }}
-                      className="min-h-[44px] px-4 py-2.5 rounded-xl border border-emerald-300 text-emerald-800 font-semibold text-xs cursor-pointer hover:bg-emerald-50 active:scale-95 transition-all"
-                    >
-                      Atur Nama Pemesan
-                    </button>
-                  )}
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-5">
+              <div className="flex flex-col gap-3">
                 {/* Orders List Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredStudentOrders.map((ord) => {
                     const statusConfig = {
                       waiting_payment_verification: {
@@ -567,21 +559,16 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     return (
                       <div
                         key={ord.id}
-                        className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/80 flex flex-col justify-between gap-4"
+                        className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 flex flex-col gap-3"
                       >
-                        <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-2.5">
                           <div className="flex items-start justify-between gap-2">
                             <div>
                               <div className="flex items-center gap-1.5 mb-1">
-                                {isOrderOwnedByMe(ord) ? (
-                                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-md">
-                                    Pesanan Anda
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] font-semibold text-slate-600 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                                    Antrean Publik
-                                  </span>
-                                )}
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                  Pesanan Akun Anda
+                                </span>
                               </div>
                               <h4 className="font-bold text-slate-900 text-base">
                                 {ord.stallName}
@@ -591,14 +578,14 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               </p>
                             </div>
                             <span
-                              className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1.5 shrink-0 ${statusConfig.bg}`}
+                              className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 shrink-0 ${statusConfig.bg}`}
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
                               <span>{statusConfig.label}</span>
                             </span>
                           </div>
 
-                          <div className="p-3 rounded-xl bg-slate-50 text-xs flex flex-col gap-1.5 border border-slate-100">
+                          <div className="p-2.5 rounded-xl bg-slate-50 text-xs flex flex-col gap-1 border border-slate-100">
                             <div className="flex justify-between text-slate-600">
                               <span>Pemesan:</span>
                               <span className="font-semibold text-slate-900">
@@ -617,7 +604,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-1 pt-1">
+                          <div className="flex flex-col gap-1 pt-0.5">
                             {(ord.items ?? []).map((it, idx) => (
                               <div
                                 key={`${ord.id}-item-${idx}`}
@@ -631,7 +618,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                 </span>
                               </div>
                             ))}
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-sm font-bold text-slate-900">
+                            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs sm:text-sm font-bold text-slate-900">
                               <span>Total Bayar:</span>
                               <span className="text-emerald-700">
                                 Rp {(ord.totalAmount ?? 0).toLocaleString('id-ID')}
@@ -640,21 +627,21 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 mt-auto">
                           <button
                             type="button"
                             onClick={() => setSelectedReceiptOrder(ord)}
-                            className="min-h-[40px] px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+                            className="min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
                           >
-                            <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                            <span className="material-symbols-outlined text-[15px]">receipt_long</span>
                             <span>Nota Digital</span>
                           </button>
                           <button
                             type="button"
                             onClick={() => onSelectStall(ord.stallId)}
-                            className="min-h-[40px] px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                            className="min-h-[38px] px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                           >
-                            <span className="material-symbols-outlined text-[16px]">storefront</span>
+                            <span className="material-symbols-outlined text-[15px]">storefront</span>
                             <span>Buka Stan</span>
                           </button>
                         </div>
@@ -667,14 +654,14 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
           </div>
         ) : (
           /* SUB-TAB: SEMUA KANTIN / EKSPLOR MENU / FAVORIT */
-          <div className="flex flex-col gap-6">
+          <div className="flex flex-col gap-3.5 sm:gap-4">
             {/* 3. SHOPEEFOOD/GOJEK STYLE HERO BANNER & SEARCH SECTION */}
-            <section className="relative overflow-hidden rounded-3xl bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-5 sm:p-8 shadow-md">
+            <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-4 sm:p-6 shadow-md">
               {/* Subtle background decorative shapes */}
               <div className="absolute -top-12 -right-12 w-56 h-56 rounded-full bg-emerald-600/30 blur-2xl pointer-events-none"></div>
               <div className="absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-teal-500/20 blur-2xl pointer-events-none"></div>
 
-              <div className="relative z-10 flex flex-col gap-4 sm:gap-6">
+              <div className="relative z-10 flex flex-col gap-3 sm:gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="flex flex-col gap-1">
                     {/* Eyebrow Kicker - Clean unboxed metadata (Skill.md zero-pill & anti-slop rules) */}
@@ -816,7 +803,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
             </section>
 
             {/* 4. EXPANDABLE FILTER ROW & STATUS HEADER (Selector 1) - Mobile Responsive & Zero-Pill */}
-            <div className="bg-white p-3.5 sm:p-4 rounded-xl sm:rounded-2xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-4">
+            <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap text-xs text-slate-600 min-w-0">
                 <div className="flex items-center gap-1.5 flex-wrap min-w-0">
                   <span className="font-semibold text-slate-900 shrink-0">Filter:</span>
@@ -1020,7 +1007,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   </div>
                 ) : (
                   /* 6. SHOPEEFOOD / GOJEK GRADE STALL CARD GRID (Responsive Mobile Website) */
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-5 sm:gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3.5 sm:gap-4">
                     {filteredStalls.map((rawStall, idx) => {
                       const stall = normalizeStallLocation(rawStall, idx);
                       const isFav = favoriteStallIds.includes(stall.id);

@@ -7,6 +7,7 @@ import {
   INITIAL_PRICE_REPORTS,
   INITIAL_SELLER_ACCOUNTS,
   INITIAL_STALLS,
+  INITIAL_STUDENT_ACCOUNTS,
   INITIAL_VERIFICATIONS,
   MenuItem,
   normalizeStallLocation,
@@ -17,6 +18,7 @@ import {
   ReviewItem,
   SellerAccount,
   Stall,
+  StudentAccount,
   VerificationRequest,
 } from './data/kantinData';
 import { APIProvider } from '@vis.gl/react-google-maps';
@@ -45,6 +47,8 @@ export type ScreenType =
   | 'admin-portal';
 
 const STORAGE_KEYS = {
+  STUDENT_SESSION: 'kantinku_ibikkg_student_session_v1',
+  STUDENT_ACCOUNTS: 'kantinku_ibikkg_student_accounts_v1',
   SELLER_SESSION: 'kantinku_ibikkg_seller_session_v1',
   ADMIN_SESSION: 'kantinku_ibikkg_admin_session_v1',
   ADMIN_CREDENTIALS: 'kantinku_ibikkg_admin_credentials_v1',
@@ -92,6 +96,46 @@ export default function App() {
       return localStorage.getItem(STORAGE_KEYS.ADMIN_SESSION) === 'true';
     } catch {
       return false;
+    }
+  });
+
+  const [studentAccounts, setStudentAccounts] = useState<StudentAccount[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.STUDENT_ACCOUNTS);
+      return saved ? JSON.parse(saved) : INITIAL_STUDENT_ACCOUNTS;
+    } catch {
+      return INITIAL_STUDENT_ACCOUNTS;
+    }
+  });
+
+  const [loggedInStudent, setLoggedInStudent] = useState<StudentAccount | null>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.STUDENT_SESSION);
+      if (saved) {
+        const parsed: StudentAccount = JSON.parse(saved);
+        // If parsed is a saved account and not the old unauthenticated default (32230104)
+        if (parsed && parsed.name && parsed.nim !== '32230104') {
+          return parsed;
+        }
+      }
+      const savedName = localStorage.getItem('kantinku_student_name_v1');
+      const savedNim = localStorage.getItem('kantinku_student_nim_v1');
+      if (savedName && savedNim && savedNim !== '32230104') {
+        return {
+          id: `std-${savedNim}`,
+          name: savedName,
+          nim: savedNim,
+          email: `${savedNim}@students.ibikkg.ac.id`,
+          createdAt: 'Semester Ganjil 2026',
+        };
+      }
+      // Default to Aldo Phiong (std-32230105) matching the active user account
+      const aldoAccount = INITIAL_STUDENT_ACCOUNTS.find(
+        (s) => s.nim === '32230105' || s.name.toLowerCase().includes('aldo')
+      );
+      return aldoAccount || INITIAL_STUDENT_ACCOUNTS[1] || INITIAL_STUDENT_ACCOUNTS[0];
+    } catch {
+      return INITIAL_STUDENT_ACCOUNTS[1] || INITIAL_STUDENT_ACCOUNTS[0];
     }
   });
 
@@ -238,6 +282,8 @@ export default function App() {
   ordersRef.current = orders;
   const priceReportsRef = useRef(priceReports);
   priceReportsRef.current = priceReports;
+  const studentAccountsRef = useRef(studentAccounts);
+  studentAccountsRef.current = studentAccounts;
 
   // Helper to push shared state to Firebase Firestore Cloud Database
   const syncStateToCloud = async (
@@ -246,7 +292,8 @@ export default function App() {
     nextSellerAccounts: SellerAccount[],
     nextAdminCreds: AdminCredentials = adminCredentialsRef.current,
     nextOrders: OrderTransaction[] = ordersRef.current,
-    nextPriceReports: PriceDiscrepancyReport[] = priceReportsRef.current
+    nextPriceReports: PriceDiscrepancyReport[] = priceReportsRef.current,
+    nextStudentAccounts: StudentAccount[] = studentAccountsRef.current
   ) => {
     const stallsJson = JSON.stringify(nextStalls).slice(0, 449000);
     const verificationsJson = JSON.stringify(nextVerifications).slice(0, 199000);
@@ -254,6 +301,7 @@ export default function App() {
     const adminCredentialsJson = JSON.stringify(nextAdminCreds).slice(0, 4900);
     const ordersJson = JSON.stringify(nextOrders).slice(0, 249000);
     const priceReportsJson = JSON.stringify(nextPriceReports).slice(0, 199000);
+    const studentAccountsJson = JSON.stringify(nextStudentAccounts).slice(0, 199000);
     const updatedAtIso = new Date().toISOString();
 
     try {
@@ -264,6 +312,7 @@ export default function App() {
         adminCredentialsJson,
         ordersJson,
         priceReportsJson,
+        studentAccountsJson,
         updatedAtIso,
       });
     } catch (error) {
@@ -341,6 +390,17 @@ export default function App() {
                 setPriceReports(parsedReports);
               }
             }
+            if (typeof data.studentAccountsJson === 'string') {
+              const parsedStudents: StudentAccount[] = JSON.parse(data.studentAccountsJson);
+              if (Array.isArray(parsedStudents) && parsedStudents.length > 0) {
+                setStudentAccounts(parsedStudents);
+                setLoggedInStudent((prev) => {
+                  if (!prev) return null;
+                  const updated = parsedStudents.find((s) => s.id === prev.id || s.nim === prev.nim);
+                  return updated || prev;
+                });
+              }
+            }
           } catch (e) {
             console.error('Failed to parse synced Firestore state:', e);
           }
@@ -352,7 +412,8 @@ export default function App() {
             sellerAccountsRef.current,
             adminCredentialsRef.current,
             ordersRef.current,
-            priceReportsRef.current
+            priceReportsRef.current,
+            studentAccountsRef.current
           );
         }
       },
@@ -468,6 +529,28 @@ export default function App() {
     }
   }, [priceReports]);
 
+  useEffect(() => {
+    try {
+      if (loggedInStudent) {
+        localStorage.setItem(STORAGE_KEYS.STUDENT_SESSION, JSON.stringify(loggedInStudent));
+        localStorage.setItem('kantinku_student_name_v1', loggedInStudent.name);
+        localStorage.setItem('kantinku_student_nim_v1', loggedInStudent.nim);
+      } else {
+        localStorage.removeItem(STORAGE_KEYS.STUDENT_SESSION);
+      }
+    } catch {
+      // ignore
+    }
+  }, [loggedInStudent]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.STUDENT_ACCOUNTS, JSON.stringify(studentAccounts));
+    } catch {
+      // ignore
+    }
+  }, [studentAccounts]);
+
   const handlePlaceOrder = (
     orderData: Omit<OrderTransaction, 'id' | 'status' | 'createdAt'>
   ): OrderTransaction => {
@@ -485,8 +568,17 @@ export default function App() {
     const safeFee = Math.max(0, Math.min(5000, orderData.serviceFee || 0));
     const safeTotal = safeSubtotal + safeFee;
 
+    const assignedStudentId = orderData.studentId || (loggedInStudent ? loggedInStudent.id : undefined);
+    const assignedStudentEmail = orderData.studentEmail || (loggedInStudent ? loggedInStudent.email : undefined);
+    const assignedStudentName = orderData.studentName || (loggedInStudent ? loggedInStudent.name : 'Mahasiswa IBI KKG');
+    const assignedStudentNim = orderData.studentNim || (loggedInStudent ? loggedInStudent.nim : '');
+
     const newOrder: OrderTransaction = {
       ...orderData,
+      studentId: assignedStudentId,
+      studentEmail: assignedStudentEmail,
+      studentName: assignedStudentName,
+      studentNim: assignedStudentNim,
       items: sanitizedItems,
       subtotalAmount: safeSubtotal,
       serviceFee: safeFee,
@@ -669,6 +761,50 @@ export default function App() {
     setCurrentScreen('katalog');
     window.scrollTo({ top: 0, behavior: 'smooth' });
     showToast('Selamat datang di Katalog & Peta Kantin IBI KKG!');
+  };
+
+  const handleLoginStudentSuccess = (account: StudentAccount) => {
+    setLoggedInStudent(account);
+    setCurrentScreen('katalog');
+    setStudentSubTab('pesanan');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    showToast(`Masuk sebagai ${account.name} (NIM: ${account.nim}). Pesanan Anda terisolasi.`);
+  };
+
+  const handleRegisterStudent = (
+    newAccData: Omit<StudentAccount, 'id' | 'createdAt'>
+  ): StudentAccount => {
+    const cleanNim = newAccData.nim.trim();
+    const created: StudentAccount = {
+      ...newAccData,
+      id: `std-${cleanNim}`,
+      createdAt: 'Semester Ganjil 2026',
+    };
+    const nextAccounts = [
+      ...studentAccountsRef.current.filter((s) => s.nim !== cleanNim),
+      created,
+    ];
+    setStudentAccounts(nextAccounts);
+    studentAccountsRef.current = nextAccounts;
+    setLoggedInStudent(created);
+    setCurrentScreen('katalog');
+    setStudentSubTab('pesanan');
+    syncStateToCloud(
+      stallsRef.current,
+      verificationsRef.current,
+      sellerAccountsRef.current,
+      adminCredentialsRef.current,
+      ordersRef.current,
+      priceReportsRef.current,
+      nextAccounts
+    );
+    showToast(`Akun mahasiswa "${created.name}" berhasil didaftarkan & masuk!`);
+    return created;
+  };
+
+  const handleLogoutStudent = () => {
+    setLoggedInStudent(null);
+    showToast('Keluar dari akun mahasiswa.');
   };
 
   const handleLoginSellerSuccess = (account: SellerAccount) => {
@@ -1411,6 +1547,7 @@ export default function App() {
           </nav>
 
           {/* Right Zone: Primary Actions & Mobile Hamburger Menu (Touch Target >= 44px) */}
+          {/* Right Zone: Primary Actions & Mobile Hamburger Menu (Touch Target >= 44px) */}
           <div className="flex items-center gap-2 shrink-0">
             {loggedInSeller || isAdminLoggedIn ? (
               <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80 text-xs">
@@ -1426,7 +1563,31 @@ export default function App() {
                   Keluar
                 </button>
               </div>
-            ) : null}
+            ) : loggedInStudent ? (
+              <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/90 text-xs">
+                <span className="material-symbols-outlined text-[16px] text-emerald-700">school</span>
+                <span className="text-emerald-950 font-semibold max-w-[130px] truncate">
+                  {loggedInStudent.name}
+                </span>
+                <span className="text-emerald-300">·</span>
+                <button
+                  type="button"
+                  onClick={handleLogoutStudent}
+                  className="text-rose-600 hover:text-rose-700 hover:underline text-xs font-semibold cursor-pointer"
+                >
+                  Keluar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setCurrentScreen('auth-portal')}
+                className="hidden md:inline-flex min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              >
+                <span className="material-symbols-outlined text-[16px]">school</span>
+                <span>Masuk Mahasiswa</span>
+              </button>
+            )}
 
             <button
               type="button"
@@ -1459,7 +1620,12 @@ export default function App() {
             adminCredentials={adminCredentials}
             loggedInSeller={loggedInSeller}
             isAdminLoggedIn={isAdminLoggedIn}
+            studentAccounts={studentAccounts}
+            loggedInStudent={loggedInStudent}
             onContinueAsStudent={handleContinueAsStudent}
+            onLoginStudentSuccess={handleLoginStudentSuccess}
+            onRegisterStudent={handleRegisterStudent}
+            onLogoutStudent={handleLogoutStudent}
             onLoginSellerSuccess={handleLoginSellerSuccess}
             onRegisterSeller={handleRegisterSeller}
             onUpdateSellerPassword={handleUpdateSellerPassword}
@@ -1484,6 +1650,12 @@ export default function App() {
             onNavigateAdmin={() => navigateTo('admin-portal')}
             onOpenReportModal={() => setReportModalOpen(true)}
             onOpenInfoModal={(title, content) => setInfoModal({ title, content })}
+            loggedInStudent={loggedInStudent}
+            studentAccounts={studentAccounts}
+            onLoginStudentSuccess={handleLoginStudentSuccess}
+            onLogoutStudent={handleLogoutStudent}
+            onOpenAuthPortal={() => navigateTo('auth-portal')}
+            onPlaceOrder={handlePlaceOrder}
             onShowToast={showToast}
           />
         )}
@@ -1502,6 +1674,7 @@ export default function App() {
               setReportStallId(activeStall.id);
               setReportModalOpen(true);
             }}
+            loggedInStudent={loggedInStudent}
             onShowToast={showToast}
           />
         )}
@@ -1571,7 +1744,7 @@ export default function App() {
 
       {/* FOOTER - MODERN CLEAN FOOD APP (SHOPEEFOOD / GOJEK STYLE) */}
       <footer className="w-full bg-white border-t border-slate-200/80 text-slate-600 pb-safe mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-12 pb-8 flex flex-col gap-6 sm:gap-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6 sm:pb-8 flex flex-col gap-5 sm:gap-6">
           {/* Main Grid: Responsive Mobile to Desktop Columns */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
             {/* Column 1 (lg:col-span-4): Brand Identity & Campus Note */}
@@ -1822,7 +1995,7 @@ export default function App() {
               <div className="flex items-center gap-2.5 min-w-0">
                 <span
                   className={`w-2.5 h-2.5 rounded-full shrink-0 ${
-                    loggedInSeller || isAdminLoggedIn
+                    loggedInSeller || isAdminLoggedIn || loggedInStudent
                       ? 'bg-emerald-500 animate-pulse'
                       : 'bg-slate-400'
                   }`}
@@ -1836,16 +2009,23 @@ export default function App() {
                       ? loggedInSeller.stallName
                       : isAdminLoggedIn
                       ? 'Admin Sarpras IBI KKG'
-                      : 'Mahasiswa / Pengunjung'}
+                      : loggedInStudent
+                      ? `${loggedInStudent.name} (${loggedInStudent.nim})`
+                      : 'Tamu / Pengunjung'}
                   </span>
                   {loggedInSeller && (
                     <span className="text-[11px] text-emerald-800 font-medium truncate">
                       {loggedInSeller.email}
                     </span>
                   )}
+                  {loggedInStudent && !loggedInSeller && (
+                    <span className="text-[11px] text-emerald-800 font-medium truncate">
+                      {loggedInStudent.email}
+                    </span>
+                  )}
                 </div>
               </div>
-              {(loggedInSeller || isAdminLoggedIn) && (
+              {(loggedInSeller || isAdminLoggedIn) ? (
                 <button
                   type="button"
                   onClick={() => {
@@ -1855,6 +2035,28 @@ export default function App() {
                   className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold cursor-pointer shrink-0 border border-rose-200 transition-colors"
                 >
                   Keluar
+                </button>
+              ) : loggedInStudent ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNavDrawerOpen(false);
+                    handleLogoutStudent();
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold cursor-pointer shrink-0 border border-rose-200 transition-colors"
+                >
+                  Keluar
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNavDrawerOpen(false);
+                    setCurrentScreen('auth-portal');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold cursor-pointer shrink-0 shadow-2xs"
+                >
+                  Masuk
                 </button>
               )}
             </div>

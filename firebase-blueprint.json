@@ -41,6 +41,12 @@
           "minLength": 2,
           "maxLength": 200000
         },
+        "studentAccountsJson": {
+          "type": "string",
+          "description": "Serialized JSON of registered student accounts for secure order isolation.",
+          "minLength": 2,
+          "maxLength": 200000
+        },
         "updatedAtIso": {
           "type": "string",
           "description": "ISO timestamp of last state update.",

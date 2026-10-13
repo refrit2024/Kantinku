@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AdminCredentials, SellerAccount } from '../data/kantinData';
+import { AdminCredentials, SellerAccount, StudentAccount } from '../data/kantinData';
 import {
   checkLoginBruteForce,
   clearLoginBruteForce,
@@ -11,7 +11,12 @@ interface AuthPortalScreenProps {
   adminCredentials: AdminCredentials;
   loggedInSeller: SellerAccount | null;
   isAdminLoggedIn: boolean;
+  studentAccounts?: StudentAccount[];
+  loggedInStudent?: StudentAccount | null;
   onContinueAsStudent: () => void;
+  onLoginStudentSuccess?: (account: StudentAccount) => void;
+  onRegisterStudent?: (newAccount: Omit<StudentAccount, 'id' | 'createdAt'>) => StudentAccount;
+  onLogoutStudent?: () => void;
   onLoginSellerSuccess: (account: SellerAccount) => void;
   onRegisterSeller: (newAccount: Omit<SellerAccount, 'id' | 'stallId' | 'status'>) => SellerAccount;
   onUpdateSellerPassword: (accountId: string, newPassword: string) => void;
@@ -27,7 +32,12 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   adminCredentials,
   loggedInSeller,
   isAdminLoggedIn,
+  studentAccounts = [],
+  loggedInStudent = null,
   onContinueAsStudent,
+  onLoginStudentSuccess,
+  onRegisterStudent,
+  onLogoutStudent,
   onLoginSellerSuccess,
   onRegisterSeller,
   onUpdateSellerPassword,
@@ -238,6 +248,88 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
     }
   };
 
+  // Student Login & Register State
+  const [studentAuthMode, setStudentAuthMode] = useState<'login' | 'register'>('login');
+  const [studentIdentifier, setStudentIdentifier] = useState('32230104');
+  const [studentPassword, setStudentPassword] = useState('password123');
+  const [showStudentPassword, setShowStudentPassword] = useState(false);
+  const [regStudentName, setRegStudentName] = useState('');
+  const [regStudentNim, setRegStudentNim] = useState('');
+  const [regStudentEmail, setRegStudentEmail] = useState('');
+  const [regStudentPassword, setRegStudentPassword] = useState('');
+
+  const handleStudentLogin = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const cleanId = studentIdentifier.trim().toLowerCase();
+    if (!cleanId) {
+      onShowToast('Masukkan NIM atau Email Mahasiswa.', true);
+      return;
+    }
+    const found = studentAccounts.find(
+      (s) =>
+        s.nim.toLowerCase() === cleanId ||
+        s.email.toLowerCase() === cleanId ||
+        s.name.toLowerCase() === cleanId
+    );
+
+    if (found) {
+      if (found.password && studentPassword && found.password !== studentPassword) {
+        onShowToast('Kata sandi akun mahasiswa tidak cocok.', true);
+        return;
+      }
+      if (onLoginStudentSuccess) {
+        onLoginStudentSuccess(found);
+      }
+    } else {
+      // Auto-create with entered NIM/Name
+      const newAcc: StudentAccount = {
+        id: `std-${cleanId.replace(/\D/g, '') || cleanId}`,
+        name: cleanId.includes('@') ? cleanId.split('@')[0] : `Mahasiswa ${cleanId}`,
+        nim: cleanId.replace(/\D/g, '') || cleanId,
+        email: cleanId.includes('@') ? cleanId : `${cleanId}@students.ibikkg.ac.id`,
+        password: studentPassword || 'password123',
+        createdAt: 'Baru saja',
+      };
+      if (onRegisterStudent) {
+        onRegisterStudent(newAcc);
+      } else if (onLoginStudentSuccess) {
+        onLoginStudentSuccess(newAcc);
+      }
+    }
+  };
+
+  const handleStudentRegister = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!regStudentName.trim() || !regStudentNim.trim()) {
+      onShowToast('Nama dan NIM wajib diisi.', true);
+      return;
+    }
+    const created: StudentAccount = {
+      id: `std-${regStudentNim.trim()}`,
+      name: regStudentName.trim(),
+      nim: regStudentNim.trim(),
+      email: regStudentEmail.trim() || `${regStudentNim.trim()}@students.ibikkg.ac.id`,
+      password: regStudentPassword || 'password123',
+      createdAt: 'Terdaftar Hari Ini',
+    };
+    if (onRegisterStudent) {
+      onRegisterStudent(created);
+    } else if (onLoginStudentSuccess) {
+      onLoginStudentSuccess(created);
+    }
+  };
+
+  const handleQuickStudentSelect = (targetNim: string) => {
+    const found = studentAccounts.find((s) => s.nim === targetNim);
+    if (found) {
+      setStudentIdentifier(found.nim);
+      setStudentPassword(found.password || 'password123');
+      if (onLoginStudentSuccess) {
+        onLoginStudentSuccess(found);
+      }
+    }
+  };
+
   // Seller Registration State
   const [regOwnerName, setRegOwnerName] = useState('');
   const [regStallName, setRegStallName] = useState('');
@@ -413,27 +505,15 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
             </div>
 
             {/* Visual Step List - clean unboxed typography */}
-            <div className="space-y-3 pt-2 border-t border-slate-100">
+            <div className="pt-2 border-t border-slate-100">
               <div className="flex items-start gap-3">
                 <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  1
+                  <span className="material-symbols-outlined text-[14px]">lock</span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-900">Mahasiswa Bebas Akses</span>
+                  <span className="text-xs font-bold text-slate-900">Mahasiswa &amp; Privasi Nota</span>
                   <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                    Langsung jelajah menu, cek stan buka/tutup, dan pesan tanpa kewajiban login.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
-                  2
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-slate-900">Mitra Stan Terverifikasi</span>
-                  <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">
-                    Diverifikasi Biro Sarpras untuk memastikan keabsahan stan & kesesuaian harga kasir.
+                    Masuk dengan Akun Mahasiswa (NIM) untuk memesan makanan, memantau antrean dapur, dan menjaga privasi nota pesanan Anda.
                   </p>
                 </div>
               </div>
@@ -507,29 +587,258 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
             </div>
           </div>
 
-          {/* ROLE 1: MAHASISWA */}
+          {/* ROLE 1: MAHASISWA (ISOLATED ORDER SYSTEM) */}
           {selectedRole === 'mahasiswa' && (
             <div className="flex flex-col gap-4 pt-1">
-              <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200/80 flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-emerald-800">
-                  <span className="material-symbols-outlined text-[20px] text-emerald-600">check_circle</span>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Akses Langsung Tanpa Login
-                  </h3>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Mahasiswa dapat langsung menjelajah katalog menu, memeriksa stan yang sedang buka di Hall D, dan membuat pesanan saat istirahat kuliah tanpa login.
-                </p>
-              </div>
+              {loggedInStudent ? (
+                /* Authenticated Student Card */
+                <div className="bg-emerald-50/80 rounded-2xl p-4 sm:p-5 border border-emerald-200 flex flex-col gap-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-xs shrink-0">
+                        <span className="material-symbols-outlined text-[24px]">school</span>
+                      </div>
+                      <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-emerald-800">
+                          Akun Mahasiswa Terverifikasi
+                        </span>
+                        <h3 className="text-base font-bold text-slate-900 leading-tight">
+                          {loggedInStudent.name}
+                        </h3>
+                        <span className="text-xs text-slate-600 font-mono">
+                          NIM: {loggedInStudent.nim} • {loggedInStudent.email}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
 
-              <button
-                type="button"
-                onClick={onContinueAsStudent}
-                className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-sm cursor-pointer active:scale-[0.99] transition-all"
-              >
-                <span>Buka Katalog &amp; Peta Kantin IBI KKG</span>
-                <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-              </button>
+                  <p className="text-xs text-emerald-950 bg-white/70 p-2.5 rounded-xl border border-emerald-200/60 leading-relaxed">
+                    Pesanan Anda terisolasi aman khusus di akun ini. Mahasiswa lain (Aldo, dll) tidak dapat melihat pesanan maupun nota digital Anda.
+                  </p>
+
+                  <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={onContinueAsStudent}
+                      className="w-full sm:flex-1 min-h-[44px] py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-all active:scale-[0.99]"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">receipt_long</span>
+                      <span>Buka Katalog &amp; Pesanan Saya</span>
+                    </button>
+                    {onLogoutStudent && (
+                      <button
+                        type="button"
+                        onClick={onLogoutStudent}
+                        className="w-full sm:w-auto min-h-[44px] py-2 px-3.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                      >
+                        <span className="material-symbols-outlined text-[16px]">logout</span>
+                        <span>Ganti Akun</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* Student Login & Register Form */
+                <div className="flex flex-col gap-4">
+                  {/* Quick One-Click Demo Accounts to immediately test isolation */}
+                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[14px] text-emerald-600">flash_on</span>
+                        Uji Coba Cepat (Pilih Akun):
+                      </span>
+                      <span className="text-[10px] text-slate-500">Tes pemisahan pesanan</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleQuickStudentSelect('32230104')}
+                        className="p-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200/90 hover:border-emerald-300 text-left cursor-pointer transition-all flex items-center gap-2 group"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                          B
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-slate-900 truncate">Benedict</span>
+                          <span className="text-[10px] text-slate-500 font-mono">NIM: 32230104</span>
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleQuickStudentSelect('32230105')}
+                        className="p-2 rounded-xl bg-white hover:bg-emerald-50 border border-slate-200/90 hover:border-emerald-300 text-left cursor-pointer transition-all flex items-center gap-2 group"
+                      >
+                        <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-800 flex items-center justify-center font-bold text-xs shrink-0 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                          A
+                        </div>
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-xs font-bold text-slate-900 truncate">Aldo Phiong</span>
+                          <span className="text-[10px] text-slate-500 font-mono">NIM: 32230105</span>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Mode Tabs: Login vs Register */}
+                  <div className="flex items-center gap-1 p-1 bg-slate-100 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setStudentAuthMode('login')}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        studentAuthMode === 'login'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Masuk Akun Mahasiswa
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setStudentAuthMode('register')}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                        studentAuthMode === 'register'
+                          ? 'bg-white text-slate-900 shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      Daftar Akun Baru
+                    </button>
+                  </div>
+
+                  {studentAuthMode === 'login' ? (
+                    <form onSubmit={handleStudentLogin} className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-slate-700">
+                          NIM / Email Mahasiswa:
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
+                            badge
+                          </span>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Contoh: 32230104 atau benedict"
+                            value={studentIdentifier}
+                            onChange={(e) => setStudentIdentifier(e.target.value)}
+                            className="w-full h-11 pl-9 pr-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-slate-700">
+                          Kata Sandi / PIN:
+                        </label>
+                        <div className="relative">
+                          <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
+                            lock
+                          </span>
+                          <input
+                            type={showStudentPassword ? 'text' : 'password'}
+                            required
+                            placeholder="Masukkan kata sandi"
+                            value={studentPassword}
+                            onChange={(e) => setStudentPassword(e.target.value)}
+                            className="w-full h-11 pl-9 pr-10 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowStudentPassword(!showStudentPassword)}
+                            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[18px]">
+                              {showStudentPassword ? 'visibility_off' : 'visibility'}
+                            </span>
+                          </button>
+                        </div>
+                        <span className="text-[11px] text-slate-500 mt-0.5">
+                          Kata sandi default akun demo: <code>password123</code>
+                        </span>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full min-h-[46px] mt-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-all active:scale-[0.99]"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">login</span>
+                        <span>Masuk ke Akun Mahasiswa</span>
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleStudentRegister} className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-slate-700">Nama Lengkap:</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: Benedict"
+                          value={regStudentName}
+                          onChange={(e) => setRegStudentName(e.target.value)}
+                          className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-bold text-slate-700">NIM Mahasiswa:</label>
+                          <input
+                            type="text"
+                            required
+                            placeholder="Contoh: 32230104"
+                            value={regStudentNim}
+                            onChange={(e) => setRegStudentNim(e.target.value)}
+                            className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-xs font-bold text-slate-700">Email Kampus:</label>
+                          <input
+                            type="email"
+                            placeholder="benedict@students.ibikkg.ac.id"
+                            value={regStudentEmail}
+                            onChange={(e) => setRegStudentEmail(e.target.value)}
+                            className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-xs font-bold text-slate-700">Kata Sandi / PIN:</label>
+                        <input
+                          type="password"
+                          required
+                          placeholder="Buat kata sandi akun"
+                          value={regStudentPassword}
+                          onChange={(e) => setRegStudentPassword(e.target.value)}
+                          className="w-full h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                        />
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full min-h-[46px] mt-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-all active:scale-[0.99]"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">person_add</span>
+                        <span>Daftar &amp; Masuk Otomatis</span>
+                      </button>
+                    </form>
+                  )}
+
+                  <div className="pt-2 border-t border-slate-100 flex items-center justify-between">
+                    <span className="text-[11px] text-slate-500">Hanya ingin lihat-lihat menu?</span>
+                    <button
+                      type="button"
+                      onClick={onContinueAsStudent}
+                      className="text-xs font-bold text-emerald-700 hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer"
+                    >
+                      <span>Lanjut Tanpa Login</span>
+                      <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

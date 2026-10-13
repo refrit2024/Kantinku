@@ -19,6 +19,7 @@ import {
   isValidStudentNim,
   PRICE_BOUNDS,
 } from '../utils/securityGuard';
+import { StudentAccount } from '../data/kantinData';
 
 interface DetailStanScreenProps {
   stall: Stall;
@@ -42,6 +43,7 @@ interface DetailStanScreenProps {
   ) => void;
   onBackToKatalog: () => void;
   onOpenReportModal: () => void;
+  loggedInStudent?: StudentAccount | null;
   onShowToast?: (message: string, isError?: boolean) => void;
 }
 
@@ -54,6 +56,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   onAddReview,
   onBackToKatalog,
   onOpenReportModal,
+  loggedInStudent = null,
   onShowToast,
 }) => {
   const stall = normalizeStallLocation(rawStall);
@@ -67,6 +70,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const [cartQuantities, setCartQuantities] = useState<Record<string, number>>({});
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [studentName, setStudentName] = useState(() => {
+    if (loggedInStudent?.name) return loggedInStudent.name;
     try {
       return localStorage.getItem('kantinku_student_name_v1') || '';
     } catch {
@@ -74,12 +78,21 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     }
   });
   const [studentNim, setStudentNim] = useState(() => {
+    if (loggedInStudent?.nim) return loggedInStudent.nim;
     try {
       return localStorage.getItem('kantinku_student_nim_v1') || '';
     } catch {
       return '';
     }
   });
+
+  useEffect(() => {
+    if (loggedInStudent) {
+      setStudentName(loggedInStudent.name);
+      setStudentNim(loggedInStudent.nim);
+    }
+  }, [loggedInStudent]);
+
   const [pickupTime, setPickupTime] = useState('Istirahat Siang (12.00 WIB)');
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
@@ -211,6 +224,8 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       stallId: stall.id,
       stallName: stall.name,
       stallLocation: stall.fullLocation,
+      studentId: loggedInStudent ? loggedInStudent.id : undefined,
+      studentEmail: loggedInStudent ? loggedInStudent.email : undefined,
       studentName: studentName.trim(),
       studentNim: studentNim.trim(),
       pickupTime,
@@ -653,8 +668,8 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 </table>
               </div>
             ) : (
-              /* 5. SHOPEEFOOD / GOJEK GRADE 2-COLUMN MENU CARD GRID */
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              /* 5. SHOPEEFOOD / GOJEK GRADE 2-COLUMN MENU CARD GRID - TIDY & SPACIOUS */
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {visibleMenu.map((item) => {
                   const isAvailable = item.status === 'ready';
                   const inCartQty = cartQuantities[item.id] || 0;
@@ -662,13 +677,30 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   return (
                     <article
                       key={item.id}
-                      className={`group bg-white rounded-2xl p-3.5 shadow-xs hover:shadow-md border border-slate-200/90 flex gap-3.5 min-w-0 transition-all duration-200 ${
-                        !isAvailable ? 'opacity-70 bg-slate-50' : 'hover:border-emerald-300'
+                      className={`group bg-white rounded-2xl p-4 shadow-xs hover:shadow-md border border-slate-200/90 flex flex-col justify-between transition-all duration-200 ${
+                        !isAvailable ? 'opacity-75 bg-slate-50/70' : 'hover:border-emerald-300'
                       }`}
                     >
-                      {/* Left: Text & Price */}
-                      <div className="flex flex-col justify-between flex-grow min-w-0">
-                        <div>
+                      {/* Top Row: Information & Food Thumbnail */}
+                      <div className="flex gap-3.5 items-start justify-between">
+                        <div className="flex flex-col flex-1 min-w-0 pr-1">
+                          <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                              {item.category}
+                            </span>
+                            {isAvailable ? (
+                              <span className="text-[10px] font-semibold text-emerald-700 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                Tersedia
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-semibold text-rose-600 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                                Habis
+                              </span>
+                            )}
+                          </div>
+
                           <h4
                             className={`text-sm sm:text-base font-bold text-slate-900 leading-snug line-clamp-2 ${
                               !isAvailable ? 'line-through text-slate-400' : ''
@@ -676,81 +708,80 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           >
                             {item.name}
                           </h4>
-                          <p className="text-xs text-slate-500 line-clamp-2 mt-1">
+                          <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
                             {item.description}
                           </p>
                         </div>
 
-                        <div className="flex items-end justify-between gap-2 pt-2 mt-2 border-t border-slate-100">
-                          <div className="flex flex-col">
-                            <span
-                              className={`text-base sm:text-lg font-black ${
-                                isAvailable ? 'text-emerald-700' : 'text-slate-400'
-                              }`}
-                            >
-                              Rp {item.price.toLocaleString('id-ID')}
-                            </span>
-                            <span className="text-[10px] text-slate-400">
-                              Update: {item.lastUpdated}
-                            </span>
-                          </div>
-
-                          {/* Stepper / Add Button */}
-                          {isAvailable ? (
-                            inCartQty > 0 ? (
-                              <div className="flex items-center gap-1 bg-emerald-50 text-emerald-900 p-1 rounded-xl border border-emerald-300 shadow-xs">
-                                <button
-                                  type="button"
-                                  aria-label={`Kurangi ${item.name}`}
-                                  onClick={() => updateCartQty(item, -1)}
-                                  className="w-8 h-8 rounded-lg bg-white text-emerald-800 font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs"
-                                >
-                                  -
-                                </button>
-                                <span className="font-bold text-xs min-w-[20px] text-center">
-                                  {inCartQty}
-                                </span>
-                                <button
-                                  type="button"
-                                  aria-label={`Tambah ${item.name}`}
-                                  onClick={() => updateCartQty(item, 1)}
-                                  className="w-8 h-8 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs"
-                                >
-                                  +
-                                </button>
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                onClick={() => updateCartQty(item, 1)}
-                                className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1 shadow-xs cursor-pointer active:scale-95 transition-all"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">add</span>
-                                <span>Tambah</span>
-                              </button>
-                            )
-                          ) : (
-                            <span className="text-xs font-bold text-slate-400 px-2.5 py-1 rounded-lg bg-slate-200">
+                        {/* Square Food Thumbnail */}
+                        <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative border border-slate-200/60 shadow-2xs">
+                          <img
+                            src={item.imageCatalog}
+                            alt={item.altCatalog}
+                            referrerPolicy="no-referrer"
+                            className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
+                              !isAvailable ? 'grayscale' : ''
+                            }`}
+                          />
+                          {!isAvailable && (
+                            <div className="absolute inset-0 bg-slate-950/60 flex items-center justify-center text-white text-[10px] font-bold uppercase tracking-wider">
                               Habis
-                            </span>
+                            </div>
                           )}
                         </div>
                       </div>
 
-                      {/* Right: Square Food Thumbnail */}
-                      <div className="w-22 h-22 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative">
-                        <img
-                          src={item.imageCatalog}
-                          alt={item.altCatalog}
-                          referrerPolicy="no-referrer"
-                          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 ${
-                            !isAvailable ? 'grayscale' : ''
-                          }`}
-                        />
-                        {!isAvailable && (
-                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center text-white text-[10px] font-bold uppercase">
+                      {/* Bottom Row: Official Price on left, Stepper/Add Button on right */}
+                      <div className="flex items-center justify-between gap-3 pt-3 mt-3 border-t border-slate-100">
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[10px] text-slate-400 font-medium">Harga Resmi</span>
+                          <span
+                            className={`text-base sm:text-lg font-black tracking-tight tabular-nums ${
+                              isAvailable ? 'text-emerald-700' : 'text-slate-400'
+                            }`}
+                          >
+                            Rp {item.price.toLocaleString('id-ID')}
+                          </span>
+                        </div>
+
+                        {/* Stepper / Add Button */}
+                        {isAvailable ? (
+                          inCartQty > 0 ? (
+                            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 p-1 rounded-xl border border-emerald-300 shadow-2xs">
+                              <button
+                                type="button"
+                                aria-label={`Kurangi ${item.name}`}
+                                onClick={() => updateCartQty(item, -1)}
+                                className="w-8 h-8 rounded-lg bg-white hover:bg-slate-50 text-emerald-800 font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
+                              >
+                                -
+                              </button>
+                              <span className="font-bold text-xs min-w-[22px] text-center tabular-nums">
+                                {inCartQty}
+                              </span>
+                              <button
+                                type="button"
+                                aria-label={`Tambah ${item.name}`}
+                                onClick={() => updateCartQty(item, 1)}
+                                className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
+                              >
+                                +
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => updateCartQty(item, 1)}
+                              className="min-h-[38px] px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">add</span>
+                              <span>Tambah</span>
+                            </button>
+                          )
+                        ) : (
+                          <span className="text-xs font-bold text-slate-400 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200">
                             Habis
-                          </div>
+                          </span>
                         )}
                       </div>
                     </article>
@@ -1033,6 +1064,20 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             </div>
 
             {/* Student Info */}
+            {loggedInStudent && (
+              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-emerald-700">verified_user</span>
+                  <span className="text-emerald-950">
+                    Pesanan terhubung ke akun <strong>{loggedInStudent.name}</strong> ({loggedInStudent.nim})
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
+                  Terotentikasi
+                </span>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-slate-700">

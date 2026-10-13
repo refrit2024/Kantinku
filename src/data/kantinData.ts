@@ -61,6 +61,8 @@ export interface OrderTransaction {
   stallId: string;
   stallName: string;
   stallLocation: string;
+  studentId?: string;
+  studentEmail?: string;
   studentName: string;
   studentNim: string;
   pickupTime: string;
@@ -201,6 +203,43 @@ export const INITIAL_ADMIN_CREDENTIALS: AdminCredentials = {
   email: 'sarpras@ibikkg.ac.id',
   password: 'admin123',
 };
+
+export interface StudentAccount {
+  id: string;
+  name: string;
+  nim: string;
+  email: string;
+  password?: string;
+  avatarUrl?: string;
+  createdAt: string;
+}
+
+export const INITIAL_STUDENT_ACCOUNTS: StudentAccount[] = [
+  {
+    id: 'std-32230104',
+    name: 'Benedict',
+    nim: '32230104',
+    email: 'benedict@students.ibikkg.ac.id',
+    password: 'password123',
+    createdAt: 'Semester Ganjil 2026',
+  },
+  {
+    id: 'std-32230105',
+    name: 'Aldo Phiong',
+    nim: '32230105',
+    email: 'aldo@students.ibikkg.ac.id',
+    password: 'password123',
+    createdAt: 'Semester Ganjil 2026',
+  },
+  {
+    id: 'std-32230106',
+    name: 'Clarissa Tan',
+    nim: '32230106',
+    email: 'clarissa@students.ibikkg.ac.id',
+    password: 'password123',
+    createdAt: 'Semester Ganjil 2026',
+  },
+];
 
 export function normalizeStallLocation<
   T extends {
