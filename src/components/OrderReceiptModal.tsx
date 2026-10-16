@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { INITIAL_STALLS, OrderTransaction, Stall } from '../data/kantinData';
 import { generateReceiptSecurityCode } from '../utils/securityGuard';
-import { LiveGpsTrackerMap } from './LiveGpsTrackerMap';
 
 interface OrderReceiptModalProps {
   order: OrderTransaction;
@@ -19,7 +18,6 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isDownloading, setIsDownloading] = useState(false);
-  const [showLiveRouteMap, setShowLiveRouteMap] = useState(true);
 
   const matchedStall =
     stall ||
@@ -39,41 +37,54 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
     totalAmount,
   });
 
+  const isAutoPaid = order.paymentStatus === 'paid_gateway';
+
   const statusMeta =
     order.status === 'waiting_payment_verification'
       ? {
-          label: 'MENUNGGU VERIFIKASI PENJUAL',
+          label: isAutoPaid ? 'LUNAS • MENUNGGU DAPUR MEMPROSES' : 'MENUNGGU VERIFIKASI TRANSFER PENJUAL',
           badgeClass: 'bg-tertiary-fixed text-tertiary',
-          paidText: 'Menunggu Konfirmasi Pembayaran',
+          paidText: isAutoPaid ? 'Lunas Otomatis (Payment Gateway)' : 'Menunggu Konfirmasi Pembayaran',
         }
       : order.status === 'cooking'
       ? {
-          label: 'SEDANG DISIAPKAN DI DAPUR',
+          label:
+            order.fulfillmentType === 'dine_in'
+              ? `SEDANG DIMASAK / DISIAPKAN KE MEJA ${order.tableNumber || ''}`.trim()
+              : 'SEDANG DISIAPKAN DI DAPUR',
           badgeClass: 'bg-primary-fixed text-on-primary-fixed',
-          paidText:
-            order.paymentMethod === 'tunai'
-              ? 'Bayar Tunai Saat Ambil'
-              : 'Lunas Terverifikasi',
+          paidText: isAutoPaid
+            ? 'Lunas Otomatis (Payment Gateway)'
+            : order.paymentMethod === 'tunai'
+            ? 'Bayar Tunai Saat Ambil'
+            : 'Lunas Terverifikasi',
         }
       : order.status === 'ready_pickup'
       ? {
-          label: 'SIAP DIAMBIL DI STAN',
+          label:
+            order.fulfillmentType === 'dine_in'
+              ? `DIANTAR KE MEJA ${order.tableNumber || ''}`.trim()
+              : 'SIAP DIAMBIL DI STAN',
           badgeClass: 'bg-secondary text-on-secondary',
-          paidText:
-            order.paymentMethod === 'tunai'
-              ? 'Bayar Tunai Saat Ambil'
-              : 'Lunas Terverifikasi',
+          paidText: isAutoPaid
+            ? 'Lunas Otomatis (Payment Gateway)'
+            : order.paymentMethod === 'tunai'
+            ? 'Bayar Tunai di Tempat'
+            : 'Lunas Terverifikasi',
         }
       : order.status === 'completed'
       ? {
-          label: 'PESANAN SELESAI DIAMBIL',
+          label:
+            order.fulfillmentType === 'dine_in'
+              ? 'PESANAN SELESAI DISAJIKAN'
+              : 'PESANAN SELESAI DIAMBIL',
           badgeClass: 'bg-secondary-container text-on-secondary-container',
-          paidText: 'Lunas & Selesai',
+          paidText: isAutoPaid ? 'Lunas Otomatis (Payment Gateway)' : 'Lunas & Selesai',
         }
       : {
           label: 'PESANAN DIBATALKAN / DITOLAK',
           badgeClass: 'bg-error-container text-on-error-container',
-          paidText: 'Dibatalkan',
+          paidText: isAutoPaid ? 'Dana Dikembalikan (Refund Gateway)' : 'Dibatalkan',
         };
 
   useEffect(() => {
@@ -299,7 +310,11 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
       `Kode Order: ${order.id} (Token: ${securityToken})`,
       `Stan: ${order.stallName} (${order.stallLocation})`,
       `Pemesan: ${order.studentName} (NIM: ${order.studentNim})`,
-      `Jam Ambil: ${order.pickupTime}`,
+      `Layanan: ${
+        order.fulfillmentType === 'dine_in'
+          ? `Makan di Tempat (Meja: ${order.tableNumber || '-'})`
+          : `Ambil di Stan (${order.pickupTime})`
+      }`,
       `Rincian Menu:`,
       itemLines,
       `Total Bayar: Rp ${totalAmount.toLocaleString('id-ID')} (${order.paymentProviderLabel})`,
@@ -342,33 +357,57 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
 
         {/* Scrollable Receipt Body */}
         <div className="p-4 sm:p-5 overflow-y-auto flex flex-col gap-4">
-          {/* LIVE MAP & ROUTE TRACKER AT TOP OF ORDER RECEIPT */}
+          {/* Petunjuk Pengambilan / Dine-In (Tanpa Peta Rumit) */}
           {order.status !== 'rejected' && (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-emerald-700 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-                  <span>Peta Rute Ambil Pesanan</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setShowLiveRouteMap((prev) => !prev)}
-                  className="text-xs font-bold text-emerald-600 hover:text-emerald-700 hover:underline cursor-pointer"
-                >
-                  {showLiveRouteMap ? 'Sembunyikan Peta' : 'Buka Peta Rute'}
-                </button>
+            order.fulfillmentType === 'dine_in' ? (
+              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <span className="material-symbols-outlined text-[20px]">table_restaurant</span>
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-amber-950">Makan di Tempat (Dine-In)</span>
+                    <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-amber-200 text-amber-900 border border-amber-300">
+                      Meja {order.tableNumber || '-'}
+                    </span>
+                    {order.paymentMethod === 'tunai' && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-300 text-slate-950">
+                        Bayar Tunai di Meja
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-amber-800 leading-relaxed mt-0.5">
+                    {order.paymentMethod === 'tunai'
+                      ? `Silakan duduk santai di meja Anda. Pesanan langsung dimasak stan. Siapkan uang pas Rp ${totalAmount.toLocaleString('id-ID')} saat staf menyajikan makanan ke meja.`
+                      : 'Silakan duduk santai di meja Anda. Pesanan sedang dimasak dan akan diantar langsung ke meja saat matang.'}
+                  </p>
+                </div>
               </div>
-              {showLiveRouteMap && (
-                <LiveGpsTrackerMap
-                  stalls={[matchedStall]}
-                  selectedStallId={matchedStall.id}
-                  order={order}
-                  mode="order-tracking"
-                  compact={true}
-                  onShowToast={onShowToast}
-                />
-              )}
-            </div>
+            ) : (
+              <div className="p-3.5 rounded-2xl bg-emerald-50/90 border border-emerald-200/90 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-xs font-bold text-emerald-950">Ambil Sendiri di Stan (Self-Pickup)</span>
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      {order.pickupTime || 'Segera'}
+                    </span>
+                    {order.paymentMethod === 'tunai' && (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                        Bayar Tunai di Kasir
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] text-emerald-800 leading-relaxed mt-0.5">
+                    {order.paymentMethod === 'tunai'
+                      ? `Pesanan langsung disiapkan oleh stan. Ambil di ${order.stallLocation || matchedStall.fullLocation} dan siapkan uang pas Rp ${totalAmount.toLocaleString('id-ID')} saat mengambil di kasir.`
+                      : `Ambil pesanan di ${order.stallLocation || matchedStall.fullLocation} saat status berubah menjadi Siap Diambil.`}
+                  </p>
+                </div>
+              </div>
+            )
           )}
 
           {/* Ticket Number & Status Highlight */}
@@ -406,10 +445,35 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
                 {order.studentName} (NIM: {order.studentNim})
               </strong>
             </div>
-            <div className="flex justify-between gap-2">
-              <span className="text-slate-500">Jadwal Ambil:</span>
-              <strong className="text-emerald-700 text-right">{order.pickupTime}</strong>
+            <div className="flex justify-between items-center gap-2">
+              <span className="text-slate-500">Layanan:</span>
+              <div className="text-right">
+                {order.fulfillmentType === 'dine_in' ? (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-lg">
+                    <span className="material-symbols-outlined text-[13px]">table_restaurant</span>
+                    <span>Makan di Tempat • Meja {order.tableNumber || '-'}</span>
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-900 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-lg">
+                    <span className="material-symbols-outlined text-[13px]">shopping_bag</span>
+                    <span>Ambil Sendiri di Stan</span>
+                  </span>
+                )}
+              </div>
             </div>
+            {order.fulfillmentType === 'dine_in' ? (
+              <div className="flex justify-between gap-2">
+                <span className="text-slate-500">Pengantaran:</span>
+                <strong className="text-amber-700 text-right">
+                  Diantar ke Meja {order.tableNumber || '-'} saat matang
+                </strong>
+              </div>
+            ) : (
+              <div className="flex justify-between gap-2">
+                <span className="text-slate-500">Jadwal Ambil:</span>
+                <strong className="text-emerald-700 text-right">{order.pickupTime}</strong>
+              </div>
+            )}
             <div className="flex justify-between gap-2">
               <span className="text-slate-500">Metode Bayar:</span>
               <strong className="text-slate-900 text-right">

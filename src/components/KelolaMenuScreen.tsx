@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import {
   getPublicStallUrl,
@@ -27,6 +27,7 @@ export type SellerSubTab =
   | 'pesanan'
   | 'menu'
   | 'pembayaran'
+  | 'laporan'
   | 'profil'
   | 'ulasan'
   | 'pengaturan';
@@ -123,6 +124,10 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   const [stallQrDataUrl, setStallQrDataUrl] = useState<string>('');
   const [qrisPreviewDataUrl, setQrisPreviewDataUrl] = useState<string>('');
 
+  // Laporan Penjualan & Ekspor Struk State
+  const [reportPeriod, setReportPeriod] = useState<'today' | '7days' | 'month' | 'all'>('today');
+  const [isPrintRecapOpen, setIsPrintRecapOpen] = useState(false);
+
   useEffect(() => {
     let mounted = true;
     const stallUrl = getPublicStallUrl(stall.id);
@@ -196,6 +201,69 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   const totalRevenueToday = stallOrders
     .filter((o) => o.status !== 'rejected')
     .reduce((sum, o) => sum + (o.subtotalAmount ?? o.totalAmount), 0);
+
+  const filteredReportOrders = useMemo(() => {
+    if (reportPeriod === 'today') {
+      return stallOrders.filter(
+        (o) =>
+          o.createdAt.toLowerCase().includes('hari ini') ||
+          o.createdAt.toLowerCase().includes('baru saja')
+      );
+    }
+    if (reportPeriod === '7days') {
+      return stallOrders.filter(
+        (o) =>
+          o.createdAt.toLowerCase().includes('hari ini') ||
+          o.createdAt.toLowerCase().includes('kemarin') ||
+          o.createdAt.toLowerCase().includes('baru saja')
+      );
+    }
+    return stallOrders;
+  }, [stallOrders, reportPeriod]);
+
+  const reportMetrics = useMemo(() => {
+    const completed = filteredReportOrders.filter(
+      (o) => o.status === 'completed' || o.status === 'ready_pickup' || o.status === 'cooking'
+    );
+    const rejected = filteredReportOrders.filter((o) => o.status === 'rejected');
+    const totalOmset = completed.reduce(
+      (sum, o) => sum + (o.subtotalAmount ?? o.totalAmount),
+      0
+    );
+    const gatewayOmset = completed
+      .filter((o) => o.paymentStatus === 'paid_gateway')
+      .reduce((sum, o) => sum + (o.subtotalAmount ?? o.totalAmount), 0);
+    const cashOmset = completed
+      .filter((o) => o.paymentStatus !== 'paid_gateway')
+      .reduce((sum, o) => sum + (o.subtotalAmount ?? o.totalAmount), 0);
+    const dineInCount = completed.filter((o) => o.fulfillmentType === 'dine_in').length;
+    const pickupCount = completed.filter((o) => o.fulfillmentType === 'pickup').length;
+
+    const itemMap: Record<string, { name: string; quantity: number; revenue: number }> = {};
+    completed.forEach((ord) => {
+      ord.items.forEach((item) => {
+        if (!itemMap[item.name]) {
+          itemMap[item.name] = { name: item.name, quantity: 0, revenue: 0 };
+        }
+        itemMap[item.name].quantity += item.quantity;
+        itemMap[item.name].revenue += item.price * item.quantity;
+      });
+    });
+    const bestSellers = Object.values(itemMap).sort((a, b) => b.quantity - a.quantity);
+    const avgBasket = completed.length > 0 ? Math.round(totalOmset / completed.length) : 0;
+
+    return {
+      completedCount: completed.length,
+      rejectedCount: rejected.length,
+      totalOmset,
+      gatewayOmset,
+      cashOmset,
+      dineInCount,
+      pickupCount,
+      bestSellers,
+      avgBasket,
+    };
+  }, [filteredReportOrders]);
 
   // Real-Time Sound Alert ("Ting-Tong!") & Live Order Banner State for Seller
   const [soundAlertEnabled, setSoundAlertEnabled] = useState<boolean>(true);
@@ -306,8 +374,14 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
         const menuSummary = latestOrder.items
           .map((i) => `${i.quantity} ${i.name}`)
           .join(', ');
+        const fulfillmentText =
+          latestOrder.fulfillmentType === 'dine_in'
+            ? `makan di tempat meja ${latestOrder.tableNumber || 'kantin'}`
+            : 'ambil di stan';
+        const isPaidGateway = latestOrder.paymentStatus === 'paid_gateway';
+        const payStatusVoice = isPaidGateway ? 'sudah lunas otomatis' : 'menunggu konfirmasi';
         playTingTongSound(
-          `Pesanan baru masuk di ${stall.name}, atas nama ${latestOrder.studentName}, ${menuSummary}`
+          `Pesanan baru masuk ${payStatusVoice} di ${stall.name}, ${fulfillmentText}, atas nama ${latestOrder.studentName}, ${menuSummary}`
         );
       }
     }
@@ -367,6 +441,40 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
         `Berhasil! Saldo Rp ${newRecord.amount.toLocaleString('id-ID')} (Bebas Potongan Rp 0) telah ditransfer ke ${destLabel}!`
       );
     }, 900);
+  };
+
+  const handleCopyRecapWhatsApp = () => {
+    const periodLabel =
+      reportPeriod === 'today'
+        ? 'Hari Ini'
+        : reportPeriod === '7days'
+        ? '7 Hari Terakhir'
+        : reportPeriod === 'month'
+        ? 'Bulan Ini'
+        : 'Semua Riwayat';
+    const menuLines = reportMetrics.bestSellers
+      .map((m) => `• ${m.quantity}x ${m.name} = Rp ${m.revenue.toLocaleString('id-ID')}`)
+      .join('\n');
+    const text =
+      `*📊 REKAP PENJUALAN - ${stall.name.toUpperCase()}*\n` +
+      `📅 Periode: ${periodLabel}\n` +
+      `⏰ Waktu Rekap: ${new Date().toLocaleTimeString('id-ID')} WIB\n\n` +
+      `*💰 RINGKASAN OMSET:*\n` +
+      `• Total Penjualan: Rp ${reportMetrics.totalOmset.toLocaleString('id-ID')}\n` +
+      `• Gateway (QRIS/VA): Rp ${reportMetrics.gatewayOmset.toLocaleString('id-ID')}\n` +
+      `• Kasir Tunai: Rp ${reportMetrics.cashOmset.toLocaleString('id-ID')}\n` +
+      `• Total Pesanan: ${reportMetrics.completedCount} berhasil (${reportMetrics.rejectedCount} batal)\n` +
+      `• Makan di Meja: ${reportMetrics.dineInCount} | Ambil Stan: ${reportMetrics.pickupCount}\n\n` +
+      `*🍽️ MENU TERJUAL:*\n` +
+      `${menuLines || 'Belum ada data menu terjual'}\n\n` +
+      `_Sistem Operasi KantinKu IBI KKG & Multi-UMKM_`;
+
+    if (navigator?.clipboard?.writeText) {
+      navigator.clipboard.writeText(text);
+      onShowToast('✓ Ringkasan rekap berhasil disalin ke clipboard! Siap kirim ke WhatsApp.');
+    } else {
+      onShowToast('Format teks telah disiapkan.');
+    }
   };
 
   const handleQrisImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -436,6 +544,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
   const [profHours, setProfHours] = useState(stall.hours);
   const [profWhatsapp, setProfWhatsapp] = useState(stall.whatsapp);
   const [profQris, setProfQris] = useState(true);
+  const [profDineIn, setProfDineIn] = useState(stall.dineInAvailable !== false);
   const [profHeroImg, setProfHeroImg] = useState(stall.heroImage);
 
   // Reply state for reviews
@@ -566,6 +675,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
       paymentMethods: profQris
         ? ['QRIS tersedia (Semua Bank & E-Wallet)', 'Tunai di Kasir']
         : ['Tunai di Kasir'],
+      dineInAvailable: profDineIn,
       lastUpdatedDate: '8 Oktober 2026',
       lastUpdatedTime: 'Baru saja',
     });
@@ -588,8 +698,13 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               { id: 'menu', label: 'Menu & Harga', icon: 'restaurant_menu' },
               {
                 id: 'pembayaran',
-                label: 'Rekening, DANA & QRIS',
+                label: 'Rekening & Dompet',
                 icon: 'account_balance_wallet',
+              },
+              {
+                id: 'laporan',
+                label: 'Rekap & Laporan',
+                icon: 'monitoring',
               },
               { id: 'profil', label: 'Profil Kantin', icon: 'store' },
               { id: 'ulasan', label: `Ulasan (${stall.reviews.length})`, icon: 'reviews' },
@@ -679,9 +794,16 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               </div>
               <div className="flex flex-col gap-1 min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-2.5 py-0.5 rounded-md bg-on-secondary text-secondary font-label-sm text-xs font-extrabold uppercase tracking-wider">
-                    TING-TONG! PESANAN BARU MASUK
-                  </span>
+                  {liveOrderAlert.paymentStatus === 'paid_gateway' ? (
+                    <span className="px-2.5 py-0.5 rounded-md bg-emerald-400 text-slate-950 font-label-sm text-xs font-black uppercase tracking-wider flex items-center gap-1 shadow-xs">
+                      <span className="material-symbols-outlined text-[14px]">verified</span>
+                      <span>TING-TONG! PESANAN LUNAS OTOMATIS (GATEWAY)</span>
+                    </span>
+                  ) : (
+                    <span className="px-2.5 py-0.5 rounded-md bg-on-secondary text-secondary font-label-sm text-xs font-extrabold uppercase tracking-wider">
+                      TING-TONG! PESANAN BARU MASUK
+                    </span>
+                  )}
                   <span className="font-mono text-xs font-bold text-on-secondary/90">
                     {liveOrderAlert.id} • {liveOrderAlert.createdAt}
                   </span>
@@ -699,7 +821,16 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   </span>
                   <span>•</span>
                   <span>
-                    <strong>Ambil:</strong> {liveOrderAlert.pickupTime}
+                    {liveOrderAlert.fulfillmentType === 'dine_in' ? (
+                      <span className="bg-amber-300 text-slate-950 px-2 py-0.5 rounded font-black inline-flex items-center gap-1 shadow-2xs">
+                        <span className="material-symbols-outlined text-[14px]">table_restaurant</span>
+                        <span>ANTAR KE MEJA: {liveOrderAlert.tableNumber || '-'}</span>
+                      </span>
+                    ) : (
+                      <span>
+                        <strong>Ambil:</strong> {liveOrderAlert.pickupTime}
+                      </span>
+                    )}
                   </span>
                   <span>•</span>
                   <span>
@@ -1097,6 +1228,15 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   <span>+ Tambah Menu Baru</span>
                 </button>
 
+                <button
+                  type="button"
+                  onClick={() => setSellerSubTab('laporan')}
+                  className="w-full min-h-[44px] bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-xs font-bold rounded-xl flex items-center justify-center gap-2 border border-outline-variant/30 shadow-xs transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-primary text-[18px]">monitoring</span>
+                  <span>Lihat Rekap Penjualan &amp; Cetak Struk</span>
+                </button>
+
                 <div className="bg-surface-container-lowest p-3.5 rounded-xl border-2 border-primary/30 shadow-xs flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     {stallQrDataUrl && (
@@ -1373,7 +1513,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     Antrean Pesanan &amp; Pembayaran Mahasiswa
                   </h3>
                   <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    Cek saldo masuk di aplikasi DANA / M-Banking / QRIS Anda, lalu ubah status pesanan di bawah agar mahasiswa mendapat pemberitahuan otomatis.
+                    Pesanan via <strong>Payment Gateway</strong> sudah <strong>LUNAS OTOMATIS</strong> diverifikasi sistem sehingga stan bisa langsung fokus memasak/menyiapkan. Untuk metode <strong>Transfer Manual / Tunai</strong>, pastikan mutasi atau uang fisik sudah diterima.
                   </p>
                 </div>
                 <span className="font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md font-semibold">
@@ -1409,6 +1549,17 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                             <span className="text-[11px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface font-semibold">
                               NIM: {ord.studentNim}
                             </span>
+                            {ord.fulfillmentType === 'dine_in' ? (
+                              <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black flex items-center gap-1 shadow-2xs">
+                                <span className="material-symbols-outlined text-[13px]">table_restaurant</span>
+                                <span>DINE-IN: MEJA {ord.tableNumber || '-'}</span>
+                              </span>
+                            ) : (
+                              <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 font-bold flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px]">shopping_bag</span>
+                                <span>AMBIL DI STAN</span>
+                              </span>
+                            )}
                             <span
                               title="Token Verifikasi Nota Anti-Palsu (Cocokkan dengan struk mahasiswa)"
                               className="text-[11px] px-2 py-0.5 rounded bg-secondary-container/70 text-on-secondary-container font-mono font-bold flex items-center gap-1"
@@ -1427,8 +1578,19 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                               • {ord.createdAt}
                             </span>
                           </div>
-                          <div className="text-[12px] text-primary font-semibold mt-0.5">
-                            Kode Order: <span className="font-mono">{ord.id}</span> • Jadwal Ambil: {ord.pickupTime}
+                          <div className="text-[12px] text-primary font-semibold mt-0.5 flex items-center gap-2 flex-wrap">
+                            <span>
+                              Kode Order: <span className="font-mono">{ord.id}</span>
+                            </span>
+                            {ord.fulfillmentType === 'dine_in' ? (
+                              <span className="text-amber-800 font-bold bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded">
+                                🍽️ Sajikan di Piring / Meja: {ord.tableNumber || '-'}
+                              </span>
+                            ) : (
+                              <span className="text-slate-600">
+                                🛍️ Jadwal Ambil di Stan: {ord.pickupTime}
+                              </span>
+                            )}
                           </div>
                         </div>
 
@@ -1448,9 +1610,13 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           {ord.status === 'waiting_payment_verification'
                             ? 'Pesanan Baru (Cek Bayar)'
                             : ord.status === 'cooking'
-                            ? 'Sedang Disiapkan / Dibungkus'
+                            ? ord.fulfillmentType === 'dine_in'
+                              ? 'Sedang Dimasak / Disiapkan'
+                              : 'Sedang Disiapkan / Dibungkus'
                             : ord.status === 'ready_pickup'
-                            ? 'Siap Diambil Mahasiswa'
+                            ? ord.fulfillmentType === 'dine_in'
+                              ? `Diantar ke Meja ${ord.tableNumber || ''}`
+                              : 'Siap Diambil Mahasiswa'
                             : ord.status === 'completed'
                             ? 'Selesai'
                             : 'Ditolak'}
@@ -1485,9 +1651,18 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                               <span className="font-label-sm text-on-surface font-bold">
                                 {ord.paymentProviderLabel}
                               </span>
-                              {ord.paymentStatus === 'paid_gateway' && (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-secondary text-on-secondary font-bold">
-                                  LUNAS OTOMATIS (PAYMENT GATEWAY)
+                              {ord.paymentStatus === 'paid_gateway' ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-600 text-white font-bold inline-flex items-center gap-1 shadow-2xs">
+                                  <span className="material-symbols-outlined text-[13px]">verified</span>
+                                  <span>LUNAS OTOMATIS (GATEWAY) • TIDAK PERLU CEK MUTASI</span>
+                                </span>
+                              ) : ord.paymentStatus === 'cash_on_pickup' ? (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold">
+                                  💵 BAYAR TUNAI DI KASIR
+                                </span>
+                              ) : (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-bold">
+                                  🏦 TRANSFER MANUAL (CEK REKENING PRIBADI)
                                 </span>
                               )}
                             </div>
@@ -1516,12 +1691,20 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => onUpdateOrderStatus(ord.id, 'ready_pickup')}
-                              className="min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
+                              className={`min-h-[44px] px-4 py-2 rounded-lg font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] ${
+                                ord.fulfillmentType === 'dine_in'
+                                  ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold'
+                                  : 'bg-secondary text-on-secondary'
+                              }`}
                             >
                               <span className="material-symbols-outlined text-[18px]">
-                                bolt
+                                {ord.fulfillmentType === 'dine_in' ? 'table_restaurant' : 'bolt'}
                               </span>
-                              <span>Langsung Siap Diambil (Menu Etalase / Matang)</span>
+                              <span>
+                                {ord.fulfillmentType === 'dine_in'
+                                  ? `Langsung Sajikan ke Meja ${ord.tableNumber || ''} (Menu Ready)`.trim()
+                                  : 'Langsung Siap Diambil (Menu Etalase / Matang)'}
+                              </span>
                             </button>
                             <button
                               type="button"
@@ -1531,14 +1714,20 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                               <span className="material-symbols-outlined text-[18px]">
                                 soup_kitchen
                               </span>
-                              <span>Sedang Disiapkan / Dibungkus</span>
+                              <span>
+                                {ord.fulfillmentType === 'dine_in'
+                                  ? 'Mulai Masak / Siapkan di Piring'
+                                  : 'Sedang Disiapkan / Dibungkus'}
+                              </span>
                             </button>
                             <button
                               type="button"
                               onClick={() => onUpdateOrderStatus(ord.id, 'rejected')}
                               className="min-h-[44px] px-3.5 py-2 rounded-lg bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold cursor-pointer"
                             >
-                              Tolak (Dana Belum Masuk)
+                              {ord.paymentStatus === 'paid_gateway'
+                                ? 'Batalkan (Stok Habis / Refund Gateway)'
+                                : 'Tolak (Dana Belum Masuk / Stok Habis)'}
                             </button>
                           </>
                         )}
@@ -1550,9 +1739,13 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                             className="min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
                           >
                             <span className="material-symbols-outlined text-[18px]">
-                              notifications_active
+                              {ord.fulfillmentType === 'dine_in' ? 'table_restaurant' : 'notifications_active'}
                             </span>
-                            <span>Tandai Siap Diambil di Stan</span>
+                            <span>
+                              {ord.fulfillmentType === 'dine_in'
+                                ? `Tandai Siap & Antar ke Meja ${ord.tableNumber || ''}`.trim()
+                                : 'Tandai Siap Diambil di Stan'}
+                            </span>
                           </button>
                         )}
 
@@ -1560,12 +1753,20 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                           <button
                             type="button"
                             onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
-                            className="min-h-[44px] px-4 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer"
+                            className="min-h-[44px] px-4 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
                           >
                             <span className="material-symbols-outlined text-[18px]">
                               task_alt
                             </span>
-                            <span>Selesaikan Transaksi (Sudah Diambil)</span>
+                            <span>
+                              {ord.paymentStatus === 'cash_on_pickup'
+                                ? (ord.fulfillmentType === 'dine_in'
+                                    ? `Selesaikan (Terima Tunai Rp ${(ord.subtotalAmount ?? ord.totalAmount).toLocaleString('id-ID')} di Meja)`
+                                    : `Selesaikan (Terima Tunai Rp ${(ord.subtotalAmount ?? ord.totalAmount).toLocaleString('id-ID')} di Kasir)`)
+                                : (ord.fulfillmentType === 'dine_in'
+                                    ? 'Selesaikan (Sudah Disajikan di Meja)'
+                                    : 'Selesaikan Transaksi (Sudah Diambil)')}
+                            </span>
                           </button>
                         )}
                       </div>
@@ -1991,6 +2192,373 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
           </section>
         )}
 
+        {/* TAB: REKAP & LAPORAN PENJUALAN STAN */}
+        {sellerSubTab === 'laporan' && (
+          <section className="max-w-5xl mx-auto w-full flex flex-col gap-6">
+            {/* Header & Filter Controls */}
+            <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-primary text-[24px]">
+                      monitoring
+                    </span>
+                    <h2 className="fluid-headline-md text-on-surface font-bold">
+                      Rekap &amp; Laporan Penjualan Stan
+                    </h2>
+                  </div>
+                  <p className="font-body-sm text-xs sm:text-sm text-on-surface-variant max-w-2xl">
+                    Laporan keuangan harian dan performa penjualan <strong>{stall.name}</strong>. Terkumpul utuh 100% tanpa potongan komisi pihak ketiga.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsPrintRecapOpen(true)}
+                    className="min-h-[44px] px-4 py-2 rounded-xl bg-primary text-on-primary font-label-sm text-xs font-bold flex items-center gap-1.5 shadow-xs hover:bg-primary-container cursor-pointer transition-all active:scale-95"
+                  >
+                    <span className="material-symbols-outlined text-[18px]">print</span>
+                    <span>Cetak / Unduh Struk Rekap</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCopyRecapWhatsApp}
+                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-sm text-xs font-semibold flex items-center gap-1.5 border border-outline-variant/30 cursor-pointer transition-all active:scale-95"
+                    title="Salin ringkasan ke format pesan WhatsApp"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-emerald-600">
+                      content_copy
+                    </span>
+                    <span>Salin WhatsApp</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Segmented Filter Periode */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-outline-variant/20">
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
+                  <span className="text-xs font-bold text-on-surface-variant mr-1">
+                    Filter Periode:
+                  </span>
+                  {[
+                    { id: 'today', label: 'Hari Ini' },
+                    { id: '7days', label: '7 Hari Terakhir' },
+                    { id: 'month', label: 'Bulan Ini' },
+                    { id: 'all', label: 'Semua Riwayat' },
+                  ].map((p) => {
+                    const isSelected = reportPeriod === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => setReportPeriod(p.id as typeof reportPeriod)}
+                        className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                          isSelected
+                            ? 'bg-primary text-on-primary shadow-xs font-bold'
+                            : 'bg-surface-container text-on-surface-variant hover:text-on-surface border border-outline-variant/25'
+                        }`}
+                      >
+                        {p.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <span className="text-xs text-on-surface-variant font-medium">
+                  Menampilkan <strong>{filteredReportOrders.length} transaksi</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* 4 Financial & Operational Metric Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Card 1: Total Omset */}
+              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Total Omset Penjualan
+                  </span>
+                  <span className="material-symbols-outlined text-primary text-[20px]">
+                    payments
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <span className="text-xl sm:text-2xl font-bold text-primary font-mono">
+                    Rp {reportMetrics.totalOmset.toLocaleString('id-ID')}
+                  </span>
+                  <span className="text-[11px] text-emerald-700 font-medium">
+                    ✓ Bersih 100% (0% potongan komisi)
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 2: Pemisahan Gateway vs Tunai */}
+              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Penerimaan Saldo
+                  </span>
+                  <span className="material-symbols-outlined text-secondary text-[20px]">
+                    account_balance_wallet
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-on-surface-variant">Gateway (QRIS/VA):</span>
+                    <span className="font-bold text-secondary font-mono">
+                      Rp {reportMetrics.gatewayOmset.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-on-surface-variant">Kas Tunai (COD):</span>
+                    <span className="font-bold text-on-surface font-mono">
+                      Rp {reportMetrics.cashOmset.toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 3: Pesanan & Rata-rata Nilai */}
+              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Volume Transaksi
+                  </span>
+                  <span className="material-symbols-outlined text-tertiary text-[20px]">
+                    receipt_long
+                  </span>
+                </div>
+                <div className="flex flex-col gap-0.5">
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-xl sm:text-2xl font-bold text-on-surface">
+                      {reportMetrics.completedCount}
+                    </span>
+                    <span className="text-xs text-on-surface-variant">
+                      berhasil ({reportMetrics.rejectedCount} batal)
+                    </span>
+                  </div>
+                  <span className="text-[11px] text-on-surface-variant">
+                    Rata-rata: Rp {reportMetrics.avgBasket.toLocaleString('id-ID')}/order
+                  </span>
+                </div>
+              </div>
+
+              {/* Card 4: Distribusi Dine-In vs Pickup */}
+              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
+                    Jalur Pemenuhan
+                  </span>
+                  <span className="material-symbols-outlined text-purple-600 text-[20px]">
+                    restaurant
+                  </span>
+                </div>
+                <div className="flex flex-col gap-1 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-on-surface-variant">
+                      <span>🍽️</span> Makan di Meja:
+                    </span>
+                    <span className="font-bold text-on-surface">
+                      {reportMetrics.dineInCount} pesanan
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="flex items-center gap-1 text-on-surface-variant">
+                      <span>🛍️</span> Ambil di Stan:
+                    </span>
+                    <span className="font-bold text-on-surface">
+                      {reportMetrics.pickupCount} pesanan
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Menu Terlaris (Performance Breakdown) */}
+            <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <h3 className="fluid-headline-md text-on-surface font-bold">
+                    Performa Menu Terlaris (Sales by Item)
+                  </h3>
+                  <p className="font-body-sm text-xs text-on-surface-variant">
+                    Rincian menu yang paling sering dipesan oleh mahasiswa selama periode terpilih
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
+                  {reportMetrics.bestSellers.length} Menu Terjual
+                </span>
+              </div>
+
+              {reportMetrics.bestSellers.length === 0 ? (
+                <div className="p-8 text-center bg-surface-container-low rounded-xl border border-dashed border-outline-variant/40 flex flex-col items-center gap-2">
+                  <span className="material-symbols-outlined text-[36px] text-on-surface-variant/40">
+                    fastfood
+                  </span>
+                  <p className="text-xs text-on-surface-variant font-medium">
+                    Belum ada data menu terjual pada periode ini.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {reportMetrics.bestSellers.map((item, idx) => {
+                    const totalQty = reportMetrics.bestSellers.reduce((s, i) => s + i.quantity, 0);
+                    const percentage = totalQty > 0 ? Math.round((item.quantity / totalQty) * 100) : 0;
+                    return (
+                      <div
+                        key={item.name}
+                        className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-2"
+                      >
+                        <div className="flex items-center justify-between gap-3 text-xs">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center shrink-0">
+                              {idx + 1}
+                            </span>
+                            <span className="font-bold text-on-surface truncate">
+                              {item.name}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 shrink-0">
+                            <span className="font-semibold text-on-surface-variant">
+                              {item.quantity} porsi ({percentage}%)
+                            </span>
+                            <span className="font-bold text-primary font-mono">
+                              Rp {item.revenue.toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                        </div>
+                        {/* Contribution Bar */}
+                        <div className="w-full h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-primary rounded-full transition-all duration-300"
+                            style={{ width: `${Math.min(100, Math.max(5, percentage))}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Tabel Riwayat Transaksi Lengkap */}
+            <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <h3 className="fluid-headline-md text-on-surface font-bold">
+                    Daftar Rincian Transaksi
+                  </h3>
+                  <p className="font-body-sm text-xs text-on-surface-variant">
+                    Seluruh tiket pesanan mahasiswa dalam periode terpilih
+                  </p>
+                </div>
+              </div>
+
+              {filteredReportOrders.length === 0 ? (
+                <div className="p-8 text-center bg-surface-container-low rounded-xl border border-dashed border-outline-variant/40 flex flex-col items-center gap-2">
+                  <span className="material-symbols-outlined text-[36px] text-on-surface-variant/40">
+                    receipt
+                  </span>
+                  <p className="text-xs text-on-surface-variant font-medium">
+                    Tidak ada pesanan pada filter periode ini.
+                  </p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto no-scrollbar">
+                  <table className="w-full text-left text-xs">
+                    <thead>
+                      <tr className="border-b border-outline-variant/30 text-on-surface-variant font-bold uppercase tracking-wider">
+                        <th className="py-2.5 px-3">Tiket &amp; Waktu</th>
+                        <th className="py-2.5 px-3">Mahasiswa</th>
+                        <th className="py-2.5 px-3">Penyajian</th>
+                        <th className="py-2.5 px-3">Rincian Menu</th>
+                        <th className="py-2.5 px-3">Pembayaran</th>
+                        <th className="py-2.5 px-3 text-right">Total</th>
+                        <th className="py-2.5 px-3 text-center">Status</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-outline-variant/20">
+                      {filteredReportOrders.map((ord) => {
+                        const isPaidGateway = ord.paymentStatus === 'paid_gateway';
+                        return (
+                          <tr key={ord.id} className="hover:bg-surface-container-low transition-colors">
+                            <td className="py-3 px-3 align-top whitespace-nowrap">
+                              <span className="font-bold font-mono text-on-surface block">
+                                #{ord.id}
+                              </span>
+                              <span className="text-[11px] text-on-surface-variant">
+                                {ord.createdAt}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 align-top whitespace-nowrap">
+                              <span className="font-bold text-on-surface block">
+                                {ord.studentName}
+                              </span>
+                              <span className="text-[11px] text-on-surface-variant font-mono">
+                                {ord.studentNim}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 align-top whitespace-nowrap">
+                              {ord.fulfillmentType === 'dine_in' ? (
+                                <span className="font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded text-[11px]">
+                                  🍽️ Meja {ord.tableNumber || '-'}
+                                </span>
+                              ) : (
+                                <span className="font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded text-[11px]">
+                                  🛍️ Ambil di Stan
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 align-top max-w-xs">
+                              <span className="text-on-surface block font-medium">
+                                {ord.items.map((i) => `${i.quantity}x ${i.name}`).join(', ')}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 align-top whitespace-nowrap">
+                              {isPaidGateway ? (
+                                <span className="text-[11px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
+                                  ✓ Gateway Lunas
+                                </span>
+                              ) : (
+                                <span className="text-[11px] font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">
+                                  💵 Tunai Kasir
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 align-top text-right whitespace-nowrap">
+                              <span className="font-bold font-mono text-on-surface">
+                                Rp {(ord.subtotalAmount ?? ord.totalAmount).toLocaleString('id-ID')}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 align-top text-center whitespace-nowrap">
+                              <span
+                                className={`text-[11px] font-bold px-2 py-0.5 rounded ${
+                                  ord.status === 'completed'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : ord.status === 'rejected'
+                                    ? 'bg-rose-100 text-rose-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}
+                              >
+                                {ord.status === 'completed'
+                                  ? 'Selesai'
+                                  : ord.status === 'rejected'
+                                  ? 'Dibatalkan'
+                                  : 'Diproses'}
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </section>
+        )}
+
         {/* TAB 3: PROFIL KANTIN */}
         {sellerSubTab === 'profil' && (
           <section className="max-w-3xl mx-auto w-full">
@@ -2153,6 +2721,26 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     type="checkbox"
                     checked={profQris}
                     onChange={(e) => setProfQris(e.target.checked)}
+                    className="w-5 h-5 accent-primary shrink-0"
+                  />
+                </label>
+
+                <label className="min-h-[52px] flex items-center justify-between gap-3 p-3.5 rounded-lg bg-surface-container-low cursor-pointer border border-outline-variant/20">
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[18px] text-primary">table_restaurant</span>
+                      <span className="font-label-md text-label-md text-on-surface font-semibold">
+                        Layanan Makan di Tempat (Dine-In ke Meja)
+                      </span>
+                    </div>
+                    <span className="font-body-sm text-[11px] text-on-surface-variant">
+                      Mahasiswa dapat memasukkan nomor meja saat checkout, dan pesanan disajikan langsung ke meja mereka di kantin/pujasera.
+                    </span>
+                  </div>
+                  <input
+                    type="checkbox"
+                    checked={profDineIn}
+                    onChange={(e) => setProfDineIn(e.target.checked)}
                     className="w-5 h-5 accent-primary shrink-0"
                   />
                 </label>
@@ -2589,6 +3177,173 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 className="flex-1 min-h-[44px] rounded-lg bg-error text-on-error font-label-md text-label-md font-semibold cursor-pointer"
               >
                 Ya, Hapus Menu
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL CETAK & UNDUH STRUK REKAPITULASI PENJUALAN FORMAL */}
+      {isPrintRecapOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto"
+        >
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden my-6 border border-slate-200">
+            {/* Header Control Buttons (Hidden when printing via no-print) */}
+            <div className="no-print p-4 bg-slate-900 text-white flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-emerald-400 text-[20px]">
+                  receipt_long
+                </span>
+                <span className="text-xs font-bold uppercase tracking-wider">
+                  Preview Struk Rekap Stan
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPrintRecapOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Printable Thermal Receipt Paper Container */}
+            <div
+              id="printable-receipt"
+              className="p-6 font-mono text-slate-900 text-xs flex flex-col gap-3 bg-white"
+            >
+              <div className="text-center flex flex-col gap-1 pb-2 border-b border-dashed border-slate-300">
+                <span className="text-sm font-bold tracking-wider">
+                  KANTINKU IBI KKG &amp; UMKM
+                </span>
+                <span className="text-xs font-bold text-slate-800">
+                  {stall.name.toUpperCase()}
+                </span>
+                <span className="text-[11px] text-slate-600">
+                  {stall.fullLocation || stall.building}
+                </span>
+                <span className="text-[10px] text-slate-500 mt-1">
+                  Dicetak: {new Date().toLocaleString('id-ID')} WIB
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-1 text-[11px] py-1 border-b border-dashed border-slate-300">
+                <div className="flex justify-between">
+                  <span>Periode Rekap</span>
+                  <span className="font-bold">
+                    {reportPeriod === 'today'
+                      ? 'Hari Ini'
+                      : reportPeriod === '7days'
+                      ? '7 Hari Terakhir'
+                      : reportPeriod === 'month'
+                      ? 'Bulan Ini'
+                      : 'Semua Riwayat'}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Total Transaksi</span>
+                  <span className="font-bold">
+                    {reportMetrics.completedCount} berhasil ({reportMetrics.rejectedCount} batal)
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Makan di Meja</span>
+                  <span>{reportMetrics.dineInCount} pesanan</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Ambil di Stan</span>
+                  <span>{reportMetrics.pickupCount} pesanan</span>
+                </div>
+              </div>
+
+              {/* Rincian Penjualan Menu */}
+              <div className="flex flex-col gap-1.5 py-1 border-b border-dashed border-slate-300">
+                <span className="font-bold text-[11px] text-slate-700">
+                  RINCIAN MENU TERJUAL:
+                </span>
+                {reportMetrics.bestSellers.length === 0 ? (
+                  <span className="text-[11px] text-slate-400 italic">
+                    Belum ada menu terjual
+                  </span>
+                ) : (
+                  reportMetrics.bestSellers.map((item) => (
+                    <div key={item.name} className="flex justify-between items-start text-[11px]">
+                      <span className="min-w-0 pr-2">
+                        {item.quantity}x {item.name}
+                      </span>
+                      <span className="shrink-0 font-bold font-mono">
+                        Rp {item.revenue.toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Ringkasan Finansial */}
+              <div className="flex flex-col gap-1 text-[11px] py-1 border-b border-dashed border-slate-300">
+                <div className="flex justify-between font-bold text-xs pt-1">
+                  <span>TOTAL OMSET KOTOR</span>
+                  <span className="font-mono">
+                    Rp {reportMetrics.totalOmset.toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>• Via Gateway (QRIS/VA)</span>
+                  <span className="font-mono">
+                    Rp {reportMetrics.gatewayOmset.toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div className="flex justify-between text-slate-600">
+                  <span>• Via Kasir Tunai (COD)</span>
+                  <span className="font-mono">
+                    Rp {reportMetrics.cashOmset.toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div className="flex justify-between text-emerald-700 font-semibold pt-1">
+                  <span>Potongan Komisi (0%)</span>
+                  <span>Rp 0</span>
+                </div>
+                <div className="flex justify-between font-bold text-xs pt-1 border-t border-slate-200">
+                  <span>DITERIMA BERSIH</span>
+                  <span className="font-mono text-emerald-800">
+                    Rp {reportMetrics.totalOmset.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              </div>
+
+              <div className="text-center text-[10px] text-slate-500 pt-2 flex flex-col gap-0.5">
+                <span>*** DOKUMEN REKAP RESMI STAN ***</span>
+                <span>Sistem Operasi Kantinku &amp; Multi-UMKM Terpadu</span>
+              </div>
+            </div>
+
+            {/* Bottom Actions (no-print) */}
+            <div className="no-print p-4 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row gap-2">
+              <button
+                type="button"
+                onClick={() => window.print()}
+                className="flex-1 min-h-[44px] py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
+              >
+                <span className="material-symbols-outlined text-[18px]">print</span>
+                <span>Cetak Struk Sekarang</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleCopyRecapWhatsApp}
+                className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+              >
+                <span className="material-symbols-outlined text-[18px]">content_copy</span>
+                <span>Salin WA</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsPrintRecapOpen(false)}
+                className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white border border-slate-300 hover:bg-slate-100 text-slate-700 font-bold text-xs cursor-pointer transition-colors"
+              >
+                Tutup
               </button>
             </div>
           </div>

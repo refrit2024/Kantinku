@@ -559,6 +559,7 @@ export default function App() {
       minute: '2-digit',
     });
     const isAutoPaidGateway = orderData.paymentStatus === 'paid_gateway';
+    const isCashOrder = orderData.paymentStatus === 'cash_on_pickup';
     const sanitizedItems = (orderData.items || []).map((it) => ({
       ...it,
       price: sanitizeMenuPrice(it.price).price,
@@ -584,7 +585,7 @@ export default function App() {
       serviceFee: safeFee,
       totalAmount: safeTotal,
       id: `ORD-${Date.now().toString().slice(-6)}`,
-      status: isAutoPaidGateway ? 'cooking' : 'waiting_payment_verification',
+      status: (isAutoPaidGateway || isCashOrder) ? 'cooking' : 'waiting_payment_verification',
       createdAt: `Hari ini, ${nowTime} WIB`,
     };
     // Auto-prune to max 80 recent orders so Firestore 1MB document limit is never exceeded
@@ -612,7 +613,9 @@ export default function App() {
     );
     showToast(
       isAutoPaidGateway
-        ? `Pembayaran Lunas Otomatis! Pesanan ${newOrder.id} langsung diproses oleh ${newOrder.stallName}.`
+        ? `Pembayaran Lunas Otomatis! Pesanan ${newOrder.id} langsung diproses & dimasak oleh ${newOrder.stallName}.`
+        : isCashOrder
+        ? `Pesanan Tunai (COD) Berhasil Dibuat! Stan ${newOrder.stallName} langsung memasak pesanan Anda. Siapkan uang pas saat disajikan/diambil.`
         : `Pesanan ${newOrder.id} (Rp ${newOrder.totalAmount.toLocaleString('id-ID')}) berhasil dikirim ke ${newOrder.stallName}!`
     );
     return newOrder;
@@ -634,16 +637,25 @@ export default function App() {
 
     const target = nextOrders.find((o) => o.id === orderId);
     if (target) {
+      const isDineIn = target.fulfillmentType === 'dine_in';
       if (nextStatus === 'cooking') {
         showToast(
-          `Pembayaran ${target.studentName} diterima! Pesanan ditandai Sedang Disiapkan / Dibungkus.`
+          isDineIn
+            ? `Pembayaran ${target.studentName} diterima! Pesanan sedang disiapkan di piring untuk Meja ${target.tableNumber || '-'}.`
+            : `Pembayaran ${target.studentName} diterima! Pesanan ditandai Sedang Disiapkan / Dibungkus.`
         );
       } else if (nextStatus === 'ready_pickup') {
         showToast(
-          `Notifikasi dikirim ke ${target.studentName}: Pesanan sudah SIAP DIAMBIL di stan!`
+          isDineIn
+            ? `Notifikasi dikirim ke ${target.studentName}: Makanan siap & sedang disajikan ke Meja ${target.tableNumber || ''}!`
+            : `Notifikasi dikirim ke ${target.studentName}: Pesanan sudah SIAP DIAMBIL di stan!`
         );
       } else if (nextStatus === 'completed') {
-        showToast(`Transaksi pesanan ${target.studentName} selesai!`);
+        showToast(
+          isDineIn
+            ? `Transaksi pesanan ${target.studentName} selesai (sudah dinikmati di Meja ${target.tableNumber || '-'})!`
+            : `Transaksi pesanan ${target.studentName} selesai (sudah diambil)!`
+        );
       } else if (nextStatus === 'rejected') {
         showToast(`Pesanan ${target.studentName} ditolak karena pembayaran belum masuk.`, true);
       }

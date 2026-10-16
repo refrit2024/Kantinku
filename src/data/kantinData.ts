@@ -56,6 +56,8 @@ export type OrderStatusType =
   | 'completed'
   | 'rejected';
 
+export type FulfillmentType = 'pickup' | 'dine_in';
+
 export interface OrderTransaction {
   id: string;
   stallId: string;
@@ -66,6 +68,8 @@ export interface OrderTransaction {
   studentName: string;
   studentNim: string;
   pickupTime: string;
+  fulfillmentType?: FulfillmentType;
+  tableNumber?: string;
   notes?: string;
   items: OrderItem[];
   subtotalAmount?: number;
@@ -105,7 +109,7 @@ export interface Stall {
   name: string;
   code: string;
   mapPinCode: 'Kantin A' | 'Kantin B' | 'Kantin C' | 'Kantin D';
-  building: 'Gedung A' | 'Gedung B';
+  building: 'Gedung A' | 'Gedung B' | 'Sentra UMKM' | 'Kantin Mitra';
   distanceMeters: number;
   locationDetail: string;
   fullLocation: string;
@@ -133,6 +137,7 @@ export interface Stall {
   gpsLocation?: SellerLiveGpsLocation;
   menuItems: MenuItem[];
   reviews: ReviewItem[];
+  dineInAvailable?: boolean;
 }
 
 export interface VerificationRequest {
@@ -167,7 +172,7 @@ export interface SellerAccount {
   whatsapp: string;
   stallId: string;
   stallName: string;
-  building: 'Gedung A' | 'Gedung B';
+  building: 'Gedung A' | 'Gedung B' | 'Sentra UMKM' | 'Kantin Mitra';
   locationDetail: string;
   categorySummary: string;
   hours: string;

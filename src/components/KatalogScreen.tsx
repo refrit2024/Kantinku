@@ -528,19 +528,26 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                 {/* Orders List Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {filteredStudentOrders.map((ord) => {
+                    const isAutoPaid = ord.paymentStatus === 'paid_gateway';
                     const statusConfig = {
                       waiting_payment_verification: {
-                        label: 'Menunggu Verifikasi',
+                        label: isAutoPaid ? 'Lunas • Menunggu Dapur' : 'Menunggu Konfirmasi Transfer',
                         bg: 'bg-amber-50 text-amber-800 border-amber-200',
                         dot: 'bg-amber-500',
                       },
                       cooking: {
-                        label: 'Sedang Dimasak',
+                        label:
+                          ord.fulfillmentType === 'dine_in'
+                            ? 'Sedang Dimasak / Disajikan'
+                            : 'Sedang Disiapkan di Stan',
                         bg: 'bg-blue-50 text-blue-800 border-blue-200',
                         dot: 'bg-blue-500',
                       },
                       ready_pickup: {
-                        label: 'Siap Diambil di Stan!',
+                        label:
+                          ord.fulfillmentType === 'dine_in'
+                            ? `Siap di Meja ${ord.tableNumber || ''}!`
+                            : 'Siap Diambil di Stan!',
                         bg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
                         dot: 'bg-emerald-500',
                       },
@@ -550,7 +557,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         dot: 'bg-slate-400',
                       },
                       rejected: {
-                        label: 'Ditolak / Dibatalkan',
+                        label: 'Dibatalkan',
                         bg: 'bg-rose-50 text-rose-800 border-rose-200',
                         dot: 'bg-rose-500',
                       },
@@ -564,11 +571,28 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         <div className="flex flex-col gap-2.5">
                           <div className="flex items-start justify-between gap-2">
                             <div>
-                              <div className="flex items-center gap-1.5 mb-1">
+                              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
                                 <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-md flex items-center gap-1">
                                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
                                   Pesanan Akun Anda
                                 </span>
+                                {isAutoPaid && (
+                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                                    <span className="material-symbols-outlined text-[12px]">verified</span>
+                                    Lunas Otomatis (Gateway)
+                                  </span>
+                                )}
+                                {ord.fulfillmentType === 'dine_in' ? (
+                                  <span className="text-[10px] font-black text-amber-900 bg-amber-200 border border-amber-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[12px]">table_restaurant</span>
+                                    Makan di Meja {ord.tableNumber || '-'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[12px]">shopping_bag</span>
+                                    Ambil di Stan
+                                  </span>
+                                )}
                               </div>
                               <h4 className="font-bold text-slate-900 text-base">
                                 {ord.stallName}
@@ -581,7 +605,11 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 shrink-0 ${statusConfig.bg}`}
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
-                              <span>{statusConfig.label}</span>
+                              <span>
+                                {ord.status === 'ready_pickup' && ord.fulfillmentType === 'dine_in'
+                                  ? `Diantar ke Meja ${ord.tableNumber || ''}`.trim()
+                                  : statusConfig.label}
+                              </span>
                             </span>
                           </div>
 
@@ -592,10 +620,19 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                 {ord.studentName} ({ord.studentNim})
                               </span>
                             </div>
-                            <div className="flex justify-between text-slate-600">
-                              <span>Jam Ambil:</span>
-                              <span className="font-semibold text-emerald-700">{ord.pickupTime}</span>
-                            </div>
+                            {ord.fulfillmentType === 'dine_in' ? (
+                              <div className="flex justify-between text-slate-600">
+                                <span>Layanan:</span>
+                                <span className="font-bold text-amber-800">
+                                  Makan di Tempat (Meja {ord.tableNumber || '-'})
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex justify-between text-slate-600">
+                                <span>Jam Ambil:</span>
+                                <span className="font-semibold text-emerald-700">{ord.pickupTime}</span>
+                              </div>
+                            )}
                             <div className="flex justify-between text-slate-600">
                               <span>Bayar:</span>
                               <span className="font-semibold text-slate-900">

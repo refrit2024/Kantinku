@@ -1493,9 +1493,16 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                               {ord.stallName}
                             </td>
                             <td className="py-2.5 px-3">
-                              <div className="font-semibold text-on-surface">{ord.studentName}</div>
-                              <div className="text-[11px] text-on-surface-variant">
-                                NIM: {ord.studentNim} • Ambil: {ord.pickupTime}
+                              <div className="text-[11px] text-on-surface-variant flex items-center gap-1 flex-wrap">
+                                <span>NIM: {ord.studentNim}</span>
+                                <span>•</span>
+                                {ord.fulfillmentType === 'dine_in' ? (
+                                  <span className="font-semibold text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded">
+                                    🍽️ Meja: {ord.tableNumber || '-'}
+                                  </span>
+                                ) : (
+                                  <span>🛍️ Ambil: {ord.pickupTime}</span>
+                                )}
                               </div>
                             </td>
                             <td className="py-2.5 px-3">

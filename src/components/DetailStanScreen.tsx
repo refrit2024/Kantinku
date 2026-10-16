@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import {
+  FulfillmentType,
   getPublicStallUrl,
   getStallPaymentDetails,
   MenuItem,
@@ -94,12 +95,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   }, [loggedInStudent]);
 
   const [pickupTime, setPickupTime] = useState('Istirahat Siang (12.00 WIB)');
+  const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>('pickup');
+  const [tableNumber, setTableNumber] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState<PaymentMethodType>('gateway');
+    useState<PaymentMethodType>('qris');
   const [selectedEwalletProvider, setSelectedEwalletProvider] = useState<
     'DANA' | 'GoPay' | 'OVO' | 'ShopeePay'
-  >('DANA');
+  >('ShopeePay');
   const [paymentReference, setPaymentReference] = useState('');
 
   // Payment Gateway Sandbox (Midtrans Snap Simulation) State
@@ -158,7 +161,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
   const cartTotalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const cartSubtotalAmount = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
-  const activeServiceFee = selectedPaymentMethod === 'gateway' ? PLATFORM_SERVICE_FEE : 0;
+  const activeServiceFee = selectedPaymentMethod === 'tunai' ? 0 : PLATFORM_SERVICE_FEE;
   const cartTotalAmount = cartSubtotalAmount + activeServiceFee;
 
   useEffect(() => {
@@ -220,6 +223,8 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     payStatus: 'paid_gateway' | 'manual_verification' | 'cash_on_pickup',
     txId?: string
   ) => {
+    const isDineIn = fulfillmentType === 'dine_in';
+    const cleanTable = tableNumber.trim();
     const createdOrder = onPlaceOrder({
       stallId: stall.id,
       stallName: stall.name,
@@ -228,7 +233,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       studentEmail: loggedInStudent ? loggedInStudent.email : undefined,
       studentName: studentName.trim(),
       studentNim: studentNim.trim(),
-      pickupTime,
+      fulfillmentType,
+      tableNumber: isDineIn ? cleanTable : undefined,
+      pickupTime: isDineIn ? `Makan di Meja ${cleanTable || 'Kantin'}` : pickupTime,
       notes: orderNotes.trim() || undefined,
       items: cartItems,
       subtotalAmount: cartSubtotalAmount,
@@ -243,6 +250,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
     setCartQuantities({});
     setOrderNotes('');
+    setTableNumber('');
     setPaymentReference('');
     setCheckoutModalOpen(false);
     setSnapGatewayOpen(false);
@@ -253,6 +261,13 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const handleCheckoutSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (cartItems.length === 0 || !studentName.trim() || !studentNim.trim()) return;
+
+    if (fulfillmentType === 'dine_in' && !tableNumber.trim()) {
+      if (onShowToast) {
+        onShowToast('Silakan isi Nomor Meja Anda untuk layanan Makan di Tempat (Dine-In).', true);
+      }
+      return;
+    }
 
     const cd = checkActionCooldown('place_order');
     if (!cd.allowed) {
@@ -289,30 +304,27 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       // ignore
     }
 
-    if (selectedPaymentMethod === 'gateway') {
-      const generatedTx = `SANDBOX-SNAP-${Date.now().toString().slice(-6)}`;
-      setSnapTxId(generatedTx);
-      setSnapStep('select');
-      setSnapGatewayOpen(true);
+    if (selectedPaymentMethod === 'tunai') {
+      completeOrderPlacement(
+        'COD / Bayar Tunai di Kasir Stan',
+        'Bayar Tunai saat Makan di Meja / Ambil di Stan',
+        'cash_on_pickup'
+      );
       return;
     }
 
-    let providerLabel = 'Tunai di Kasir';
+    // Online Payments (Sistem Rekber ala Shopee / Auto-Verified Gateway)
+    const generatedTx = `SHOPEE-SNAP-${Date.now().toString().slice(-6)}`;
+    setSnapTxId(generatedTx);
     if (selectedPaymentMethod === 'qris') {
-      providerLabel = `QRIS Manual (${selectedEwalletProvider} / M-Banking)`;
+      setSnapChannel('qris_snap');
     } else if (selectedPaymentMethod === 'ewallet') {
-      providerLabel = `Transfer ${selectedEwalletProvider} (${paymentConfig.ewalletNumber})`;
-    } else if (selectedPaymentMethod === 'bank') {
-      providerLabel = `Transfer Bank ${paymentConfig.bankName}`;
+      setSnapChannel('gopay_dana');
+    } else {
+      setSnapChannel('bca_va');
     }
-
-    completeOrderPlacement(
-      providerLabel,
-      selectedPaymentMethod === 'tunai'
-        ? 'Bayar Tunai saat Ambil di Stan'
-        : paymentReference.trim() || `Dibayar via ${providerLabel}`,
-      selectedPaymentMethod === 'tunai' ? 'cash_on_pickup' : 'manual_verification'
-    );
+    setSnapStep('select');
+    setSnapGatewayOpen(true);
   };
 
   const handleSimulateGatewaySuccess = () => {
@@ -321,22 +333,22 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       setSnapStep('success');
       const channelName =
         snapChannel === 'qris_snap'
-          ? 'Payment Gateway • QRIS Otomatis (DANA/GoPay/OVO/M-Banking)'
+          ? 'QRIS Otomatis (ShopeePay / Semua Bank & E-Wallet)'
           : snapChannel === 'gopay_dana'
-          ? `Payment Gateway • ${selectedEwalletProvider} Instant`
+          ? `ShopeePay / ${selectedEwalletProvider} Instant`
           : snapChannel === 'bca_va'
-          ? 'Payment Gateway • BCA Virtual Account'
-          : 'Payment Gateway • Mandiri Bill Payment';
+          ? 'Virtual Account Bank BCA (Otomatis)'
+          : 'Virtual Account Bank Mandiri (Otomatis)';
 
       setTimeout(() => {
         completeOrderPlacement(
           channelName,
-          `LUNAS OTOMATIS (Sandbox Callback • ID: ${snapTxId})`,
+          `LUNAS OTOMATIS (Shopee / Gateway Callback • ID: ${snapTxId})`,
           'paid_gateway',
           snapTxId
         );
-      }, 1100);
-    }, 900);
+      }, 1000);
+    }, 850);
   };
 
   // Review Form State
@@ -1107,26 +1119,124 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
             </div>
 
-            {/* Pickup Time & Notes */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700">Waktu Ambil di Stan:</label>
-                <select
-                  value={pickupTime}
-                  onChange={(e) => setPickupTime(e.target.value)}
-                  className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            {/* Pilihan Layanan: Ambil Sendiri vs Makan di Tempat (Dine-In) */}
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                <span>Pilih Cara Menikmati:</span>
+                <span className="text-[11px] text-emerald-700 font-semibold">
+                  {fulfillmentType === 'dine_in' ? '🍽️ Antar ke Meja (Dine-In)' : '🛍️ Ambil di Stan (Self-Pickup)'}
+                </span>
+              </label>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setFulfillmentType('pickup')}
+                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                    fulfillmentType === 'pickup'
+                      ? 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20 text-slate-900 shadow-xs'
+                      : 'bg-slate-50/80 border-slate-200 hover:bg-slate-100/80 text-slate-700'
+                  }`}
                 >
-                  <option value="Sekarang (Langsung Ambil)">Sekarang (Langsung Ambil)</option>
-                  <option value="Istirahat Pagi (09.45 WIB)">Istirahat Pagi (09.45 WIB)</option>
-                  <option value="Istirahat Siang (12.00 WIB)">Istirahat Siang (12.00 WIB)</option>
-                  <option value="Sore (15.00 WIB)">Sore (15.00 WIB)</option>
-                </select>
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      fulfillmentType === 'pickup'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="text-xs font-bold text-slate-900">
+                      Ambil Sendiri di Stan
+                    </span>
+                    <span className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                      Bungkus &amp; ambil di etalase tanpa antre berdesakan.
+                    </span>
+                  </div>
+                </button>
+
+                {stall.dineInAvailable !== false && (
+                  <button
+                    type="button"
+                    onClick={() => setFulfillmentType('dine_in')}
+                    className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                      fulfillmentType === 'dine_in'
+                        ? 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20 text-slate-900 shadow-xs'
+                        : 'bg-slate-50/80 border-slate-200 hover:bg-slate-100/80 text-slate-700'
+                    }`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        fulfillmentType === 'dine_in'
+                          ? 'bg-emerald-600 text-white shadow-xs'
+                          : 'bg-white text-slate-600 border border-slate-200'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[20px]">table_restaurant</span>
+                    </div>
+                    <div className="flex flex-col min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-slate-900">
+                          Makan di Tempat
+                        </span>
+                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black">
+                          Dine-In
+                        </span>
+                      </div>
+                      <span className="text-[11px] text-slate-500 leading-tight mt-0.5">
+                        Duduk di meja kantin, hidangan diantar ke mejamu.
+                      </span>
+                    </div>
+                  </button>
+                )}
               </div>
+            </div>
+
+            {/* Dynamic Input depending on Fulfillment */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {fulfillmentType === 'pickup' ? (
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-700">Waktu Ambil di Stan:</label>
+                  <select
+                    value={pickupTime}
+                    onChange={(e) => setPickupTime(e.target.value)}
+                    className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="Sekarang (Langsung Ambil)">Sekarang (Langsung Ambil)</option>
+                    <option value="Istirahat Pagi (09.45 WIB)">Istirahat Pagi (09.45 WIB)</option>
+                    <option value="Istirahat Siang (12.00 WIB)">Istirahat Siang (12.00 WIB)</option>
+                    <option value="Sore (15.00 WIB)">Sore (15.00 WIB)</option>
+                  </select>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
+                    <span>Nomor Meja Anda:</span>
+                    <span className="text-[10px] text-amber-700 font-semibold bg-amber-100/70 px-2 py-0.5 rounded">Wajib Diisi</span>
+                  </label>
+                  <div className="relative">
+                    <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
+                      pin_drop
+                    </span>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: Meja 14 / Meja B-04 / Gazebo"
+                      value={tableNumber}
+                      onChange={(e) => setTableNumber(e.target.value)}
+                      className="h-11 pl-9 pr-3 w-full rounded-xl bg-slate-50 border border-amber-300 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:font-normal placeholder:text-slate-400"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="flex flex-col gap-1">
                 <label className="text-xs font-bold text-slate-700">Catatan Pesanan:</label>
                 <input
                   type="text"
-                  placeholder="Contoh: Sambal pisah / jangan pedas"
+                  placeholder={fulfillmentType === 'dine_in' ? 'Contoh: Dekat kipas angin / sendok garpu' : 'Contoh: Sambal pisah / jangan pedas'}
                   value={orderNotes}
                   onChange={(e) => setOrderNotes(e.target.value)}
                   className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -1134,151 +1244,115 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
             </div>
 
-            {/* Payment Method Selector */}
-            <div className="flex flex-col gap-2">
-              <label className="text-xs font-bold text-slate-700">Metode Pembayaran:</label>
+            {/* Metod Pembayaran ala Shopee */}
+            <div className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[17px] text-amber-600">verified_user</span>
+                  <span>Metode Pembayaran (Sistem Rekber Shopee):</span>
+                </label>
+                <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                  Otomatis Lunas
+                </span>
+              </div>
 
-              {/* Gateway Sandbox */}
-              <button
-                type="button"
-                onClick={() => setSelectedPaymentMethod('gateway')}
-                className={`w-full p-3 rounded-2xl flex items-center justify-between gap-3 border text-left transition-all cursor-pointer ${
-                  selectedPaymentMethod === 'gateway'
-                    ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                    : 'bg-slate-50 text-slate-800 border-slate-200 hover:bg-slate-100'
-                }`}
-              >
-                <div className="flex items-center gap-2.5">
-                  <span className="material-symbols-outlined text-[24px]">bolt</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                {/* 1. QRIS ShopeePay & Semua Bank */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('qris')}
+                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                    selectedPaymentMethod === 'qris'
+                      ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs font-medium'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[22px] text-emerald-600 shrink-0 mt-0.5">qr_code_2</span>
                   <div className="flex flex-col">
-                    <span className="text-xs font-bold">
-                      Payment Gateway Otomatis (Simulasi Sandbox)
-                    </span>
-                    <span
-                      className={`text-[11px] ${
-                        selectedPaymentMethod === 'gateway' ? 'text-emerald-100' : 'text-slate-500'
-                      }`}
-                    >
-                      QRIS Dinamis, DANA, GoPay &amp; VA • Otomatis Lunas!
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-xs text-slate-900">QRIS Shopee &amp; Bank</span>
+                      <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black">POPULER</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                      ShopeePay, GoPay, DANA, BCA, Mandiri, dll.
                     </span>
                   </div>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black">
-                  Cepat
-                </span>
-              </button>
+                </button>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {paymentConfig.qrisEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaymentMethod('qris')}
-                    className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
-                      selectedPaymentMethod === 'qris'
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-slate-50 text-slate-800 border-slate-200'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>
-                    <span>QRIS Manual</span>
-                  </button>
-                )}
-
-                {paymentConfig.ewalletEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaymentMethod('ewallet')}
-                    className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
-                      selectedPaymentMethod === 'ewallet'
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-slate-50 text-slate-800 border-slate-200'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">
-                      account_balance_wallet
+                {/* 2. ShopeePay / E-Wallet Instant */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('ewallet')}
+                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                    selectedPaymentMethod === 'ewallet'
+                      ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs font-medium'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[22px] text-emerald-600 shrink-0 mt-0.5">account_balance_wallet</span>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs text-slate-900">ShopeePay / E-Wallet</span>
+                    <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                      Pembayaran 1-klik instan saldo e-wallet
                     </span>
-                    <span>DANA / GoPay</span>
-                  </button>
-                )}
+                  </div>
+                </button>
 
-                {paymentConfig.bankEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaymentMethod('bank')}
-                    className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
-                      selectedPaymentMethod === 'bank'
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-slate-50 text-slate-800 border-slate-200'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">account_balance</span>
-                    <span>Transfer Bank</span>
-                  </button>
-                )}
+                {/* 3. Virtual Account Bank */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('bank')}
+                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                    selectedPaymentMethod === 'bank'
+                      ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs font-medium'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[22px] text-emerald-600 shrink-0 mt-0.5">account_balance</span>
+                  <div className="flex flex-col">
+                    <span className="font-bold text-xs text-slate-900">Virtual Account Bank</span>
+                    <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                      BCA, Mandiri, BRI, BNI (Cek Otomatis)
+                    </span>
+                  </div>
+                </button>
 
-                {paymentConfig.cashEnabled && (
-                  <button
-                    type="button"
-                    onClick={() => setSelectedPaymentMethod('tunai')}
-                    className={`p-2 rounded-xl text-xs font-bold flex flex-col items-center justify-center gap-0.5 border cursor-pointer ${
-                      selectedPaymentMethod === 'tunai'
-                        ? 'bg-emerald-600 text-white border-emerald-600'
-                        : 'bg-slate-50 text-slate-800 border-slate-200'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[18px]">payments</span>
-                    <span>Tunai Kasir</span>
-                  </button>
-                )}
+                {/* 4. COD / Tunai Kasir */}
+                <button
+                  type="button"
+                  onClick={() => setSelectedPaymentMethod('tunai')}
+                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                    selectedPaymentMethod === 'tunai'
+                      ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs font-medium'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[22px] text-amber-600 shrink-0 mt-0.5">payments</span>
+                  <div className="flex flex-col">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="font-bold text-xs text-slate-900">Bayar Tunai di Stan (COD)</span>
+                    </div>
+                    <span className="text-[11px] text-slate-500 mt-0.5 leading-snug">
+                      Bayar kasir saat makan atau ambil pesanan
+                    </span>
+                  </div>
+                </button>
+              </div>
+
+              {/* Rincian Proteksi Shopee */}
+              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-emerald-600 text-[16px]">security</span>
+                  <span>Uang aman di sistem rekber platform. Penjual langsung terima notifikasi masak.</span>
+                </div>
               </div>
             </div>
 
-            {/* Direct QRIS Image Box */}
-            {selectedPaymentMethod === 'qris' && (
-              <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center gap-2">
-                <span className="text-xs font-bold text-slate-800">
-                  Scan QRIS Resmi {paymentConfig.qrisMerchantName}
-                </span>
-                <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-xs flex flex-col items-center gap-1">
-                  {paymentConfig.qrisImage || paymentQrisDataUrl ? (
-                    <img
-                      src={paymentConfig.qrisImage || paymentQrisDataUrl}
-                      alt="QRIS Kantin"
-                      className="w-40 h-40 object-contain rounded"
-                    />
-                  ) : null}
-                  <span className="text-xs font-bold text-emerald-700">
-                    Nominal: Rp {cartTotalAmount.toLocaleString('id-ID')}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {/* E-Wallet Direct Info */}
-            {selectedPaymentMethod === 'ewallet' && (
-              <div className="p-3 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between text-xs">
-                <div>
-                  <span className="text-slate-500 block">
-                    {selectedEwalletProvider} ({paymentConfig.ewalletAccountName}):
-                  </span>
-                  <span className="font-mono text-base font-bold text-slate-900">
-                    {paymentConfig.ewalletNumber}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleCopyText(paymentConfig.ewalletNumber, 'Nomor E-Wallet')}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold cursor-pointer"
-                >
-                  Salin
-                </button>
-              </div>
-            )}
-
             {/* Cash note */}
             {selectedPaymentMethod === 'tunai' && (
-              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-                Silakan siapkan uang pas <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong> saat mengambil pesanan di stan.
+              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+                <span className="material-symbols-outlined text-amber-600 text-[20px]">info</span>
+                <span>Silakan siapkan uang pas <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong> saat pesanan disajikan / diambil di kasir.</span>
               </div>
             )}
 
@@ -1295,9 +1369,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 className="w-2/3 min-h-[46px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-95"
               >
                 <span>
-                  {selectedPaymentMethod === 'gateway'
-                    ? 'Lanjut ke Sandbox Gateway'
-                    : 'Konfirmasi & Kirim Pesanan'}
+                  {selectedPaymentMethod === 'tunai'
+                    ? 'Konfirmasi Pesanan (Bayar Tunai)'
+                    : 'Bayar Sekarang (Otomatis)'}
                 </span>
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
               </button>
@@ -1339,34 +1413,98 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             <div className="p-5 flex flex-col gap-4">
               {snapStep === 'select' && (
                 <>
-                  <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex rounded-xl bg-slate-100 p-1 gap-1 text-xs font-bold">
                     {[
-                      { id: 'qris_snap', label: 'QRIS Otomatis', icon: 'qr_code_2' },
-                      { id: 'gopay_dana', label: 'DANA / GoPay', icon: 'account_balance_wallet' },
-                      { id: 'bca_va', label: 'BCA Virtual Account', icon: 'account_balance' },
-                      { id: 'mandiri_va', label: 'Mandiri Livin', icon: 'credit_card' },
+                      { id: 'qris_snap', label: 'QRIS Shopee & Bank' },
+                      { id: 'gopay_dana', label: 'ShopeePay / E-Wallet' },
+                      { id: 'bca_va', label: 'Virtual Account' },
                     ].map((ch) => (
                       <button
                         key={ch.id}
                         type="button"
                         onClick={() =>
                           setSnapChannel(
-                            ch.id as 'qris_snap' | 'gopay_dana' | 'bca_va' | 'mandiri_va'
+                            ch.id as 'qris_snap' | 'gopay_dana' | 'bca_va'
                           )
                         }
-                        className={`p-3 rounded-2xl border text-left flex items-center gap-2 cursor-pointer transition-all ${
+                        className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
                           snapChannel === ch.id
-                            ? 'bg-emerald-50 border-emerald-600 text-emerald-950 font-bold'
-                            : 'bg-white border-slate-200 text-slate-700'
+                            ? 'bg-white text-emerald-800 shadow-2xs'
+                            : 'text-slate-600 hover:text-slate-900'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[20px] text-emerald-600">
-                          {ch.icon}
-                        </span>
-                        <span>{ch.label}</span>
+                        {ch.label}
                       </button>
                     ))}
                   </div>
+
+                  {snapChannel === 'qris_snap' && (
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center gap-2.5">
+                      <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-3 py-1 rounded-full font-bold border border-amber-200/80">
+                        <span className="material-symbols-outlined text-[15px]">timer</span>
+                        <span>Berlaku 14:59 menit</span>
+                      </div>
+                      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center gap-1.5">
+                        {paymentConfig.qrisImage || paymentQrisDataUrl || stallQrDataUrl ? (
+                          <img
+                            src={paymentConfig.qrisImage || paymentQrisDataUrl || stallQrDataUrl}
+                            alt="QRIS Dinamis"
+                            className="w-40 h-40 object-contain rounded"
+                          />
+                        ) : (
+                          <div className="w-40 h-40 bg-slate-100 rounded flex items-center justify-center text-slate-400">
+                            <span className="material-symbols-outlined text-[48px]">qr_code_2</span>
+                          </div>
+                        )}
+                        <span className="font-mono text-[11px] text-slate-500 font-bold">
+                          NMID: ID2026880019 • IBI KKG REKBER
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 max-w-xs">
+                        Buka aplikasi <strong>ShopeePay, GoPay, DANA, OVO, BCA Mobile</strong>, atau m-banking apa saja lalu scan kode QR di atas.
+                      </p>
+                    </div>
+                  )}
+
+                  {snapChannel === 'bca_va' && (
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-2.5">
+                      <span className="text-xs font-bold text-slate-700">Nomor Virtual Account Bank (BCA / Mandiri):</span>
+                      <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
+                        <div>
+                          <span className="font-mono text-base font-bold text-slate-900 block tracking-wider">
+                            8801 3223 0104 9912
+                          </span>
+                          <span className="text-[11px] text-slate-500">
+                            a.n. REKBER KANTINKU - {stall.name}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText('8801322301049912', 'Nomor Virtual Account')}
+                          className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs cursor-pointer active:scale-95"
+                        >
+                          Salin
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-slate-500">
+                        Transfer ke nomor VA di atas. Sistem rekber otomatis mendeteksi tanpa perlu unggah bukti transfer manual.
+                      </p>
+                    </div>
+                  )}
+
+                  {snapChannel === 'gopay_dana' && (
+                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-3 text-center items-center">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                        <span className="material-symbols-outlined text-[28px]">account_balance_wallet</span>
+                      </div>
+                      <div>
+                        <h5 className="font-bold text-sm text-slate-900">ShopeePay / DANA Instant</h5>
+                        <p className="text-[11px] text-slate-500 mt-0.5">
+                          Saldo otomatis terpotong Rp {cartTotalAmount.toLocaleString('id-ID')} saat Anda klik konfirmasi.
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   <button
                     type="button"
@@ -1374,7 +1512,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     className="w-full min-h-[46px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-md"
                   >
                     <span className="material-symbols-outlined text-[20px]">verified</span>
-                    <span>Simulasikan Pembayaran Berhasil</span>
+                    <span>Simulasikan Pembayaran Berhasil (Callback Lunas)</span>
                   </button>
                 </>
               )}

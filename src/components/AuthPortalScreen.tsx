@@ -333,7 +333,9 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   // Seller Registration State
   const [regOwnerName, setRegOwnerName] = useState('');
   const [regStallName, setRegStallName] = useState('');
-  const [regBuilding, setRegBuilding] = useState<'Gedung A' | 'Gedung B'>('Gedung A');
+  const [regBuilding, setRegBuilding] = useState<
+    'Gedung A' | 'Gedung B' | 'Sentra UMKM' | 'Kantin Mitra'
+  >('Gedung A');
   const [regLocationDetail, setRegLocationDetail] = useState('');
   const [regCategory, setRegCategory] = useState('Makanan Berat & Minuman');
   const [regHours, setRegHours] = useState('07.00–17.00');
@@ -1154,12 +1156,20 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                         <select
                           value={regBuilding}
                           onChange={(e) =>
-                            setRegBuilding(e.target.value as 'Gedung A' | 'Gedung B')
+                            setRegBuilding(
+                              e.target.value as
+                                | 'Gedung A'
+                                | 'Gedung B'
+                                | 'Sentra UMKM'
+                                | 'Kantin Mitra'
+                            )
                           }
                           className="h-10 px-3 rounded-xl bg-slate-50/80 border border-slate-200 text-slate-900 text-xs focus:bg-white focus:border-emerald-600 focus:ring-2 focus:ring-emerald-500/15 outline-none"
                         >
                           <option value="Gedung A">Area Kantin Dekat Hall D (Deretan Utama)</option>
                           <option value="Gedung B">Area Kantin Dekat Hall D (Sudut Duduk)</option>
+                          <option value="Sentra UMKM">Pujasera / Sentra UMKM Kuliner Mitra Kampus</option>
+                          <option value="Kantin Mitra">Kantin Mitra / Stan Mandiri Eksternal</option>
                         </select>
                       </div>
                       <div className="flex flex-col gap-1">
