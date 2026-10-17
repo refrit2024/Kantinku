@@ -150,7 +150,7 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
       ctx.fillStyle = '#FFFFFF';
       ctx.textAlign = 'center';
       ctx.font = 'bold 26px Inter, sans-serif';
-      ctx.fillText('NOTA PESANAN RESMI — KANTINKU IBI KKG', width / 2, 92);
+      ctx.fillText('NOTA PESANAN RESMI — UNIFOOD', width / 2, 92);
 
       ctx.fillStyle = '#94A3B8';
       ctx.font = '600 15px Inter, sans-serif';
@@ -357,9 +357,41 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
 
         {/* Scrollable Receipt Body */}
         <div className="p-4 sm:p-5 overflow-y-auto flex flex-col gap-4">
-          {/* Petunjuk Pengambilan / Dine-In (Tanpa Peta Rumit) */}
+          {/* Petunjuk Pengambilan / Dine-In / Jastip Antar-Lantai */}
           {order.status !== 'rejected' && (
-            order.fulfillmentType === 'dine_in' ? (
+            order.fulfillmentType === 'jastip_lantai' ? (
+              <div className="p-3.5 rounded-2xl bg-purple-50/90 border border-purple-200/90 flex flex-col gap-2">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                    <span className="material-symbols-outlined text-[20px]">directions_run</span>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-bold text-purple-950">Titip-Antar Mahasiswa (Jastip Kampus)</span>
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-200 text-purple-900 border border-purple-300">
+                        {order.deliveryBuilding || 'Gedung A'} &bull; {order.deliveryFloor || 'Lt. 4'} ({order.deliveryRoom || 'Kelas'})
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-purple-900 leading-relaxed mt-1">
+                      Pesanan akan diantarkan langsung oleh kurir sesama mahasiswa ke depan ruangan kelas Anda.
+                    </p>
+                  </div>
+                </div>
+
+                {/* PIN Serah Terima Box */}
+                <div className="bg-white p-3 rounded-xl border border-purple-200 flex items-center justify-between">
+                  <div>
+                    <span className="text-[10px] text-slate-500 font-bold uppercase block">4-Digit PIN Serah Terima:</span>
+                    <span className="font-mono text-xl font-extrabold text-purple-900 tracking-widest">
+                      {order.runnerPinCode || '1234'}
+                    </span>
+                  </div>
+                  <div className="text-right text-[11px] text-slate-500 max-w-[200px]">
+                    Tunjukkan PIN ini ke kurir mahasiswa saat makanan diserahkan.
+                  </div>
+                </div>
+              </div>
+            ) : order.fulfillmentType === 'dine_in' ? (
               <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 flex items-start gap-3">
                 <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
                   <span className="material-symbols-outlined text-[20px]">table_restaurant</span>

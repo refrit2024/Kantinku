@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { normalizeStallLocation, OrderTransaction, Stall, StudentAccount } from '../data/kantinData';
+import { normalizeStallLocation, OrderStatusType, OrderTransaction, Stall, StudentAccount } from '../data/kantinData';
 import { OrderReceiptModal } from './OrderReceiptModal';
-import { LiveGpsTrackerMap } from './LiveGpsTrackerMap';
 
-export type StudentSubTab = 'kantin' | 'peta-gps' | 'kategori' | 'favorit' | 'pesanan';
+export type StudentSubTab = 'kantin' | 'kategori' | 'favorit' | 'pesanan';
 
 interface KatalogScreenProps {
   stalls: Stall[];
@@ -23,6 +22,7 @@ interface KatalogScreenProps {
   onLogoutStudent?: () => void;
   onOpenAuthPortal?: () => void;
   onPlaceOrder?: (orderData: any) => OrderTransaction;
+  onUpdateOrderStatus?: (orderId: string, nextStatus: OrderStatusType) => void;
   onShowToast?: (message: string, isError?: boolean) => void;
 }
 
@@ -41,6 +41,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   onLogoutStudent,
   onOpenAuthPortal,
   onPlaceOrder,
+  onUpdateOrderStatus,
   onShowToast,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,6 +79,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
     }
   });
   const [orderScopeTab, setOrderScopeTab] = useState<'my_orders'>('my_orders');
+  const [orderStatusFilter, setOrderStatusFilter] = useState<'all' | 'active' | 'completed'>('all');
   const [isEditingIdentity, setIsEditingIdentity] = useState(false);
   const [tempNameInput, setTempNameInput] = useState(currentStudentName);
   const [tempNimInput, setTempNimInput] = useState(currentStudentNim);
@@ -182,16 +184,26 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   // Never dump other students' orders into this screen.
   const scopedOrders = myOrdersList;
 
-  const filteredStudentOrders = scopedOrders.filter((ord) => {
-    const q = orderLookupQuery.trim().toLowerCase();
-    if (!q) return true;
-    return (
-      ord.studentNim.toLowerCase().includes(q) ||
-      ord.studentName.toLowerCase().includes(q) ||
-      ord.id.toLowerCase().includes(q) ||
-      ord.stallName.toLowerCase().includes(q)
-    );
-  });
+  const filteredStudentOrders = scopedOrders
+    .filter((ord) => {
+      if (orderStatusFilter === 'active') {
+        return ord.status !== 'completed' && ord.status !== 'rejected';
+      }
+      if (orderStatusFilter === 'completed') {
+        return ord.status === 'completed' || ord.status === 'rejected';
+      }
+      return true;
+    })
+    .filter((ord) => {
+      const q = orderLookupQuery.trim().toLowerCase();
+      if (!q) return true;
+      return (
+        ord.studentNim.toLowerCase().includes(q) ||
+        ord.studentName.toLowerCase().includes(q) ||
+        ord.id.toLowerCase().includes(q) ||
+        ord.stallName.toLowerCase().includes(q)
+      );
+    });
 
   // Filter logic for Stalls & Menu Items
   const filteredStalls = stalls.filter((stall) => {
@@ -284,11 +296,6 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
           <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto py-0.5">
             {[
               { id: 'kantin', label: 'Semua Stan', icon: 'storefront' },
-              {
-                id: 'peta-gps',
-                label: 'Peta GPS & Rute',
-                icon: 'near_me',
-              },
               { id: 'kategori', label: 'Eksplor Menu', icon: 'restaurant_menu' },
               {
                 id: 'favorit',
@@ -328,8 +335,14 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   )}
 
                   {tab.activeCount !== undefined && tab.activeCount > 0 && (
-                    <span className="tabular-nums font-bold text-xs text-amber-300">
-                      ({tab.activeCount})
+                    <span
+                      className={`tabular-nums font-bold text-[11px] px-1.5 py-0.5 rounded-full transition-colors ${
+                        isActive
+                          ? 'bg-white text-emerald-800 font-black'
+                          : 'bg-emerald-100 text-emerald-800'
+                      }`}
+                    >
+                      {tab.activeCount}
                     </span>
                   )}
                 </button>
@@ -354,17 +367,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
       {/* 2. MAIN CONTAINER */}
       <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2 sm:pt-2.5 flex flex-col gap-3">
 
-        {/* SUB-TAB: PETA GPS REAL-TIME */}
-        {activeSubTab === 'peta-gps' ? (
-          <div className="flex flex-col gap-3">
-            <LiveGpsTrackerMap
-              stalls={stalls}
-              onSelectStall={onSelectStall}
-              mode="student-directory"
-              onShowToast={onShowToast}
-            />
-          </div>
-        ) : activeSubTab === 'pesanan' ? (
+        {activeSubTab === 'pesanan' ? (
           /* SUB-TAB: PESANAN SAYA (ShopeeFood / Gojek Order Tracker) */
           <div className="flex flex-col gap-2.5">
             {/* Clean Compact Header & Controls */}
@@ -450,6 +453,56 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   </button>
                 )}
               </div>
+            </div>
+
+            {/* Status Filter Tabs (Semua, Sedang Berjalan, Selesai) */}
+            <div className="flex items-center justify-between gap-2 overflow-x-auto no-scrollbar py-1">
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('all')}
+                  className={`min-h-[34px] px-3 py-1 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 ${
+                    orderStatusFilter === 'all'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <span>Semua</span>
+                  <span className="text-[11px] opacity-80 tabular-nums">({myOrdersList.length})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('active')}
+                  className={`min-h-[34px] px-3 py-1 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 ${
+                    orderStatusFilter === 'active'
+                      ? 'bg-emerald-600 text-white shadow-2xs'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Sedang Berjalan</span>
+                  <span className="text-[11px] opacity-90 font-bold tabular-nums">({myActiveOrdersCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOrderStatusFilter('completed')}
+                  className={`min-h-[34px] px-3 py-1 rounded-xl text-xs font-semibold cursor-pointer transition-all flex items-center gap-1.5 ${
+                    orderStatusFilter === 'completed'
+                      ? 'bg-slate-700 text-white shadow-2xs'
+                      : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                  <span>Riwayat Selesai</span>
+                  <span className="text-[11px] opacity-80 tabular-nums">
+                    ({myOrdersList.filter((o) => o.status === 'completed' || o.status === 'rejected').length})
+                  </span>
+                </button>
+              </div>
+
+              <span className="hidden sm:inline text-[11px] text-slate-500 font-medium">
+                Pesanan yang telah diambil tetap tersimpan sebagai riwayat nota.
+              </span>
             </div>
 
             {/* Inline Identity Editor Drawer */}
@@ -566,35 +619,19 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     return (
                       <div
                         key={ord.id}
-                        className="bg-white rounded-xl sm:rounded-2xl p-3.5 sm:p-4 shadow-sm border border-slate-200/80 flex flex-col gap-3"
+                        className={`rounded-2xl p-4 sm:p-5 border transition-all flex flex-col justify-between gap-3.5 ${
+                          ord.status === 'ready_pickup'
+                            ? 'bg-emerald-50/40 border-emerald-400 ring-1 ring-emerald-400/40 shadow-sm'
+                            : ord.status === 'completed'
+                            ? 'bg-white border-slate-200/90 shadow-2xs hover:shadow-sm'
+                            : 'bg-white border-slate-200 shadow-xs hover:shadow-sm'
+                        }`}
                       >
-                        <div className="flex flex-col gap-2.5">
-                          <div className="flex items-start justify-between gap-2">
-                            <div>
-                              <div className="flex items-center gap-1.5 mb-1 flex-wrap">
-                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-200/80 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
-                                  Pesanan Akun Anda
-                                </span>
-                                {isAutoPaid && (
-                                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
-                                    <span className="material-symbols-outlined text-[12px]">verified</span>
-                                    Lunas Otomatis (Gateway)
-                                  </span>
-                                )}
-                                {ord.fulfillmentType === 'dine_in' ? (
-                                  <span className="text-[10px] font-black text-amber-900 bg-amber-200 border border-amber-300 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[12px]">table_restaurant</span>
-                                    Makan di Meja {ord.tableNumber || '-'}
-                                  </span>
-                                ) : (
-                                  <span className="text-[10px] font-bold text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md flex items-center gap-1">
-                                    <span className="material-symbols-outlined text-[12px]">shopping_bag</span>
-                                    Ambil di Stan
-                                  </span>
-                                )}
-                              </div>
-                              <h4 className="font-bold text-slate-900 text-base">
+                        <div className="flex flex-col gap-3">
+                          {/* Card Header: Stall Name, Date, and Status Badge */}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-bold text-slate-900 text-base sm:text-lg leading-snug truncate">
                                 {ord.stallName}
                               </h4>
                               <p className="text-xs text-slate-500 font-mono mt-0.5">
@@ -602,7 +639,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               </p>
                             </div>
                             <span
-                              className={`px-2 py-0.5 rounded-full text-xs font-bold border flex items-center gap-1 shrink-0 ${statusConfig.bg}`}
+                              className={`px-2.5 py-1 rounded-full text-xs font-semibold border flex items-center gap-1.5 shrink-0 ${statusConfig.bg}`}
                             >
                               <span className={`w-1.5 h-1.5 rounded-full ${statusConfig.dot}`} />
                               <span>
@@ -613,74 +650,143 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                             </span>
                           </div>
 
-                          <div className="p-2.5 rounded-xl bg-slate-50 text-xs flex flex-col gap-1 border border-slate-100">
-                            <div className="flex justify-between text-slate-600">
-                              <span>Pemesan:</span>
-                              <span className="font-semibold text-slate-900">
-                                {ord.studentName} ({ord.studentNim})
-                              </span>
-                            </div>
+                          {/* Context Tags Row */}
+                          <div className="flex items-center gap-1.5 flex-wrap">
                             {ord.fulfillmentType === 'dine_in' ? (
-                              <div className="flex justify-between text-slate-600">
-                                <span>Layanan:</span>
-                                <span className="font-bold text-amber-800">
-                                  Makan di Tempat (Meja {ord.tableNumber || '-'})
-                                </span>
-                              </div>
+                              <span className="text-[11px] font-bold text-amber-900 bg-amber-100/90 border border-amber-200 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px]">table_restaurant</span>
+                                Makan di Meja {ord.tableNumber || '-'}
+                              </span>
                             ) : (
-                              <div className="flex justify-between text-slate-600">
-                                <span>Jam Ambil:</span>
-                                <span className="font-semibold text-emerald-700">{ord.pickupTime}</span>
-                              </div>
+                              <span className="text-[11px] font-medium text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px]">shopping_bag</span>
+                                Ambil di Stan
+                              </span>
                             )}
-                            <div className="flex justify-between text-slate-600">
-                              <span>Bayar:</span>
-                              <span className="font-semibold text-slate-900">
+                            {isAutoPaid ? (
+                              <span className="text-[11px] font-medium text-emerald-800 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-lg flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
+                                Lunas Otomatis
+                              </span>
+                            ) : (
+                              <span className="text-[11px] font-medium text-slate-600 bg-slate-50 border border-slate-200 px-2 py-0.5 rounded-lg">
                                 {ord.paymentProviderLabel}
                               </span>
+                            )}
+                          </div>
+
+                          {/* Status Feedback Banner */}
+                          {ord.status === 'ready_pickup' && (
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-3 py-2.5 rounded-xl bg-emerald-600 text-white shadow-xs">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-[18px] shrink-0">notifications_active</span>
+                                <span className="text-xs font-bold leading-tight">
+                                  {ord.fulfillmentType === 'dine_in'
+                                    ? `Makanan siap disajikan di Meja ${ord.tableNumber || '-'}!`
+                                    : 'Pesanan sudah siap diambil di stan!'}
+                                </span>
+                              </div>
+                              {onUpdateOrderStatus && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    onUpdateOrderStatus(ord.id, 'completed');
+                                    onShowToast?.(`Pesanan #${ord.id} berhasil ditandai sudah diambil!`);
+                                  }}
+                                  className="min-h-[32px] px-3 py-1 rounded-lg bg-white text-emerald-800 text-xs font-bold hover:bg-emerald-50 active:scale-95 transition-all shrink-0 cursor-pointer shadow-2xs flex items-center justify-center gap-1"
+                                >
+                                  <span className="material-symbols-outlined text-[15px]">check_circle</span>
+                                  <span>Sudah Diambil ✓</span>
+                                </button>
+                              )}
+                            </div>
+                          )}
+                          {ord.status === 'completed' && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-50 text-[11px] text-slate-600 font-medium border border-slate-200/80">
+                              <span className="material-symbols-outlined text-[15px] text-emerald-600 shrink-0">check_circle</span>
+                              <span>Pesanan sudah selesai diambil &amp; tercatat di riwayat.</span>
+                            </div>
+                          )}
+
+                          {/* Info Box: Pemesan, Jam Ambil & Metode */}
+                          <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-100 text-xs flex flex-col gap-1.5">
+                            <div className="flex items-center justify-between text-slate-600">
+                              <span>Pemesan:</span>
+                              <span className="font-semibold text-slate-900 text-right">
+                                {ord.studentName} {ord.studentNim ? `(${ord.studentNim})` : ''}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between text-slate-600">
+                              <span>Jam Ambil:</span>
+                              <span className="font-bold text-emerald-700">{ord.pickupTime}</span>
+                            </div>
+                            <div className="flex items-center justify-between text-slate-600">
+                              <span>Metode Bayar:</span>
+                              <span className="font-medium text-slate-800">{ord.paymentProviderLabel}</span>
                             </div>
                           </div>
 
-                          <div className="flex flex-col gap-1 pt-0.5">
+                          {/* Menu Items List */}
+                          <div className="flex flex-col gap-1.5 pt-1">
                             {(ord.items ?? []).map((it, idx) => (
                               <div
                                 key={`${ord.id}-item-${idx}`}
                                 className="flex items-center justify-between text-xs text-slate-700"
                               >
-                                <span>
-                                  <strong>{it.quantity}x</strong> {it.name}
+                                <span className="line-clamp-1 pr-2">
+                                  <span className="font-bold text-slate-900">{it.quantity}x</span> {it.name}
                                 </span>
-                                <span className="font-medium">
+                                <span className="font-medium shrink-0 tabular-nums">
                                   Rp {(it.price * it.quantity).toLocaleString('id-ID')}
                                 </span>
                               </div>
                             ))}
-                            <div className="flex items-center justify-between pt-1.5 border-t border-slate-100 text-xs sm:text-sm font-bold text-slate-900">
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs sm:text-sm font-bold text-slate-900">
                               <span>Total Bayar:</span>
-                              <span className="text-emerald-700">
+                              <span className="text-emerald-700 text-sm sm:text-base tabular-nums font-black">
                                 Rp {(ord.totalAmount ?? 0).toLocaleString('id-ID')}
                               </span>
                             </div>
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100 mt-auto">
-                          <button
-                            type="button"
-                            onClick={() => setSelectedReceiptOrder(ord)}
-                            className="min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition-all"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">receipt_long</span>
-                            <span>Nota Digital</span>
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => onSelectStall(ord.stallId)}
-                            className="min-h-[38px] px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">storefront</span>
-                            <span>Buka Stan</span>
-                          </button>
+                        {/* Card Actions */}
+                        <div className="flex flex-col gap-2 pt-2 border-t border-slate-100 mt-auto">
+                          {onUpdateOrderStatus && (ord.status === 'ready_pickup' || ord.status === 'cooking') && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                onUpdateOrderStatus(ord.id, 'completed');
+                                onShowToast?.(`Pesanan #${ord.id} berhasil ditandai sudah diambil!`);
+                              }}
+                              className="w-full min-h-[40px] px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-95 transition-all"
+                            >
+                              <span className="material-symbols-outlined text-[17px]">task_alt</span>
+                              <span>Konfirmasi Sudah Saya Ambil</span>
+                            </button>
+                          )}
+                          <div className="grid grid-cols-2 gap-2.5">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedReceiptOrder(ord)}
+                              className={`min-h-[40px] px-3 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all ${
+                                ord.status === 'completed'
+                                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[16px]">receipt_long</span>
+                              <span>Nota Digital</span>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => onSelectStall(ord.stallId)}
+                              className="min-h-[40px] px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                            >
+                              <span className="material-symbols-outlined text-[16px]">storefront</span>
+                              <span>Buka Stan</span>
+                            </button>
+                          </div>
                         </div>
                       </div>
                     );
@@ -692,50 +798,36 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
         ) : (
           /* SUB-TAB: SEMUA KANTIN / EKSPLOR MENU / FAVORIT */
           <div className="flex flex-col gap-3.5 sm:gap-4">
-            {/* 3. SHOPEEFOOD/GOJEK STYLE HERO BANNER & SEARCH SECTION */}
-            <section className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-4 sm:p-6 shadow-md">
+            {/* 3. HERO BANNER & SEARCH SECTION */}
+            <section className="relative overflow-hidden rounded-2xl bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-3.5 sm:p-5 shadow-md">
               {/* Subtle background decorative shapes */}
               <div className="absolute -top-12 -right-12 w-56 h-56 rounded-full bg-emerald-600/30 blur-2xl pointer-events-none"></div>
               <div className="absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-teal-500/20 blur-2xl pointer-events-none"></div>
 
               <div className="relative z-10 flex flex-col gap-3 sm:gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex flex-col gap-1">
-                    {/* Eyebrow Kicker - Clean unboxed metadata (Skill.md zero-pill & anti-slop rules) */}
-                    <div className="flex items-center gap-2 text-xs font-medium text-emerald-200/90 tracking-wide">
-                      <span>KantinKu IBI Kwik Kian Gie</span>
-                      <span aria-hidden="true" className="text-emerald-400">·</span>
-                      <span>Bebas Biaya Admin</span>
-                    </div>
-                    <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight text-white mt-1 text-balance">
-                      Mau Makan Apa Hari Ini?
+                  <div className="flex-1">
+                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white text-balance">
+                      Pesan Makanan &amp; Jastip
                     </h1>
-                    <p className="text-xs sm:text-sm text-emerald-100/90 max-w-xl leading-relaxed">
-                      Pesan menu makanan &amp; minuman favorit langsung dari pedagang kantin kampus. Harga jujur tanpa mark-up.
+                    <p className="text-xs sm:text-sm text-emerald-100/90 leading-normal mt-0.5">
+                      Pesan menu kantin favorit atau titip antar ke ruang kelas saat jeda kuliah.
                     </p>
                   </div>
 
-                  {/* Hero Actions (Selector 8) - Touch targets >= 44px, responsive width */}
-                  <div className="flex items-center gap-2.5 self-start sm:self-center shrink-0 flex-wrap sm:flex-nowrap w-full sm:w-auto">
-                    <button
-                      type="button"
-                      onClick={() => onChangeSubTab('peta-gps')}
-                      className="min-h-[44px] px-4 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-md active:scale-95 transition-all flex-1 sm:flex-none"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">near_me</span>
-                      <span>Peta &amp; Navigasi Stan</span>
-                    </button>
-                    {hasActiveFilters && (
+                  {/* Hero Actions - Clean & Minimal */}
+                  {hasActiveFilters && (
+                    <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
                       <button
                         type="button"
                         onClick={resetAllFilters}
-                        className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md"
+                        className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md transition-all"
                       >
                         <span className="material-symbols-outlined text-[16px]">restart_alt</span>
                         <span>Reset ({activeFilterCount})</span>
                       </button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Search Bar - Responsive Clean Input */}
@@ -752,8 +844,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       id="menuSearchInput"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari ayam geprek, nasi padang, es kopi, bento, atau nama stan..."
-                      className="w-full h-12 sm:h-14 pl-12 pr-12 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-3 focus:ring-amber-400/50 transition-all"
+                      placeholder="Cari menu makanan, minuman, atau nama stan..."
+                      className="w-full h-11 sm:h-12 pl-12 pr-12 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-3 focus:ring-amber-400/50 transition-all"
                     />
                     {searchQuery && (
                       <button

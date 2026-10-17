@@ -14,7 +14,6 @@ import {
   WithdrawalRecord,
 } from '../data/kantinData';
 import { StallQrModal } from './StallQrModal';
-import { LiveGpsTrackerMap } from './LiveGpsTrackerMap';
 import {
   compressUploadedImage,
   generateReceiptSecurityCode,
@@ -2575,20 +2574,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                 </span>
               </div>
 
-              {/* PEMANCAR LIVE GPS HP PENJUAL */}
-              <LiveGpsTrackerMap
-                stalls={allStalls || [stall]}
-                sellerStall={stall}
-                mode="seller-broadcast"
-                onUpdateSellerGps={(gps) => {
-                  onUpdateStallProfile({
-                    gpsLocation: gps,
-                    lastUpdatedDate: 'Hari ini',
-                    lastUpdatedTime: gps.updatedAt,
-                  });
-                }}
-                onShowToast={onShowToast}
-              />
+
 
               <form onSubmit={handleSaveProfile} className="flex flex-col gap-3.5 pt-1">
                 <div className="flex flex-col gap-2">

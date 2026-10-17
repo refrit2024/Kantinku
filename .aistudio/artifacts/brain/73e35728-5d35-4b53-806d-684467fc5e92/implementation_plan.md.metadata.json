@@ -1,6 +1,6 @@
 {
-  "summary": "Dokumen Analisis dan Perancangan Sistem Platform Kantinku & Multi-UMKM yang telah diperbarui secara mendalam dengan Rancang Bangun UI/UX lengkap: Persona & Empathy Mapping, User Journey, Prinsip Ergonomi Kasir & Dapur, Arsitektur Informasi, 7 Wireframe Visual ASCII Layout, serta Design System Tokens.",
-  "updatedAt": "2026-10-14T13:34:17.453133424Z",
+  "summary": "Spesifikasi Lengkap Halaman Interaktif Alur Sistem & Diagram UML Platform Unifood (Hyper-Local Food & Student Jastip Ecosystem). Mencakup 4 peran pengguna (Mahasiswa, Kurir Jastip Mahasiswa, Mitra Stan UMKM, Admin Kampus), simulator langkah bertahap, dan 5 spesifikasi Diagram UML (Use Case, Activity Swimlanes, Sequence Diagram, State Machine, dan Class Diagram).",
+  "updatedAt": "2026-10-16T07:27:07.404885588Z",
   "requestFeedback": true,
   "userFacing": true
 }

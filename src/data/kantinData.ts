@@ -12,6 +12,9 @@ export interface MenuItem {
   altCatalog: string;
   altMerchant: string;
   icon: string;
+  isStudentEntrepreneur?: boolean;
+  entrepreneurStudentName?: string;
+  isPreOrderDiscount?: boolean;
 }
 
 export interface ReviewItem {
@@ -56,7 +59,29 @@ export type OrderStatusType =
   | 'completed'
   | 'rejected';
 
-export type FulfillmentType = 'pickup' | 'dine_in';
+export type FulfillmentType = 'pickup' | 'dine_in' | 'jastip_lantai';
+
+export type RunnerDeliveryStatus =
+  | 'waiting_runner'
+  | 'assigned'
+  | 'picking_up'
+  | 'delivering_to_floor'
+  | 'arrived_at_room'
+  | 'delivered';
+
+export interface StudentRunnerProfile {
+  studentId: string;
+  studentNim: string;
+  studentName: string;
+  phone: string;
+  isVerifiedKtm: boolean;
+  completedDeliveries: number;
+  totalEarnings: number;
+  rating: number;
+  currentBuilding: string;
+  currentFloor: string;
+  isOnline: boolean;
+}
 
 export interface OrderTransaction {
   id: string;
@@ -70,6 +95,32 @@ export interface OrderTransaction {
   pickupTime: string;
   fulfillmentType?: FulfillmentType;
   tableNumber?: string;
+  // Hierarki Lokasi Mikro Antar-Lantai (Unifood P2P Jastip Mahasiswa)
+  campusName?: string;
+  deliveryBuilding?: string;
+  deliveryFloor?: string;
+  deliveryRoom?: string;
+  deliveryNotes?: string;
+  // Fitur Jastip Mahasiswa (Student Runner)
+  jastipFee?: number;
+  convenienceFee?: number;
+  runnerId?: string;
+  runnerName?: string;
+  runnerNim?: string;
+  runnerPhone?: string;
+  runnerPinCode?: string;
+  runnerStatus?: RunnerDeliveryStatus;
+  // Fitur Pre-Order Harian & Slot Istirahat
+  preOrderSlot?: string;
+  isPreOrder?: boolean;
+  // Fitur Group Order & Split Bill
+  isGroupOrder?: boolean;
+  groupShareCode?: string;
+  splitBillCount?: number;
+  splitBillPerPerson?: number;
+  // Fitur Kemitraan HIMA/BEM Voucher
+  himaVoucherCode?: string;
+  himaDiscount?: number;
   notes?: string;
   items: OrderItem[];
   subtotalAmount?: number;
@@ -138,7 +189,54 @@ export interface Stall {
   menuItems: MenuItem[];
   reviews: ReviewItem[];
   dineInAvailable?: boolean;
+  isStudentEntrepreneur?: boolean;
+  campusName?: string;
 }
+
+export const CAMPUS_OPTIONS = [
+  'Institut Bisnis dan Informatika Kwik Kian Gie (IBI KKG)',
+  'Binus University Kemanggisan',
+  'Universitas Bunda Mulia (UBM)',
+];
+
+export const BUILDING_OPTIONS = [
+  'Gedung A',
+  'Gedung B',
+  'Sentra UMKM',
+  'Kantin Mitra',
+  'Tower Utama',
+];
+
+export const FLOOR_OPTIONS = [
+  'Lantai 1 (Kantin Dasar)',
+  'Lantai 2 (Student Center)',
+  'Lantai 3 (Ruang Kelas 301-310)',
+  'Lantai 4 (Perpustakaan & Lounge)',
+  'Lantai 5 (Ruang Kelas 501-512)',
+  'Lantai 6 (Lab Komputer & Praktikum)',
+  'Lantai 7 (Auditorium & Ruang Dosen)',
+];
+
+export const PREORDER_SLOTS = [
+  'Sekarang (Langsung Masak 15-20 mnt)',
+  'Slot Istirahat Pagi (10:00 - 10:30 WIB)',
+  'Slot Makan Siang Puncak (12:00 - 13:00 WIB)',
+  'Slot Break Sore (15:00 - 15:30 WIB)',
+];
+
+export const INITIAL_RUNNER_PROFILE: StudentRunnerProfile = {
+  studentId: 'std-32230105',
+  studentNim: '32230105',
+  studentName: 'Aldo Phiong (Runner Aktif)',
+  phone: '081298765432',
+  isVerifiedKtm: true,
+  completedDeliveries: 14,
+  totalEarnings: 35000,
+  rating: 4.9,
+  currentBuilding: 'Gedung A',
+  currentFloor: 'Lantai 1 (Kantin Dasar)',
+  isOnline: true,
+};
 
 export interface VerificationRequest {
   id: string;
@@ -873,6 +971,109 @@ export const INITIAL_STALLS: Stall[] = [
         rating: 5,
         date: '8 Oktober 2026',
         comment: 'Toast sosis telurnya enak buat ganjal perut sebelum masuk kelas jam 1 siang!',
+      },
+    ],
+  },
+  {
+    id: 'stan-unipreneur-coffee',
+    name: 'Unipreneur Hub (Wirausaha Mahasiswa)',
+    code: 'Booth Mhs',
+    mapPinCode: 'Kantin A',
+    building: 'Gedung A',
+    campusName: 'Institut Bisnis dan Informatika Kwik Kian Gie (IBI KKG)',
+    isStudentEntrepreneur: true,
+    distanceMeters: 30,
+    locationDetail: 'Student Lounge & Koridor Lt. 2 (Booth Titip-Jual)',
+    fullLocation: 'Gedung Kampus IBI KKG, Student Lounge Lt. 2',
+    walkingGuide:
+      'Naik ke Lantai 2 Student Lounge atau koridor Hall Utama. Booth kewirausahaan mahasiswa.',
+    specialty: 'Kopi Susu Literan Homemade, Donat Kentang, & Snack Mahasiswa',
+    description:
+      'Etalase produk kuliner kreatif karya mahasiswa IBI KKG: Kopi susu aren botolan, donat kentang homemade, dan camilan renyah modal kuliah.',
+    daysOpen: 'Senin–Jumat',
+    hours: '08.00–17.00',
+    rating: 4.9,
+    reviewCount: 56,
+    visitorsCount: 172,
+    isOpen: true,
+    lastUpdatedDate: '8 Oktober 2026',
+    lastUpdatedTime: '09:00 WIB',
+    verifiedAt: '8 Oktober 2026 • 09:00 WIB',
+    bannerImage:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
+    heroImage:
+      'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
+    bannerAlt: 'Booth Unipreneur Hub Wirausaha Mahasiswa',
+    whatsapp: '6281298765432',
+    paymentMethods: ['QRIS tersedia', 'Tunai di Booth'],
+    menuItems: [
+      {
+        id: 'uni-1',
+        name: 'Kopi Susu Aren Botol 500ml',
+        description:
+          'Cold brew kopi robusta blend susu segar dan gula aren asli, racikan Alden (TI 2024).',
+        price: 18000,
+        category: 'minuman',
+        status: 'ready',
+        lastUpdated: '8 Oktober 2026',
+        imageCatalog:
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
+        imageMerchant:
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
+        altCatalog: 'Kopi Susu Aren Botol 500ml Mahasiswa',
+        altMerchant: 'Kopi Susu Aren Botol 500ml Mahasiswa',
+        icon: 'local_cafe',
+        isStudentEntrepreneur: true,
+        entrepreneurStudentName: 'Alden (TI 2024)',
+      },
+      {
+        id: 'uni-2',
+        name: 'Donat Kentang Homemade Isi 3',
+        description:
+          'Donat kentang empuk topping meses cokelat dan keju kraft, buatan Sarah (Akuntansi 2023).',
+        price: 12000,
+        category: 'snack',
+        status: 'ready',
+        lastUpdated: '8 Oktober 2026',
+        imageCatalog:
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
+        imageMerchant:
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
+        altCatalog: 'Donat Kentang Homemade Isi 3',
+        altMerchant: 'Donat Kentang Homemade Isi 3',
+        icon: 'bakery_dining',
+        isStudentEntrepreneur: true,
+        entrepreneurStudentName: 'Sarah (Akuntansi 2023)',
+      },
+      {
+        id: 'uni-3',
+        name: 'Risoles Mayo Smoked Beef (Isi 2)',
+        description:
+          'Kulit lembut isi telur rebus, smoked beef, keju leleh, dan saus mayones gurih.',
+        price: 10000,
+        category: 'snack',
+        status: 'ready',
+        lastUpdated: '8 Oktober 2026',
+        imageCatalog:
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
+        imageMerchant:
+          'https://lh3.googleusercontent.com/aida-public/AB6AXuBSSyE2IWiPyYSe0nTD5FxC6l3iWwYu4WfIUqmmKqW45KV1ZrLHOIEHhEvJkRZgKfnrS5sEErb8ZFKMLBL0tHJupooW5Lq6dXXrbtFYZ9zFDtydsaJZCpuXlUkxgJfeSIz6v24A_6ixa6jnWrwdQ-owK8XRSeTIpCndbj1rFQko_Uii0En-YGdlzIKt74tXAOLgugf90QyH6het7dK5olAYc06YD01qasqHRXu8U7vO',
+        altCatalog: 'Risoles Mayo Smoked Beef',
+        altMerchant: 'Risoles Mayo Smoked Beef',
+        icon: 'lunch_dining',
+        isStudentEntrepreneur: true,
+        entrepreneurStudentName: 'Tim HIMA Manajemen Bisnis',
+      },
+    ],
+    reviews: [
+      {
+        id: 'rev-uni1',
+        studentName: 'Benedict',
+        majorAndYear: 'Informatika 2024',
+        rating: 5,
+        date: '8 Oktober 2026',
+        comment:
+          'Kopi susu literannya mantap buat nemenin nugas di lab komputer! Harganya ramah kantong.',
       },
     ],
   },

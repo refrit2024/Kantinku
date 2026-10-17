@@ -5,6 +5,7 @@ import {
   AdminCredentials,
   INITIAL_ADMIN_CREDENTIALS,
   INITIAL_PRICE_REPORTS,
+  INITIAL_RUNNER_PROFILE,
   INITIAL_SELLER_ACCOUNTS,
   INITIAL_STALLS,
   INITIAL_STUDENT_ACCOUNTS,
@@ -19,6 +20,7 @@ import {
   SellerAccount,
   Stall,
   StudentAccount,
+  StudentRunnerProfile,
   VerificationRequest,
 } from './data/kantinData';
 import { APIProvider } from '@vis.gl/react-google-maps';
@@ -27,6 +29,9 @@ import { KatalogScreen, StudentSubTab } from './components/KatalogScreen';
 import { DetailStanScreen } from './components/DetailStanScreen';
 import { KelolaMenuScreen } from './components/KelolaMenuScreen';
 import { AdminPortalScreen } from './components/AdminPortalScreen';
+import { AlurSistemScreen } from './components/AlurSistemScreen';
+import { JastipRunnerModal } from './components/JastipRunnerModal';
+import { UnifoodModelBisnisModal } from './components/UnifoodModelBisnisModal';
 import {
   checkActionCooldown,
   compressUploadedImage,
@@ -44,7 +49,8 @@ export type ScreenType =
   | 'katalog'
   | 'detail-stan'
   | 'kelola-menu'
-  | 'admin-portal';
+  | 'admin-portal'
+  | 'alur-sistem';
 
 const STORAGE_KEYS = {
   STUDENT_SESSION: 'kantinku_ibikkg_student_session_v1',
@@ -284,6 +290,132 @@ export default function App() {
   priceReportsRef.current = priceReports;
   const studentAccountsRef = useRef(studentAccounts);
   studentAccountsRef.current = studentAccounts;
+
+  // Unifood Jastip Runner & Model Bisnis States
+  const [isJastipModalOpen, setIsJastipModalOpen] = useState(false);
+  const [isModelBisnisModalOpen, setIsModelBisnisModalOpen] = useState(false);
+  const [runnerProfile, setRunnerProfile] = useState<StudentRunnerProfile>(() => {
+    try {
+      const saved = localStorage.getItem('unifood_runner_profile_v1');
+      return saved ? JSON.parse(saved) : INITIAL_RUNNER_PROFILE;
+    } catch {
+      return INITIAL_RUNNER_PROFILE;
+    }
+  });
+
+  const handleToggleRunnerOnline = () => {
+    setRunnerProfile((prev) => {
+      const updated = { ...prev, isOnline: !prev.isOnline };
+      try {
+        localStorage.setItem('unifood_runner_profile_v1', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    showToast(runnerProfile.isOnline ? 'Status Kurir: Istirahat' : 'Status Kurir: Siap Antar (Online)!');
+  };
+
+  const handleAcceptJastip = (orderId: string) => {
+    setOrders((prev) => {
+      const next = prev.map((ord) => {
+        if (ord.id === orderId) {
+          return {
+            ...ord,
+            runnerId: runnerProfile.studentId,
+            runnerName: runnerProfile.studentName,
+            runnerNim: runnerProfile.studentNim,
+            runnerStatus: 'assigned' as const,
+          };
+        }
+        return ord;
+      });
+      ordersRef.current = next;
+      syncStateToCloud(
+        stallsRef.current,
+        verificationsRef.current,
+        sellerAccountsRef.current,
+        adminCredentialsRef.current,
+        next
+      );
+      return next;
+    });
+    showToast(`Order ${orderId} berhasil Anda ambil! Segera ambil pesanan di stan kantin.`);
+  };
+
+  const handleUpdateDeliveryStatus = (
+    orderId: string,
+    nextStatus: 'picking_up' | 'delivering_to_floor' | 'arrived_at_room' | 'delivered',
+    pinInput?: string
+  ): boolean => {
+    const targetOrder = orders.find((o) => o.id === orderId);
+    if (!targetOrder) return false;
+
+    if (nextStatus === 'delivered') {
+      const expectedPin = targetOrder.runnerPinCode || '1234';
+      if ((pinInput || '').trim() !== expectedPin.trim()) {
+        return false;
+      }
+    }
+
+    setOrders((prev) => {
+      const next = prev.map((ord) => {
+        if (ord.id === orderId) {
+          return {
+            ...ord,
+            runnerStatus: nextStatus,
+            status: nextStatus === 'delivered' ? ('completed' as const) : ord.status,
+          };
+        }
+        return ord;
+      });
+      ordersRef.current = next;
+      syncStateToCloud(
+        stallsRef.current,
+        verificationsRef.current,
+        sellerAccountsRef.current,
+        adminCredentialsRef.current,
+        next
+      );
+      return next;
+    });
+
+    if (nextStatus === 'delivered') {
+      const earnedFee = targetOrder.jastipFee || 2500;
+      setRunnerProfile((prev) => {
+        const updated: StudentRunnerProfile = {
+          ...prev,
+          totalEarnings: prev.totalEarnings + earnedFee,
+          completedDeliveries: prev.completedDeliveries + 1,
+        };
+        try {
+          localStorage.setItem('unifood_runner_profile_v1', JSON.stringify(updated));
+        } catch {}
+        return updated;
+      });
+      showToast(
+        `Verifikasi PIN Sukses! Pesanan selesai dan +Rp ${earnedFee.toLocaleString('id-ID')} masuk ke dompet Anda!`
+      );
+    } else if (nextStatus === 'delivering_to_floor') {
+      showToast('Status: Makanan telah diambil dari stan, naik ke lantai kelas.');
+    } else if (nextStatus === 'arrived_at_room') {
+      showToast(`Tiba di depan kelas (${targetOrder.deliveryRoom || 'Titik Temu'}). Minta 4 digit PIN pemesan.`);
+    }
+
+    return true;
+  };
+
+  const handleWithdrawRunnerEarnings = (amount: number, dest: string) => {
+    setRunnerProfile((prev) => {
+      const updated: StudentRunnerProfile = {
+        ...prev,
+        totalEarnings: Math.max(0, prev.totalEarnings - amount),
+      };
+      try {
+        localStorage.setItem('unifood_runner_profile_v1', JSON.stringify(updated));
+      } catch {}
+      return updated;
+    });
+    showToast(`Penarikan uang saku Rp ${amount.toLocaleString('id-ID')} ke ${dest} berhasil diproses!`);
+  };
 
   // Helper to push shared state to Firebase Firestore Cloud Database
   const syncStateToCloud = async (
@@ -772,7 +904,7 @@ export default function App() {
   const handleContinueAsStudent = () => {
     setCurrentScreen('katalog');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    showToast('Selamat datang di Katalog & Peta Kantin IBI KKG!');
+    showToast('Selamat datang di Unifood!');
   };
 
   const handleLoginStudentSuccess = (account: StudentAccount) => {
@@ -1481,14 +1613,19 @@ export default function App() {
               type="button"
               onClick={() => setCurrentScreen('katalog')}
               className="flex items-center gap-2.5 text-left cursor-pointer min-h-[44px] group"
-              aria-label="KantinKu IBI KKG Beranda"
+              aria-label="Unifood Beranda"
             >
               <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform">
                 <span className="material-symbols-outlined text-[20px] sm:text-[22px]">restaurant</span>
               </div>
-              <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight whitespace-nowrap">
-                KantinKu <span className="text-emerald-700">IBI KKG</span>
-              </span>
+              <div className="flex flex-col">
+                <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap leading-none">
+                  Unifood
+                </span>
+                <span className="text-[10px] text-slate-500 font-semibold tracking-wide">
+                  Hyper-Local Food &amp; Jastip
+                </span>
+              </div>
             </button>
           </div>
 
@@ -1507,7 +1644,39 @@ export default function App() {
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">storefront</span>
-              <span>Katalog Kantin</span>
+              <span>Katalog &amp; Jastip</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsJastipModalOpen(true)}
+              className="min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-bold text-amber-900 bg-amber-200/80 hover:bg-amber-300 border border-amber-300 flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer shadow-2xs"
+            >
+              <span className="material-symbols-outlined text-[16px]">directions_run</span>
+              <span>Kurir Jastip</span>
+              <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black">+2.5k</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => navigateTo('alur-sistem')}
+              className={`min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+                currentScreen === 'alur-sistem'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">account_tree</span>
+              <span>Alur &amp; UML</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsModelBisnisModalOpen(true)}
+              className="min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-200/70 flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer"
+            >
+              <span className="material-symbols-outlined text-[16px]">verified</span>
+              <span>Model Bisnis</span>
             </button>
 
             {loggedInSeller && (
@@ -1538,7 +1707,7 @@ export default function App() {
                 <span className="material-symbols-outlined text-[16px]">
                   admin_panel_settings
                 </span>
-                <span>Portal Admin Kampus</span>
+                <span>Admin Kampus</span>
               </button>
             )}
 
@@ -1553,7 +1722,7 @@ export default function App() {
             >
               <span className="material-symbols-outlined text-[16px]">login</span>
               <span>
-                {loggedInSeller || isAdminLoggedIn ? 'Pindah Akun' : 'Portal Mitra Kantin'}
+                {loggedInSeller || isAdminLoggedIn ? 'Pindah Akun' : 'Portal Mitra'}
               </span>
             </button>
           </nav>
@@ -1668,6 +1837,7 @@ export default function App() {
             onLogoutStudent={handleLogoutStudent}
             onOpenAuthPortal={() => navigateTo('auth-portal')}
             onPlaceOrder={handlePlaceOrder}
+            onUpdateOrderStatus={handleUpdateOrderStatus}
             onShowToast={showToast}
           />
         )}
@@ -1854,14 +2024,14 @@ export default function App() {
                     type="button"
                     onClick={() => {
                       navigateTo('katalog');
-                      setStudentSubTab('peta-gps');
+                      setStudentSubTab('favorit');
                     }}
                     className="min-h-[40px] sm:min-h-[44px] py-1.5 sm:py-2 flex items-center gap-1.5 sm:gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
                   >
                     <span className="material-symbols-outlined text-[16px] sm:text-[17px] text-slate-600 group-hover:text-emerald-700 shrink-0">
-                      map
+                      favorite
                     </span>
-                    <span className="line-clamp-1">Peta &amp; Rute</span>
+                    <span className="line-clamp-1">Menu Favorit</span>
                   </button>
                   <button
                     type="button"
@@ -1989,7 +2159,7 @@ export default function App() {
                     Menu &amp; Navigasi
                   </h4>
                   <span className="text-xs text-slate-500 font-medium truncate">
-                    KantinKu IBI KKG
+                    Unifood
                   </span>
                 </div>
               </div>
@@ -2091,7 +2261,7 @@ export default function App() {
                   <span className="material-symbols-outlined text-[20px] shrink-0">storefront</span>
                   <div className="min-w-0">
                     <div className="text-xs font-bold">
-                      Katalog &amp; Peta Kantin
+                      Katalog &amp; Jastip
                     </div>
                     <div
                       className={`text-[11px] truncate ${

@@ -98,6 +98,19 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const [fulfillmentType, setFulfillmentType] = useState<FulfillmentType>('pickup');
   const [tableNumber, setTableNumber] = useState('');
   const [orderNotes, setOrderNotes] = useState('');
+
+  // Jastip Antar-Lantai & Micro-Location State
+  const [deliveryBuilding, setDeliveryBuilding] = useState('Gedung A');
+  const [deliveryFloor, setDeliveryFloor] = useState('Lantai 4 (Perpustakaan & Lounge)');
+  const [deliveryRoom, setDeliveryRoom] = useState('R. 402');
+  const [deliveryNotes, setDeliveryNotes] = useState('');
+  const [preOrderSlot, setPreOrderSlot] = useState('Sekarang (Langsung Masak 15-20 mnt)');
+  const [isGroupOrder, setIsGroupOrder] = useState(false);
+  const [splitBillCount, setSplitBillCount] = useState(3);
+  const [himaVoucherInput, setHimaVoucherInput] = useState('');
+  const [himaDiscountApplied, setHimaDiscountApplied] = useState(0);
+  const [himaVoucherMsg, setHimaVoucherMsg] = useState<{ text: string; isError: boolean } | null>(null);
+
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState<PaymentMethodType>('qris');
   const [selectedEwalletProvider, setSelectedEwalletProvider] = useState<
@@ -161,8 +174,15 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
   const cartTotalItems = cartItems.reduce((sum, i) => sum + i.quantity, 0);
   const cartSubtotalAmount = cartItems.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const JASTIP_RUNNER_FEE = 2500;
+  const activeJastipFee = fulfillmentType === 'jastip_lantai' ? JASTIP_RUNNER_FEE : 0;
   const activeServiceFee = selectedPaymentMethod === 'tunai' ? 0 : PLATFORM_SERVICE_FEE;
-  const cartTotalAmount = cartSubtotalAmount + activeServiceFee;
+  const rawSubtotal = cartSubtotalAmount + activeServiceFee + activeJastipFee;
+  const cartTotalAmount = Math.max(0, rawSubtotal - himaDiscountApplied);
+  const splitBillPerPerson =
+    isGroupOrder && splitBillCount > 1
+      ? Math.ceil(cartTotalAmount / splitBillCount)
+      : cartTotalAmount;
 
   useEffect(() => {
     let mounted = true;
@@ -224,7 +244,10 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     txId?: string
   ) => {
     const isDineIn = fulfillmentType === 'dine_in';
+    const isJastip = fulfillmentType === 'jastip_lantai';
     const cleanTable = tableNumber.trim();
+    const pin = Math.floor(1000 + Math.random() * 9000).toString();
+
     const createdOrder = onPlaceOrder({
       stallId: stall.id,
       stallName: stall.name,
@@ -235,7 +258,26 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       studentNim: studentNim.trim(),
       fulfillmentType,
       tableNumber: isDineIn ? cleanTable : undefined,
-      pickupTime: isDineIn ? `Makan di Meja ${cleanTable || 'Kantin'}` : pickupTime,
+      pickupTime: isDineIn
+        ? `Makan di Meja ${cleanTable || 'Kantin'}`
+        : isJastip
+        ? `Jastip Mahasiswa • ${preOrderSlot}`
+        : pickupTime,
+      campusName: stall.campusName || 'Institut Bisnis dan Informatika Kwik Kian Gie (IBI KKG)',
+      deliveryBuilding: isJastip ? deliveryBuilding : undefined,
+      deliveryFloor: isJastip ? deliveryFloor : undefined,
+      deliveryRoom: isJastip ? deliveryRoom.trim() : undefined,
+      deliveryNotes: isJastip ? deliveryNotes.trim() : undefined,
+      jastipFee: isJastip ? JASTIP_RUNNER_FEE : 0,
+      convenienceFee: activeServiceFee,
+      runnerPinCode: isJastip ? pin : undefined,
+      runnerStatus: isJastip ? 'waiting_runner' : undefined,
+      preOrderSlot: isJastip ? preOrderSlot : undefined,
+      isGroupOrder: isGroupOrder,
+      splitBillCount: isGroupOrder ? splitBillCount : undefined,
+      splitBillPerPerson: isGroupOrder ? splitBillPerPerson : undefined,
+      himaVoucherCode: himaDiscountApplied > 0 ? himaVoucherInput.trim().toUpperCase() : undefined,
+      himaDiscount: himaDiscountApplied,
       notes: orderNotes.trim() || undefined,
       items: cartItems,
       subtotalAmount: cartSubtotalAmount,
@@ -251,11 +293,27 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     setCartQuantities({});
     setOrderNotes('');
     setTableNumber('');
+    setDeliveryNotes('');
     setPaymentReference('');
     setCheckoutModalOpen(false);
     setSnapGatewayOpen(false);
     setSnapStep('select');
     setReceiptOrder(createdOrder);
+  };
+
+  const handleApplyHimaVoucher = () => {
+    const code = himaVoucherInput.trim().toUpperCase();
+    if (!code) {
+      setHimaVoucherMsg({ text: 'Masukkan kode kupon HIMA / Organisasi Kampus.', isError: true });
+      return;
+    }
+    if (code === 'HIMA2026' || code === 'BEMPEDULI' || code === 'STUDENTPREP' || code === 'UNIFOOD5K') {
+      const discount = 5000;
+      setHimaDiscountApplied(discount);
+      setHimaVoucherMsg({ text: `Kupon ${code} Aktif! Potongan Rp 5.000 berhasil diterapkan.`, isError: false });
+    } else {
+      setHimaVoucherMsg({ text: `Kode kupon '${code}' tidak valid atau kedaluwarsa.`, isError: true });
+    }
   };
 
   const handleCheckoutSubmit = (e: React.FormEvent) => {
@@ -265,6 +323,13 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     if (fulfillmentType === 'dine_in' && !tableNumber.trim()) {
       if (onShowToast) {
         onShowToast('Silakan isi Nomor Meja Anda untuk layanan Makan di Tempat (Dine-In).', true);
+      }
+      return;
+    }
+
+    if (fulfillmentType === 'jastip_lantai' && !deliveryRoom.trim()) {
+      if (onShowToast) {
+        onShowToast('Silakan isi Nomor Ruang Kelas / Titik Temu di lantai untuk layanan Jastip Mahasiswa.', true);
       }
       return;
     }
@@ -1119,16 +1184,21 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
             </div>
 
-            {/* Pilihan Layanan: Ambil Sendiri vs Makan di Tempat (Dine-In) */}
+            {/* Pilihan Layanan: Ambil Sendiri vs Makan di Tempat vs Jastip Mahasiswa */}
             <div className="flex flex-col gap-1.5">
               <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
-                <span>Pilih Cara Menikmati:</span>
+                <span>Pilih Layanan &amp; Pengiriman:</span>
                 <span className="text-[11px] text-emerald-700 font-semibold">
-                  {fulfillmentType === 'dine_in' ? '🍽️ Antar ke Meja (Dine-In)' : '🛍️ Ambil di Stan (Self-Pickup)'}
+                  {fulfillmentType === 'jastip_lantai'
+                    ? '🏃 Jastip Mahasiswa (Antar ke Lantai)'
+                    : fulfillmentType === 'dine_in'
+                    ? '🍽️ Antar ke Meja (Dine-In)'
+                    : '🛍️ Ambil di Stan (Self-Pickup)'}
                 </span>
               </label>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {/* 1. Self-Pickup */}
                 <button
                   type="button"
                   onClick={() => setFulfillmentType('pickup')}
@@ -1139,24 +1209,25 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   }`}
                 >
                   <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                       fulfillmentType === 'pickup'
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'bg-white text-slate-600 border border-slate-200'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
+                    <span className="material-symbols-outlined text-[18px]">shopping_bag</span>
                   </div>
                   <div className="flex flex-col min-w-0">
-                    <span className="text-xs font-bold text-slate-900">
-                      Ambil Sendiri di Stan
+                    <span className="text-xs font-bold text-slate-900 leading-tight">
+                      Ambil Sendiri
                     </span>
-                    <span className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                      Bungkus &amp; ambil di etalase tanpa antre berdesakan.
+                    <span className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                      Bungkus di stan tanpa antre.
                     </span>
                   </div>
                 </button>
 
+                {/* 2. Dine-In */}
                 {stall.dineInAvailable !== false && (
                   <button
                     type="button"
@@ -1168,35 +1239,157 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     }`}
                   >
                     <div
-                      className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
                         fulfillmentType === 'dine_in'
                           ? 'bg-emerald-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 border border-slate-200'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[20px]">table_restaurant</span>
+                      <span className="material-symbols-outlined text-[18px]">table_restaurant</span>
                     </div>
                     <div className="flex flex-col min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-bold text-slate-900">
-                          Makan di Tempat
-                        </span>
-                        <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-amber-400 text-slate-950 font-black">
+                      <div className="flex items-center gap-1">
+                        <span className="text-xs font-bold text-slate-900 leading-tight">
                           Dine-In
                         </span>
                       </div>
-                      <span className="text-[11px] text-slate-500 leading-tight mt-0.5">
-                        Duduk di meja kantin, hidangan diantar ke mejamu.
+                      <span className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                        Duduk di meja kantin.
                       </span>
                     </div>
                   </button>
                 )}
+
+                {/* 3. Jastip Mahasiswa (Student Runner P2P) */}
+                <button
+                  type="button"
+                  onClick={() => setFulfillmentType('jastip_lantai')}
+                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                    fulfillmentType === 'jastip_lantai'
+                      ? 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20 text-slate-900 shadow-xs'
+                      : 'bg-slate-50/80 border-slate-200 hover:bg-slate-100/80 text-slate-700'
+                  }`}
+                >
+                  <div
+                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      fulfillmentType === 'jastip_lantai'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'bg-white text-slate-600 border border-slate-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[18px]">directions_run</span>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <div className="flex items-center gap-1">
+                      <span className="text-xs font-bold text-slate-900 leading-tight">
+                        Jastip Mahasiswa
+                      </span>
+                      <span className="text-[9px] px-1 py-0.2 rounded bg-amber-400 text-slate-950 font-black">
+                        P2P
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-500 leading-tight mt-0.5">
+                      Diantar teman ke kelas (+Rp 2.500)
+                    </span>
+                  </div>
+                </button>
               </div>
             </div>
 
-            {/* Dynamic Input depending on Fulfillment */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {fulfillmentType === 'pickup' ? (
+            {/* Dynamic Inputs according to fulfillment type */}
+            {fulfillmentType === 'jastip_lantai' && (
+              <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between text-xs">
+                  <strong className="text-emerald-950 font-bold flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[18px] text-emerald-700">room</span>
+                    <span>Lokasi Pengantaran Antar-Lantai (Micro-Location):</span>
+                  </strong>
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                    Jeda 15-20 Mnt Kelas
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Gedung Kampus:</label>
+                    <select
+                      value={deliveryBuilding}
+                      onChange={(e) => setDeliveryBuilding(e.target.value)}
+                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="Gedung A">Gedung A</option>
+                      <option value="Gedung B">Gedung B</option>
+                      <option value="Tower Utama">Tower Utama</option>
+                      <option value="Sentra UMKM">Sentra UMKM</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Lantai Tujuan:</label>
+                    <select
+                      value={deliveryFloor}
+                      onChange={(e) => setDeliveryFloor(e.target.value)}
+                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="Lantai 1">Lantai 1 (Dasar / Hall)</option>
+                      <option value="Lantai 2">Lantai 2 (Student Center)</option>
+                      <option value="Lantai 3">Lantai 3 (Kelas 301-310)</option>
+                      <option value="Lantai 4">Lantai 4 (Perpustakaan &amp; Lounge)</option>
+                      <option value="Lantai 5">Lantai 5 (Kelas 501-512)</option>
+                      <option value="Lantai 6">Lantai 6 (Lab Komputer)</option>
+                      <option value="Lantai 7">Lantai 7 (Auditorium &amp; Dosen)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Ruangan / Titik Temu <span className="text-rose-500">*</span>:</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: R. 504 / Depan Lab 2"
+                      value={deliveryRoom}
+                      onChange={(e) => setDeliveryRoom(e.target.value)}
+                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 font-bold focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Slot Pre-Order / Jam Antar:</label>
+                    <select
+                      value={preOrderSlot}
+                      onChange={(e) => setPreOrderSlot(e.target.value)}
+                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                    >
+                      <option value="Sekarang (Langsung Masak 15-20 mnt)">Sekarang (Langsung Masak 15-20 mnt)</option>
+                      <option value="Slot Istirahat Pagi (10:00 - 10:30 WIB)">Slot Istirahat Pagi (10:00 - 10:30 WIB)</option>
+                      <option value="Slot Makan Siang Puncak (12:00 - 13:00 WIB)">Slot Makan Siang Puncak (12:00 - 13:00 WIB)</option>
+                      <option value="Slot Break Sore (15:00 - 15:30 WIB)">Slot Break Sore (15:00 - 15:30 WIB)</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-semibold text-slate-700 block mb-1">Catatan Titip Khusus:</label>
+                    <input
+                      type="text"
+                      placeholder="Contoh: Titip ke ketua kelas / wa saat sampai"
+                      value={deliveryNotes}
+                      onChange={(e) => setDeliveryNotes(e.target.value)}
+                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="text-[11px] text-emerald-800 bg-white/70 p-2 rounded-lg border border-emerald-200/80 flex items-center justify-between">
+                  <span>💡 Ongkos Titip-Antar Mahasiswa: <strong>Rp 2.500</strong></span>
+                  <span className="text-slate-500">Bebas antre lift saat jam istirahat padat</span>
+                </div>
+              </div>
+            )}
+
+            {fulfillmentType === 'pickup' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-bold text-slate-700">Waktu Ambil di Stan:</label>
                   <select
@@ -1210,7 +1403,21 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     <option value="Sore (15.00 WIB)">Sore (15.00 WIB)</option>
                   </select>
                 </div>
-              ) : (
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-700">Catatan Pesanan:</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Sambal pisah / jangan pedas"
+                    value={orderNotes}
+                    onChange={(e) => setOrderNotes(e.target.value)}
+                    className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {fulfillmentType === 'dine_in' && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1">
                   <label className="text-xs font-bold text-slate-700 flex items-center justify-between">
                     <span>Nomor Meja Anda:</span>
@@ -1230,18 +1437,98 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     />
                   </div>
                 </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-bold text-slate-700">Catatan Pesanan:</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: Dekat kipas angin / sendok garpu"
+                    value={orderNotes}
+                    onChange={(e) => setOrderNotes(e.target.value)}
+                    className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Fitur Added Value: Group Order / Split Bill & Kupon HIMA */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
+                  <input
+                    type="checkbox"
+                    checked={isGroupOrder}
+                    onChange={(e) => setIsGroupOrder(e.target.checked)}
+                    className="w-4 h-4 rounded text-emerald-600 focus:ring-emerald-500"
+                  />
+                  <span>Pesan Bareng Kelompok / Split-Bill Otomatis</span>
+                </label>
+                {isGroupOrder && (
+                  <span className="text-[10px] bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded-full">
+                    Kalkulator Aktif
+                  </span>
+                )}
+              </div>
+
+              {isGroupOrder && (
+                <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="flex items-center gap-2">
+                    <span className="text-slate-600 text-[11px]">Bagi untuk:</span>
+                    <div className="flex items-center border border-slate-300 rounded-lg bg-white overflow-hidden">
+                      <button
+                        type="button"
+                        onClick={() => setSplitBillCount(Math.max(2, splitBillCount - 1))}
+                        className="px-2 py-1 text-slate-600 hover:bg-slate-100 font-bold"
+                      >
+                        -
+                      </button>
+                      <span className="px-3 py-1 font-bold text-slate-900 text-xs">{splitBillCount} Orang</span>
+                      <button
+                        type="button"
+                        onClick={() => setSplitBillCount(Math.min(10, splitBillCount + 1))}
+                        className="px-2 py-1 text-slate-600 hover:bg-slate-100 font-bold"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="text-right">
+                    <span className="text-[10px] text-slate-500 block">Patungan per orang:</span>
+                    <strong className="text-purple-800 text-sm font-extrabold">
+                      Rp {splitBillPerPerson.toLocaleString('id-ID')} / org
+                    </strong>
+                  </div>
+                </div>
               )}
 
-              <div className="flex flex-col gap-1">
-                <label className="text-xs font-bold text-slate-700">Catatan Pesanan:</label>
-                <input
-                  type="text"
-                  placeholder={fulfillmentType === 'dine_in' ? 'Contoh: Dekat kipas angin / sendok garpu' : 'Contoh: Sambal pisah / jangan pedas'}
-                  value={orderNotes}
-                  onChange={(e) => setOrderNotes(e.target.value)}
-                  className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+              {/* Kupon Kemitraan HIMA/BEM */}
+              <div className="pt-2 border-t border-slate-200 flex items-center gap-2 text-xs">
+                <div className="relative flex-grow">
+                  <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">
+                    confirmation_number
+                  </span>
+                  <input
+                    type="text"
+                    placeholder="Kode Kupon HIMA/Event (Cth: HIMA2026)"
+                    value={himaVoucherInput}
+                    onChange={(e) => setHimaVoucherInput(e.target.value)}
+                    className="h-9 pl-8 pr-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs uppercase font-mono"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={handleApplyHimaVoucher}
+                  className="h-9 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shrink-0 cursor-pointer"
+                >
+                  Terapkan
+                </button>
               </div>
+
+              {himaVoucherMsg && (
+                <p className={`text-[11px] font-medium ${himaVoucherMsg.isError ? 'text-rose-600' : 'text-emerald-700'}`}>
+                  {himaVoucherMsg.text}
+                </p>
+              )}
             </div>
 
             {/* Metod Pembayaran ala Shopee */}
@@ -1348,11 +1635,72 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
             </div>
 
+            {/* Rincian Pembayaran Transparan (Micro B2B2C) */}
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1.5">
+              <div className="flex justify-between text-slate-600">
+                <span>Subtotal ({cartTotalItems} item):</span>
+                <span className="font-semibold text-slate-900">
+                  Rp {cartSubtotalAmount.toLocaleString('id-ID')}
+                </span>
+              </div>
+
+              {activeServiceFee > 0 && (
+                <div className="flex justify-between text-slate-600">
+                  <span className="flex items-center gap-1">
+                    <span>Convenience Fee Mikro (B2C):</span>
+                    <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded font-bold">
+                      Unifood
+                    </span>
+                  </span>
+                  <span className="font-semibold text-slate-900">
+                    Rp {activeServiceFee.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              )}
+
+              {fulfillmentType === 'jastip_lantai' && (
+                <div className="flex justify-between text-slate-600">
+                  <span className="flex items-center gap-1">
+                    <span>Ongkir Jastip Mahasiswa (P2P):</span>
+                    <span className="text-[10px] text-amber-800 bg-amber-100 px-1.5 py-0.2 rounded font-bold">
+                      Uang Saku Teman
+                    </span>
+                  </span>
+                  <span className="font-bold text-amber-800">
+                    +Rp {JASTIP_RUNNER_FEE.toLocaleString('id-ID')}
+                  </span>
+                </div>
+              )}
+
+              {himaDiscountApplied > 0 && (
+                <div className="flex justify-between text-emerald-700 font-semibold">
+                  <span>Potongan Kupon Organisasi:</span>
+                  <span>-Rp {himaDiscountApplied.toLocaleString('id-ID')}</span>
+                </div>
+              )}
+
+              <div className="pt-2 border-t border-slate-200 flex justify-between items-center text-sm">
+                <span className="font-extrabold text-slate-900">Total Pembayaran:</span>
+                <span className="font-black text-emerald-700 text-base">
+                  Rp {cartTotalAmount.toLocaleString('id-ID')}
+                </span>
+              </div>
+
+              {isGroupOrder && splitBillCount > 1 && (
+                <div className="text-right text-[11px] text-purple-700 font-bold bg-purple-50 p-1.5 rounded-lg border border-purple-200">
+                  Patungan {splitBillCount} Orang: Rp {splitBillPerPerson.toLocaleString('id-ID')} / orang
+                </div>
+              )}
+            </div>
+
             {/* Cash note */}
             {selectedPaymentMethod === 'tunai' && (
               <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-600 text-[20px]">info</span>
-                <span>Silakan siapkan uang pas <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong> saat pesanan disajikan / diambil di kasir.</span>
+                <span>
+                  Silakan siapkan uang pas <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong>{' '}
+                  saat pesanan disajikan / diambil di kasir.
+                </span>
               </div>
             )}
 
