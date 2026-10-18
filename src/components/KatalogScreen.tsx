@@ -798,37 +798,19 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
         ) : (
           /* SUB-TAB: SEMUA KANTIN / EKSPLOR MENU / FAVORIT */
           <div className="flex flex-col gap-3.5 sm:gap-4">
-            {/* 3. HERO BANNER & SEARCH SECTION - Clean, Compact & Airy */}
-            <section className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-3 sm:p-4 shadow-xs">
-              {/* Subtle background decorative shapes */}
-              <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-600/25 blur-2xl pointer-events-none"></div>
-              <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-teal-500/15 blur-2xl pointer-events-none"></div>
+            {/* 3. HERO BANNER & SEARCH SECTION - Clean, Airy & Modern */}
+            <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-4 sm:p-5 shadow-xs">
+              {/* Subtle background glow */}
+              <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none"></div>
 
-              <div className="relative z-10 flex flex-col gap-2 sm:gap-2.5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
-                  <div>
-                    <h1 className="text-base sm:text-lg font-bold tracking-tight text-white leading-tight">
-                      Pesan Makanan &amp; Jastip
-                    </h1>
-                    <p className="text-xs text-emerald-100/90 leading-tight mt-0.5">
-                      Pesan menu kantin &amp; titip antar.
-                    </p>
-                  </div>
-
-                  {/* Reset Filters action if active */}
-                  {hasActiveFilters && (
-                    <button
-                      type="button"
-                      onClick={resetAllFilters}
-                      className="self-start sm:self-auto min-h-[30px] px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-semibold text-xs flex items-center gap-1 cursor-pointer transition-all"
-                    >
-                      <span className="material-symbols-outlined text-[14px]">restart_alt</span>
-                      <span>Reset ({activeFilterCount})</span>
-                    </button>
-                  )}
+              <div className="relative z-10 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h1 className="text-base sm:text-lg font-bold tracking-tight text-white leading-tight">
+                    Pesan Makanan &amp; Jastip
+                  </h1>
                 </div>
 
-                {/* Search Bar - Crisp & Compact */}
+                {/* Search Bar - Crisp, Modern & Spacious */}
                 <form
                   onSubmit={(e) => e.preventDefault()}
                   className="w-full relative shadow-xs"
@@ -842,8 +824,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       id="menuSearchInput"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari menu atau stan..."
-                      className="w-full h-10 sm:h-11 pl-10 pr-10 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400/60 transition-all"
+                      placeholder="Cari menu makanan, minuman, atau stan..."
+                      className="w-full h-11 pl-10 pr-10 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all"
                     />
                     {searchQuery && (
                       <button
@@ -858,8 +840,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   </div>
                 </form>
 
-                {/* Clean, 1-Word Category Chips */}
-                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
+                {/* Clean Category Chips */}
+                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-0.5">
                   {[
                     { id: 'all', label: 'Semua', icon: 'restaurant' },
                     { id: 'makanan', label: 'Makanan', icon: 'lunch_dining' },
@@ -874,10 +856,10 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         onClick={() =>
                           setCategoryFilter(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
                         }
-                        className={`min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
+                        className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
                           isSelected
                             ? 'bg-white text-emerald-950 shadow-sm font-bold'
-                            : 'bg-emerald-950/40 hover:bg-emerald-950/60 text-emerald-100 border border-emerald-500/25'
+                            : 'bg-emerald-900/35 hover:bg-emerald-900/50 text-emerald-100 border border-emerald-400/20'
                         }`}
                       >
                         <span className="material-symbols-outlined text-[16px]">

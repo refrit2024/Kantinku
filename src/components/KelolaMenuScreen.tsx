@@ -1477,300 +1477,289 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
 
         {/* TAB PESANAN MASUK & TRANSAKSI MAHASISWA (REAL-TIME) */}
         {sellerSubTab === 'pesanan' && (
-          <section className="w-full flex flex-col gap-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-1">
-                <span className="font-label-sm text-on-surface-variant">
-                  Pesanan Aktif Perlu Diproses
-                </span>
-                <span className="font-headline-lg-mobile text-primary font-bold">
-                  {activeOrdersCount} Pesanan
-                </span>
+          <section className="w-full flex flex-col gap-3.5">
+            {/* Top 3 Stats Summary - Compact & Tidy */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="bg-white rounded-xl p-3.5 shadow-2xs border border-slate-200 flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-slate-500">
+                    Pesanan Aktif
+                  </span>
+                  <span className="text-xl sm:text-2xl font-bold text-amber-600 leading-tight mt-0.5">
+                    {activeOrdersCount}
+                  </span>
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">pending_actions</span>
+                </div>
               </div>
-              <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-1">
-                <span className="font-label-sm text-on-surface-variant">
-                  Total Transaksi Masuk
-                </span>
-                <span className="font-headline-lg-mobile text-on-surface font-bold">
-                  {stallOrders.length} Transaksi
-                </span>
+
+              <div className="bg-white rounded-xl p-3.5 shadow-2xs border border-slate-200 flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-slate-500">
+                    Total Transaksi
+                  </span>
+                  <span className="text-xl sm:text-2xl font-bold text-slate-900 leading-tight mt-0.5">
+                    {stallOrders.length}
+                  </span>
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">receipt_long</span>
+                </div>
               </div>
-              <div className="bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col gap-1">
-                <span className="font-label-sm text-on-surface-variant">
-                  Pemasukan Langsung (Rp 0 Potongan)
-                </span>
-                <span className="font-headline-lg-mobile text-secondary font-bold">
-                  Rp {totalRevenueToday.toLocaleString('id-ID')}
-                </span>
+
+              <div className="bg-white rounded-xl p-3.5 shadow-2xs border border-slate-200 flex items-center justify-between gap-3">
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-slate-500">
+                    Total Pendapatan
+                  </span>
+                  <span className="text-xl sm:text-2xl font-bold text-emerald-700 leading-tight mt-0.5">
+                    Rp {totalRevenueToday.toLocaleString('id-ID')}
+                  </span>
+                </div>
+                <div className="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[20px]">payments</span>
+                </div>
               </div>
             </div>
 
-            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/25 flex flex-col gap-4">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h3 className="fluid-headline-md text-on-surface">
-                    Antrean Pesanan &amp; Pembayaran Mahasiswa
-                  </h3>
-                  <p className="font-body-sm text-body-sm text-on-surface-variant">
-                    Pesanan via <strong>Payment Gateway</strong> sudah <strong>LUNAS OTOMATIS</strong> diverifikasi sistem sehingga stan bisa langsung fokus memasak/menyiapkan. Untuk metode <strong>Transfer Manual / Tunai</strong>, pastikan mutasi atau uang fisik sudah diterima.
-                  </p>
-                </div>
-                <span className="font-label-sm text-[11px] bg-secondary-container text-on-secondary-container px-2.5 py-1 rounded-md font-semibold">
-                  Real-Time Firebase
+            {/* Orders Section Card - Clean, Concise & Airy */}
+            <div className="bg-white rounded-xl p-4 sm:p-5 shadow-2xs border border-slate-200 flex flex-col gap-3.5">
+              <div className="flex items-center justify-between gap-2 pb-2.5 border-b border-slate-100">
+                <h3 className="text-base font-bold text-slate-900 tracking-tight">
+                  Daftar Pesanan
+                </h3>
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                  {stallOrders.length} Pesanan
                 </span>
               </div>
 
               {stallOrders.length === 0 ? (
-                <div className="p-8 rounded-xl bg-surface-container-low border border-dashed border-outline-variant/40 flex flex-col items-center text-center gap-2">
-                  <span className="material-symbols-outlined text-[36px] text-on-surface-variant">
+                <div className="py-10 px-4 rounded-xl bg-slate-50/70 border border-dashed border-slate-200 flex flex-col items-center text-center gap-2">
+                  <span className="material-symbols-outlined text-[36px] text-slate-300">
                     receipt_long
                   </span>
-                  <h4 className="font-label-lg text-on-surface font-bold">
+                  <h4 className="text-sm font-semibold text-slate-700">
                     Belum Ada Pesanan Masuk
                   </h4>
-                  <p className="font-body-sm text-on-surface-variant max-w-md">
-                    Saat mahasiswa memesan makanan dan membayar melalui QRIS, DANA/GoPay/OVO, Transfer Bank, atau Tunai di halaman <strong>{stall.name}</strong>, daftar pesanannya akan langsung muncul di sini secara real-time.
+                  <p className="text-xs text-slate-400">
+                    Pesanan baru dari mahasiswa akan muncul di sini.
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3">
-                  {stallOrders.map((ord) => (
-                    <div
-                      key={ord.id}
-                      className="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-3"
-                    >
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-headline-md text-[16px] text-on-surface font-bold">
-                              {ord.studentName}
-                            </span>
-                            <span className="text-[11px] px-2 py-0.5 rounded bg-surface-container-highest text-on-surface font-semibold">
-                              NIM: {ord.studentNim}
-                            </span>
-                            {ord.fulfillmentType === 'dine_in' ? (
-                              <span className="text-[11px] px-2.5 py-0.5 rounded-md bg-amber-400 text-slate-950 font-black flex items-center gap-1 shadow-2xs">
-                                <span className="material-symbols-outlined text-[13px]">table_restaurant</span>
-                                <span>DINE-IN: MEJA {ord.tableNumber || '-'}</span>
-                              </span>
-                            ) : (
-                              <span className="text-[11px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-900 font-bold flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[13px]">shopping_bag</span>
-                                <span>AMBIL DI STAN</span>
-                              </span>
-                            )}
-                            <span
-                              title="Token Verifikasi Nota Anti-Palsu (Cocokkan dengan struk mahasiswa)"
-                              className="text-[11px] px-2 py-0.5 rounded bg-secondary-container/70 text-on-secondary-container font-mono font-bold flex items-center gap-1"
-                            >
-                              <span className="material-symbols-outlined text-[13px]">
-                                verified_user
-                              </span>
-                              {generateReceiptSecurityCode({
-                                id: ord.id,
-                                stallId: ord.stallId,
-                                studentNim: ord.studentNim,
-                                totalAmount: ord.totalAmount,
-                              })}
-                            </span>
-                            <span className="text-[11px] text-on-surface-variant">
-                              • {ord.createdAt}
-                            </span>
-                          </div>
-                          <div className="text-[12px] text-primary font-semibold mt-0.5 flex items-center gap-2 flex-wrap">
-                            <span>
-                              Kode Order: <span className="font-mono">{ord.id}</span>
-                            </span>
-                            {ord.fulfillmentType === 'dine_in' ? (
-                              <span className="text-amber-800 font-bold bg-amber-100/90 border border-amber-300 px-2 py-0.5 rounded">
-                                🍽️ Sajikan di Piring / Meja: {ord.tableNumber || '-'}
-                              </span>
-                            ) : (
-                              <span className="text-slate-600">
-                                🛍️ Jadwal Ambil di Stan: {ord.pickupTime}
-                              </span>
-                            )}
-                          </div>
-                        </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                  {stallOrders.map((ord) => {
+                    const isDineIn = ord.fulfillmentType === 'dine_in';
+                    const isAutoPaid = ord.paymentStatus === 'paid_gateway';
 
-                        <span
-                          className={`text-label-sm px-2.5 py-1 rounded-lg font-bold ${
-                            ord.status === 'waiting_payment_verification'
-                              ? 'bg-tertiary-fixed text-on-tertiary-fixed'
-                              : ord.status === 'cooking'
-                              ? 'bg-primary-fixed text-on-primary-fixed'
-                              : ord.status === 'ready_pickup'
-                              ? 'bg-secondary text-on-secondary'
-                              : ord.status === 'completed'
-                              ? 'bg-secondary-container text-on-secondary-container'
-                              : 'bg-error-container text-on-error-container'
-                          }`}
-                        >
-                          {ord.status === 'waiting_payment_verification'
-                            ? 'Pesanan Baru (Cek Bayar)'
+                    return (
+                      <div
+                        key={ord.id}
+                        className={`rounded-xl p-3.5 sm:p-4 border transition-all flex flex-col justify-between gap-3 ${
+                          ord.status === 'ready_pickup'
+                            ? 'bg-emerald-50/20 border-emerald-300 ring-1 ring-emerald-300/40 shadow-xs'
                             : ord.status === 'cooking'
-                            ? ord.fulfillmentType === 'dine_in'
-                              ? 'Sedang Dimasak / Disiapkan'
-                              : 'Sedang Disiapkan / Dibungkus'
-                            : ord.status === 'ready_pickup'
-                            ? ord.fulfillmentType === 'dine_in'
-                              ? `Diantar ke Meja ${ord.tableNumber || ''}`
-                              : 'Siap Diambil Mahasiswa'
+                            ? 'bg-blue-50/15 border-blue-200 shadow-xs'
+                            : ord.status === 'waiting_payment_verification'
+                            ? 'bg-amber-50/15 border-amber-200 shadow-xs'
                             : ord.status === 'completed'
-                            ? 'Selesai'
-                            : 'Ditolak'}
-                        </span>
-                      </div>
-
-                      <div className="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/25 flex flex-col gap-1.5">
-                        {ord.items.map((item, idx) => (
-                          <div
-                            key={idx}
-                            className="flex items-center justify-between text-body-sm text-on-surface"
-                          >
-                            <span>
-                              <strong>{item.quantity}x</strong> {item.name}
-                            </span>
-                            <span className="font-semibold">
-                              Rp {(item.price * item.quantity).toLocaleString('id-ID')}
-                            </span>
-                          </div>
-                        ))}
-                        {ord.notes && (
-                          <div className="text-[11px] text-tertiary pt-1 border-t border-outline-variant/20">
-                            <strong>Catatan Mahasiswa:</strong> &ldquo;{ord.notes}&rdquo;
-                          </div>
-                        )}
-                        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-outline-variant/25">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[11px] text-on-surface-variant">
-                              Metode Pembayaran Mahasiswa:
-                            </span>
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="font-label-sm text-on-surface font-bold">
-                                {ord.paymentProviderLabel}
+                            ? 'bg-slate-50/50 border-slate-200'
+                            : 'bg-white border-slate-200 shadow-2xs'
+                        }`}
+                      >
+                        <div className="flex flex-col gap-2.5">
+                          {/* 1. Header: ID + Time + Status Badge */}
+                          <div className="flex items-center justify-between gap-2">
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-mono text-xs font-bold text-slate-800 bg-slate-100 px-1.5 py-0.5 rounded">
+                                #{ord.id}
                               </span>
-                              {ord.paymentStatus === 'paid_gateway' ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-600 text-white font-bold inline-flex items-center gap-1 shadow-2xs">
-                                  <span className="material-symbols-outlined text-[13px]">verified</span>
-                                  <span>LUNAS OTOMATIS (GATEWAY) • TIDAK PERLU CEK MUTASI</span>
-                                </span>
-                              ) : ord.paymentStatus === 'cash_on_pickup' ? (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300 font-bold">
-                                  💵 BAYAR TUNAI DI KASIR
-                                </span>
-                              ) : (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-blue-100 text-blue-900 border border-blue-300 font-bold">
-                                  🏦 TRANSFER MANUAL (CEK REKENING PRIBADI)
+                              <span className="text-[11px] text-slate-400">
+                                {ord.createdAt}
+                              </span>
+                            </div>
+
+                            <span
+                              className={`text-[11px] px-2 py-0.5 rounded-full font-semibold border flex items-center gap-1 shrink-0 ${
+                                ord.status === 'waiting_payment_verification'
+                                  ? 'bg-amber-50 text-amber-800 border-amber-200'
+                                  : ord.status === 'cooking'
+                                  ? 'bg-blue-50 text-blue-800 border-blue-200'
+                                  : ord.status === 'ready_pickup'
+                                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                                  : ord.status === 'completed'
+                                  ? 'bg-slate-100 text-slate-600 border-slate-200'
+                                  : 'bg-rose-50 text-rose-800 border-rose-200'
+                              }`}
+                            >
+                              <span
+                                className={`w-1.5 h-1.5 rounded-full ${
+                                  ord.status === 'waiting_payment_verification'
+                                    ? 'bg-amber-500'
+                                    : ord.status === 'cooking'
+                                    ? 'bg-blue-500'
+                                    : ord.status === 'ready_pickup'
+                                    ? 'bg-emerald-500'
+                                    : ord.status === 'completed'
+                                    ? 'bg-slate-400'
+                                    : 'bg-rose-500'
+                                }`}
+                              />
+                              <span>
+                                {ord.status === 'waiting_payment_verification'
+                                  ? 'Pesanan Baru'
+                                  : ord.status === 'cooking'
+                                  ? 'Dimasak'
+                                  : ord.status === 'ready_pickup'
+                                  ? 'Siap Diambil'
+                                  : ord.status === 'completed'
+                                  ? 'Selesai'
+                                  : 'Dibatalkan'}
+                              </span>
+                            </span>
+                          </div>
+
+                          {/* 2. Customer & Fulfillment Badge */}
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <div className="flex items-center gap-1.5 min-w-0">
+                              <span className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold text-[11px] flex items-center justify-center shrink-0">
+                                {ord.studentName ? ord.studentName.charAt(0).toUpperCase() : 'M'}
+                              </span>
+                              <span className="font-semibold text-slate-800 text-xs sm:text-sm truncate">
+                                {ord.studentName}
+                              </span>
+                              {ord.studentNim && (
+                                <span className="text-[11px] font-mono text-slate-400 shrink-0">
+                                  ({ord.studentNim})
                                 </span>
                               )}
                             </div>
-                            {ord.paymentReference && (
-                              <span className="text-[11px] text-secondary">
-                                Info Bayar: {ord.paymentReference}
+
+                            {/* Fulfillment Tag */}
+                            {isDineIn ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200/70 text-[11px] font-medium shrink-0">
+                                <span className="material-symbols-outlined text-[14px] text-amber-600">table_restaurant</span>
+                                <span>Meja {ord.tableNumber || '-'}</span>
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 border border-slate-200/70 text-[11px] font-medium shrink-0">
+                                <span className="material-symbols-outlined text-[14px] text-emerald-600">shopping_bag</span>
+                                <span>Ambil {ord.pickupTime}</span>
                               </span>
                             )}
                           </div>
-                          <div className="flex flex-col items-end">
-                            <span className="font-headline-md text-[18px] text-primary font-bold">
-                              Rp {(ord.subtotalAmount ?? ord.totalAmount).toLocaleString('id-ID')}
-                            </span>
-                            {ord.serviceFee ? (
-                              <span className="text-[10px] text-on-surface-variant">
-                                (Total Mahasiswa: Rp {ord.totalAmount.toLocaleString('id-ID')})
+
+                          {/* 3. Menu Items List */}
+                          <div className="bg-slate-50/70 rounded-lg p-2.5 border border-slate-200/60 flex flex-col gap-1.5">
+                            {ord.items.map((item, idx) => (
+                              <div
+                                key={idx}
+                                className="flex items-center justify-between text-xs gap-2"
+                              >
+                                <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                                  <span className="min-w-[22px] h-4.5 px-1 rounded bg-emerald-100 text-emerald-800 text-[11px] font-bold flex items-center justify-center shrink-0">
+                                    {item.quantity}x
+                                  </span>
+                                  <span className="text-slate-800 truncate">
+                                    {item.name}
+                                  </span>
+                                </div>
+                                <span className="font-semibold text-slate-700 tabular-nums shrink-0">
+                                  Rp {(item.price * item.quantity).toLocaleString('id-ID')}
+                                </span>
+                              </div>
+                            ))}
+                            {ord.notes && (
+                              <div className="text-[11px] text-amber-800 bg-amber-50 px-2 py-1 rounded border border-amber-200/60 flex items-start gap-1 mt-0.5">
+                                <span className="font-semibold shrink-0">Catatan:</span>
+                                <span className="break-words">&ldquo;{ord.notes}&rdquo;</span>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 4. Payment & Total Row */}
+                          <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg bg-slate-50/50 border border-slate-200/50 text-xs">
+                            <div className="flex items-center gap-1.5 truncate">
+                              <span className="text-slate-500 text-[11px] truncate">
+                                {ord.paymentProviderLabel}
                               </span>
-                            ) : null}
+                              {isAutoPaid ? (
+                                <span className="px-1.5 py-0.2 rounded bg-emerald-50 text-emerald-700 font-semibold border border-emerald-200 text-[10px]">
+                                  Lunas
+                                </span>
+                              ) : ord.paymentStatus === 'cash_on_pickup' ? (
+                                <span className="px-1.5 py-0.2 rounded bg-amber-50 text-amber-800 font-semibold border border-amber-200 text-[10px]">
+                                  Tunai
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.2 rounded bg-blue-50 text-blue-800 font-semibold border border-blue-200 text-[10px]">
+                                  Transfer
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-baseline gap-1 shrink-0">
+                              <span className="text-[11px] text-slate-400">Total:</span>
+                              <span className="font-bold text-emerald-700 tabular-nums text-sm">
+                                Rp {(ord.subtotalAmount ?? ord.totalAmount).toLocaleString('id-ID')}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </div>
 
-                      <div className="flex flex-wrap items-center gap-2">
-                        {ord.status === 'waiting_payment_verification' && (
-                          <>
+                        {/* 5. Action Buttons - Compact & Direct */}
+                        <div className="pt-1 mt-auto">
+                          {ord.status === 'waiting_payment_verification' && (
+                            <div className="grid grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={() => onUpdateOrderStatus(ord.id, 'cooking')}
+                                className="min-h-[38px] px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
+                              >
+                                <span className="material-symbols-outlined text-[16px]">soup_kitchen</span>
+                                <span>Mulai Masak</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => onUpdateOrderStatus(ord.id, 'rejected')}
+                                className="min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 text-xs font-medium flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                              >
+                                <span>Tolak</span>
+                              </button>
+                            </div>
+                          )}
+
+                          {ord.status === 'cooking' && (
                             <button
                               type="button"
                               onClick={() => onUpdateOrderStatus(ord.id, 'ready_pickup')}
-                              className={`min-h-[44px] px-4 py-2 rounded-lg font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98] ${
-                                ord.fulfillmentType === 'dine_in'
-                                  ? 'bg-amber-400 hover:bg-amber-500 text-slate-950 font-bold'
-                                  : 'bg-secondary text-on-secondary'
-                              }`}
+                              className="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
                             >
-                              <span className="material-symbols-outlined text-[18px]">
-                                {ord.fulfillmentType === 'dine_in' ? 'table_restaurant' : 'bolt'}
-                              </span>
-                              <span>
-                                {ord.fulfillmentType === 'dine_in'
-                                  ? `Langsung Sajikan ke Meja ${ord.tableNumber || ''} (Menu Ready)`.trim()
-                                  : 'Langsung Siap Diambil (Menu Etalase / Matang)'}
-                              </span>
+                              <span className="material-symbols-outlined text-[17px]">notifications_active</span>
+                              <span>{isDineIn ? 'Siap Disajikan' : 'Siap Diambil'}</span>
                             </button>
+                          )}
+
+                          {ord.status === 'ready_pickup' && (
                             <button
                               type="button"
-                              onClick={() => onUpdateOrderStatus(ord.id, 'cooking')}
-                              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
+                              onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
+                              className="w-full min-h-[38px] px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs active:scale-95 transition-all"
                             >
-                              <span className="material-symbols-outlined text-[18px]">
-                                soup_kitchen
-                              </span>
-                              <span>
-                                {ord.fulfillmentType === 'dine_in'
-                                  ? 'Mulai Masak / Siapkan di Piring'
-                                  : 'Sedang Disiapkan / Dibungkus'}
-                              </span>
+                              <span className="material-symbols-outlined text-[17px]">task_alt</span>
+                              <span>Selesaikan Pesanan</span>
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => onUpdateOrderStatus(ord.id, 'rejected')}
-                              className="min-h-[44px] px-3.5 py-2 rounded-lg bg-error-container text-on-error-container font-label-sm text-label-sm font-semibold cursor-pointer"
-                            >
-                              {ord.paymentStatus === 'paid_gateway'
-                                ? 'Batalkan (Stok Habis / Refund Gateway)'
-                                : 'Tolak (Dana Belum Masuk / Stok Habis)'}
-                            </button>
-                          </>
-                        )}
+                          )}
 
-                        {ord.status === 'cooking' && (
-                          <button
-                            type="button"
-                            onClick={() => onUpdateOrderStatus(ord.id, 'ready_pickup')}
-                            className="min-h-[44px] px-4 py-2 rounded-lg bg-secondary text-on-secondary font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              {ord.fulfillmentType === 'dine_in' ? 'table_restaurant' : 'notifications_active'}
-                            </span>
-                            <span>
-                              {ord.fulfillmentType === 'dine_in'
-                                ? `Tandai Siap & Antar ke Meja ${ord.tableNumber || ''}`.trim()
-                                : 'Tandai Siap Diambil di Stan'}
-                            </span>
-                          </button>
-                        )}
-
-                        {ord.status === 'ready_pickup' && (
-                          <button
-                            type="button"
-                            onClick={() => onUpdateOrderStatus(ord.id, 'completed')}
-                            className="min-h-[44px] px-4 py-2 rounded-lg bg-surface-container-highest text-on-surface font-label-md text-label-md font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-[0.98]"
-                          >
-                            <span className="material-symbols-outlined text-[18px]">
-                              task_alt
-                            </span>
-                            <span>
-                              {ord.paymentStatus === 'cash_on_pickup'
-                                ? (ord.fulfillmentType === 'dine_in'
-                                    ? `Selesaikan (Terima Tunai Rp ${(ord.subtotalAmount ?? ord.totalAmount).toLocaleString('id-ID')} di Meja)`
-                                    : `Selesaikan (Terima Tunai Rp ${(ord.subtotalAmount ?? ord.totalAmount).toLocaleString('id-ID')} di Kasir)`)
-                                : (ord.fulfillmentType === 'dine_in'
-                                    ? 'Selesaikan (Sudah Disajikan di Meja)'
-                                    : 'Selesaikan Transaksi (Sudah Diambil)')}
-                            </span>
-                          </button>
-                        )}
+                          {ord.status === 'completed' && (
+                            <div className="w-full min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-600 text-xs font-medium flex items-center justify-center gap-1.5">
+                              <span className="material-symbols-outlined text-[16px] text-emerald-600">task_alt</span>
+                              <span>Pesanan Selesai</span>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -1799,60 +1788,62 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               </div>
             )}
 
-            {/* DOMPET PENJUALAN & TARIK DANA ALA SHOPEE SELLER BALANCE */}
-            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border-2 border-secondary/40 flex flex-col gap-4">
-              <div className="flex flex-wrap items-start justify-between gap-3 border-b border-outline-variant/25 pb-3">
+            {/* DOMPET PENJUALAN & TARIK DANA */}
+            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200/90 flex flex-col gap-5">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div className="flex flex-col gap-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded bg-secondary-container text-on-secondary-container text-[10px] font-bold uppercase tracking-wider">
-                      Dompet Penjualan Kantin (Sistem Mirip Shopee Seller Balance)
+                  <div className="flex items-center gap-2">
+                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+                      0% Potongan
                     </span>
-                    <span className="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px] font-semibold">
-                      0% Potongan Bagi Ibu Kantin
+                    <span className="text-xs text-slate-500 font-medium">
+                      Bebas biaya admin penarikan
                     </span>
                   </div>
-                  <h3 className="fluid-headline-md text-on-surface mt-0.5">
-                    Saldo Penjualan Siap Ditarik: Rp {gatewayBalance.toLocaleString('id-ID')}
-                  </h3>
-                  <p className="font-body-sm text-xs text-on-surface-variant max-w-xl">
-                    Supaya Ibu Kantin <strong>tidak rugi biaya transfer bank per pesanan</strong>, seluruh pembayaran mahasiswa terkumpul utuh 100% di Saldo Penjualan ini. Ibu Kantin bebas klik <strong>Tarik Dana</strong> kapan saja (misal sore hari selesai jualan) tanpa potongan sepeser pun!
-                  </p>
+                  <div className="mt-1">
+                    <span className="text-xs font-semibold text-slate-500 block">
+                      Saldo Siap Ditarik
+                    </span>
+                    <h3 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-0.5">
+                      Rp {gatewayBalance.toLocaleString('id-ID')}
+                    </h3>
+                  </div>
                 </div>
 
-                <div className="bg-surface-container-low px-3.5 py-2.5 rounded-xl border border-outline-variant/30 flex flex-col items-end shrink-0">
-                  <span className="text-[11px] text-on-surface-variant">
+                <div className="bg-slate-50 px-4 py-3 rounded-xl border border-slate-100 flex flex-col sm:items-end shrink-0">
+                  <span className="text-xs text-slate-500 font-medium">
                     Total Sudah Dicairkan
                   </span>
-                  <span className="font-headline-md text-base font-bold text-on-surface">
+                  <span className="text-base sm:text-lg font-bold text-slate-800 tabular-nums mt-0.5">
                     Rp {totalWithdrawn.toLocaleString('id-ID')}
                   </span>
                 </div>
               </div>
 
-              {/* Pilihan Tujuan Pencairan (DANA/E-Wallet vs Rekening Bank) & Tombol Tarik */}
-              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/25">
-                <div className="sm:col-span-8 flex flex-col gap-2">
-                  <span className="text-xs font-bold text-on-surface">
-                    Pilih Tujuan Pencairan Saldo:
+              {/* Pilihan Tujuan Pencairan & Tombol Tarik */}
+              <div className="grid grid-cols-1 sm:grid-cols-12 gap-3.5 items-stretch bg-slate-50/70 p-4 rounded-xl border border-slate-200/80">
+                <div className="sm:col-span-8 flex flex-col gap-2.5">
+                  <span className="text-xs font-bold text-slate-700">
+                    Tujuan Pencairan:
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                     <button
                       type="button"
                       onClick={() => setWithdrawDestination('ewallet')}
-                      className={`p-2.5 rounded-lg border text-left flex items-center gap-2.5 cursor-pointer transition-all ${
+                      className={`p-3 rounded-xl border text-left flex items-center gap-3 cursor-pointer transition-all ${
                         withdrawDestination === 'ewallet'
-                          ? 'border-secondary bg-secondary-container/25 text-on-surface font-semibold'
-                          : 'border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant'
+                          ? 'border-emerald-600 bg-emerald-50/50 text-slate-900 ring-1 ring-emerald-600/30 font-semibold shadow-2xs'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-secondary text-[20px]">
+                      <span className="material-symbols-outlined text-emerald-700 text-[22px] shrink-0">
                         smartphone
                       </span>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold truncate">
+                        <span className="text-xs font-bold truncate text-slate-900">
                           E-Wallet ({payEwalletProviders.split('/')[0].trim()})
                         </span>
-                        <span className="text-[11px] truncate">
+                        <span className="text-[11px] text-slate-500 truncate font-mono">
                           {payEwalletNumber} • {payEwalletAccountName}
                         </span>
                       </div>
@@ -1861,20 +1852,20 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     <button
                       type="button"
                       onClick={() => setWithdrawDestination('bank')}
-                      className={`p-2.5 rounded-lg border text-left flex items-center gap-2.5 cursor-pointer transition-all ${
+                      className={`p-3 rounded-xl border text-left flex items-center gap-3 cursor-pointer transition-all ${
                         withdrawDestination === 'bank'
-                          ? 'border-secondary bg-secondary-container/25 text-on-surface font-semibold'
-                          : 'border-outline-variant/30 bg-surface-container-lowest text-on-surface-variant'
+                          ? 'border-emerald-600 bg-emerald-50/50 text-slate-900 ring-1 ring-emerald-600/30 font-semibold shadow-2xs'
+                          : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-primary text-[20px]">
+                      <span className="material-symbols-outlined text-emerald-700 text-[22px] shrink-0">
                         account_balance
                       </span>
                       <div className="flex flex-col min-w-0">
-                        <span className="text-xs font-bold truncate">
+                        <span className="text-xs font-bold truncate text-slate-900">
                           Rekening {payBankName}
                         </span>
-                        <span className="text-[11px] truncate">
+                        <span className="text-[11px] text-slate-500 truncate font-mono">
                           {payBankAccountNumber} • {payBankAccountName}
                         </span>
                       </div>
@@ -1882,68 +1873,80 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   </div>
                 </div>
 
-                <div className="sm:col-span-4 flex flex-col gap-1.5">
+                <div className="sm:col-span-4 flex flex-col justify-end gap-1.5">
                   <button
                     type="button"
                     disabled={gatewayBalance <= 0 || isWithdrawing}
                     onClick={handleWithdrawSellerBalance}
-                    className={`w-full min-h-[46px] px-4 py-2.5 rounded-xl font-label-md text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all ${
+                    className={`w-full min-h-[44px] px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all ${
                       gatewayBalance > 0 && !isWithdrawing
-                        ? 'bg-secondary text-on-secondary cursor-pointer active:scale-95 hover:opacity-95'
-                        : 'bg-surface-container-highest text-on-surface-variant opacity-60 cursor-not-allowed'
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer active:scale-95 shadow-sm'
+                        : 'bg-slate-200 text-slate-400 cursor-not-allowed'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[18px]">
-                      {isWithdrawing ? 'sync' : 'System_Update_Alt'}
+                      {isWithdrawing ? 'sync' : 'payments'}
                     </span>
                     <span>
                       {isWithdrawing
                         ? 'Memproses Transfer...'
                         : gatewayBalance > 0
                         ? `Tarik Rp ${gatewayBalance.toLocaleString('id-ID')}`
-                        : 'Saldo Rp 0 (Sudah Ditarik)'}
+                        : 'Saldo Rp 0'}
                     </span>
                   </button>
-                  <span className="text-[10px] text-center text-secondary font-semibold">
-                    ✓ Gratis Biaya Admin Penarikan (Rp 0)
+                  <span className="text-[11px] text-center text-slate-500">
+                    Bebas biaya transfer
                   </span>
                 </div>
               </div>
 
-              {/* Riwayat Penarikan Dana Ibu Kantin */}
+              {/* Riwayat Penarikan Dana */}
               {withdrawalHistory.length > 0 && (
-                <div className="flex flex-col gap-2 pt-1">
-                  <span className="text-xs font-bold text-on-surface flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px] text-secondary">
-                      history
+                <div className="flex flex-col gap-2.5 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[17px] text-emerald-700">
+                        history
+                      </span>
+                      Riwayat Pencairan Saldo
                     </span>
-                    Riwayat Penarikan Dana ke Rekening / DANA Ibu Kantin:
-                  </span>
-                  <div className="flex flex-col gap-2 max-h-48 overflow-y-auto pr-1">
+                    <span className="text-[11px] text-slate-500 font-semibold">
+                      {withdrawalHistory.length} Transaksi
+                    </span>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 max-h-56 overflow-y-auto pr-1">
                     {withdrawalHistory.map((wd) => (
                       <div
                         key={wd.id}
-                        className="p-2.5 rounded-lg bg-surface-container-low border border-outline-variant/25 flex flex-wrap items-center justify-between gap-2 text-xs"
+                        className="p-3 sm:p-3.5 rounded-xl bg-slate-50 border border-slate-200/90 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 transition-all"
                       >
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 rounded bg-secondary-container text-on-secondary-container font-bold text-[10px]">
-                            BERHASIL CAIR
-                          </span>
-                          <div className="flex flex-col">
-                            <span className="font-bold text-on-surface">
-                              {wd.destinationLabel}
-                            </span>
-                            <span className="text-[11px] text-on-surface-variant">
-                              ID Penarikan: {wd.id} • {wd.createdAt}
+                        <div className="flex items-start gap-2.5 min-w-0 flex-1">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0 mt-0.5">
+                            <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-bold text-slate-900 text-xs sm:text-sm">
+                                {wd.destinationLabel}
+                              </span>
+                              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-200 shrink-0">
+                                Berhasil Cair
+                              </span>
+                            </div>
+                            <span className="text-[11px] text-slate-500 font-mono mt-0.5">
+                              #{wd.id} • {wd.createdAt}
                             </span>
                           </div>
                         </div>
-                        <div className="text-right">
-                          <span className="font-bold text-secondary text-sm">
+
+                        <div className="flex items-baseline sm:flex-col sm:items-end justify-between border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-200 shrink-0">
+                          <span className="font-black text-emerald-700 text-sm sm:text-base tabular-nums">
                             + Rp {wd.amount.toLocaleString('id-ID')}
                           </span>
-                          <span className="block text-[10px] text-on-surface-variant">
-                            Diterima Utuh 100%
+                          <span className="text-[10px] text-slate-500 font-medium">
+                            Diterima Utuh (0% Potongan)
                           </span>
                         </div>
                       </div>
@@ -2182,9 +2185,10 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full min-h-[48px] py-3 rounded-xl bg-primary hover:bg-primary-container text-on-primary font-label-lg text-label-lg font-semibold shadow-sm cursor-pointer"
+                  className="w-full min-h-[46px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-xs flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]"
                 >
-                  Simpan Pengaturan Pembayaran (QRIS, DANA &amp; Bank)
+                  <span className="material-symbols-outlined text-[19px]">save</span>
+                  <span>Simpan Pengaturan Pembayaran</span>
                 </button>
               </form>
             </div>
