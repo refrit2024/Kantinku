@@ -29,7 +29,6 @@ import { KatalogScreen, StudentSubTab } from './components/KatalogScreen';
 import { DetailStanScreen } from './components/DetailStanScreen';
 import { KelolaMenuScreen } from './components/KelolaMenuScreen';
 import { AdminPortalScreen } from './components/AdminPortalScreen';
-import { AlurSistemScreen } from './components/AlurSistemScreen';
 import { JastipRunnerModal } from './components/JastipRunnerModal';
 import { UnifoodModelBisnisModal } from './components/UnifoodModelBisnisModal';
 import {
@@ -49,8 +48,7 @@ export type ScreenType =
   | 'katalog'
   | 'detail-stan'
   | 'kelola-menu'
-  | 'admin-portal'
-  | 'alur-sistem';
+  | 'admin-portal';
 
 const STORAGE_KEYS = {
   STUDENT_SESSION: 'kantinku_ibikkg_student_session_v1',
@@ -1657,18 +1655,7 @@ export default function App() {
               <span className="text-[10px] px-1.5 py-0.2 rounded bg-amber-400 text-slate-950 font-black">+2.5k</span>
             </button>
 
-            <button
-              type="button"
-              onClick={() => navigateTo('alur-sistem')}
-              className={`min-h-[38px] px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
-                currentScreen === 'alur-sistem'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">account_tree</span>
-              <span>Alur &amp; UML</span>
-            </button>
+
 
             <button
               type="button"

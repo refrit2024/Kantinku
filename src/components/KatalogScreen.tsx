@@ -798,45 +798,43 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
         ) : (
           /* SUB-TAB: SEMUA KANTIN / EKSPLOR MENU / FAVORIT */
           <div className="flex flex-col gap-3.5 sm:gap-4">
-            {/* 3. HERO BANNER & SEARCH SECTION */}
-            <section className="relative overflow-hidden rounded-2xl bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-3.5 sm:p-5 shadow-md">
+            {/* 3. HERO BANNER & SEARCH SECTION - Clean, Compact & Airy */}
+            <section className="relative overflow-hidden rounded-xl sm:rounded-2xl bg-linear-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-3 sm:p-4 shadow-xs">
               {/* Subtle background decorative shapes */}
-              <div className="absolute -top-12 -right-12 w-56 h-56 rounded-full bg-emerald-600/30 blur-2xl pointer-events-none"></div>
-              <div className="absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-teal-500/20 blur-2xl pointer-events-none"></div>
+              <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-600/25 blur-2xl pointer-events-none"></div>
+              <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-teal-500/15 blur-2xl pointer-events-none"></div>
 
-              <div className="relative z-10 flex flex-col gap-3 sm:gap-4">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                  <div className="flex-1">
-                    <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-white text-balance">
+              <div className="relative z-10 flex flex-col gap-2 sm:gap-2.5">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 sm:gap-2">
+                  <div>
+                    <h1 className="text-base sm:text-lg font-bold tracking-tight text-white leading-tight">
                       Pesan Makanan &amp; Jastip
                     </h1>
-                    <p className="text-xs sm:text-sm text-emerald-100/90 leading-normal mt-0.5">
-                      Pesan menu kantin favorit atau titip antar ke ruang kelas saat jeda kuliah.
+                    <p className="text-xs text-emerald-100/90 leading-tight mt-0.5">
+                      Pesan menu kantin &amp; titip antar.
                     </p>
                   </div>
 
-                  {/* Hero Actions - Clean & Minimal */}
+                  {/* Reset Filters action if active */}
                   {hasActiveFilters && (
-                    <div className="flex items-center gap-2 self-start sm:self-center shrink-0">
-                      <button
-                        type="button"
-                        onClick={resetAllFilters}
-                        className="min-h-[44px] px-3.5 py-2.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-semibold text-xs flex items-center justify-center gap-1.5 cursor-pointer backdrop-blur-md transition-all"
-                      >
-                        <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-                        <span>Reset ({activeFilterCount})</span>
-                      </button>
-                    </div>
+                    <button
+                      type="button"
+                      onClick={resetAllFilters}
+                      className="self-start sm:self-auto min-h-[30px] px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 text-white font-semibold text-xs flex items-center gap-1 cursor-pointer transition-all"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">restart_alt</span>
+                      <span>Reset ({activeFilterCount})</span>
+                    </button>
                   )}
                 </div>
 
-                {/* Search Bar - Responsive Clean Input */}
+                {/* Search Bar - Crisp & Compact */}
                 <form
                   onSubmit={(e) => e.preventDefault()}
-                  className="w-full relative shadow-md"
+                  className="w-full relative shadow-xs"
                 >
                   <div className="relative flex items-center">
-                    <span className="material-symbols-outlined absolute left-4 text-emerald-700 text-[22px]">
+                    <span className="material-symbols-outlined absolute left-3.5 text-emerald-700 text-[20px]">
                       search
                     </span>
                     <input
@@ -844,29 +842,29 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       id="menuSearchInput"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari menu makanan, minuman, atau nama stan..."
-                      className="w-full h-11 sm:h-12 pl-12 pr-12 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-sm font-medium focus:outline-none focus:ring-3 focus:ring-amber-400/50 transition-all"
+                      placeholder="Cari menu atau stan..."
+                      className="w-full h-10 sm:h-11 pl-10 pr-10 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-amber-400/60 transition-all"
                     />
                     {searchQuery && (
                       <button
                         type="button"
                         onClick={() => setSearchQuery('')}
                         aria-label="Bersihkan pencarian"
-                        className="absolute right-2 min-h-[44px] min-w-[44px] flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
+                        className="absolute right-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
                       >
-                        <span className="material-symbols-outlined text-[20px]">close</span>
+                        <span className="material-symbols-outlined text-[18px]">close</span>
                       </button>
                     )}
                   </div>
                 </form>
 
-                {/* Quick Category Bubbles with 44px Touch Targets */}
-                <div className="flex items-center gap-2 sm:gap-3 overflow-x-auto no-scrollbar pt-1">
+                {/* Clean, 1-Word Category Chips */}
+                <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar">
                   {[
                     { id: 'all', label: 'Semua', icon: 'restaurant' },
-                    { id: 'makanan', label: 'Makanan Berat', icon: 'lunch_dining' },
-                    { id: 'minuman', label: 'Minuman Segar', icon: 'local_cafe' },
-                    { id: 'snack', label: 'Camilan / Snack', icon: 'bakery_dining' },
+                    { id: 'makanan', label: 'Makanan', icon: 'lunch_dining' },
+                    { id: 'minuman', label: 'Minuman', icon: 'local_cafe' },
+                    { id: 'snack', label: 'Snack', icon: 'bakery_dining' },
                   ].map((cat) => {
                     const isSelected = categoryFilter === cat.id;
                     return (
@@ -876,110 +874,80 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         onClick={() =>
                           setCategoryFilter(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
                         }
-                        className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-[13px] font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
+                        className={`min-h-[36px] px-3 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
                           isSelected
-                            ? 'bg-white text-emerald-950 shadow-md ring-2 ring-white/60'
-                            : 'bg-emerald-950/40 hover:bg-emerald-950/60 text-emerald-50 border border-emerald-500/30'
+                            ? 'bg-white text-emerald-950 shadow-sm font-bold'
+                            : 'bg-emerald-950/40 hover:bg-emerald-950/60 text-emerald-100 border border-emerald-500/25'
                         }`}
                       >
-                        <span className="material-symbols-outlined text-[17px]">
+                        <span className="material-symbols-outlined text-[16px]">
                           {cat.icon}
                         </span>
                         <span>{cat.label}</span>
                       </button>
                     );
                   })}
-
-                  <div className="w-[1px] h-6 bg-emerald-500/40 shrink-0 mx-1"></div>
-
-                  {/* Quick Budget Filters with 44px Touch Targets */}
-                  {[
-                    { id: '<=10000', label: 'Hemat ≤ Rp10rb' },
-                    { id: '<=15000', label: 'Populer ≤ Rp15rb' },
-                  ].map((p) => {
-                    const isSelected = priceFilter === p.id;
-                    return (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => setPriceFilter(isSelected ? 'all' : p.id)}
-                        className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1 whitespace-nowrap shrink-0 transition-all cursor-pointer active:scale-95 ${
-                          isSelected
-                            ? 'bg-amber-400 text-slate-950 shadow-md font-bold'
-                            : 'bg-emerald-950/40 text-emerald-100 border border-emerald-500/30 hover:bg-emerald-950/60'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[15px]">savings</span>
-                        <span>{p.label}</span>
-                      </button>
-                    );
-                  })}
-
-                  {/* Open Now Toggle Button with 44px Touch Target */}
-                  <button
-                    type="button"
-                    onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
-                    className={`min-h-[44px] px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer active:scale-95 ${
-                      onlyOpenFilter
-                        ? 'bg-white text-emerald-950 shadow-md font-bold'
-                        : 'bg-emerald-950/40 text-emerald-100 border border-emerald-500/30 hover:bg-emerald-950/60'
-                    }`}
-                  >
-                    <span>{onlyOpenFilter ? '✓ Buka Sekarang' : 'Buka Sekarang'}</span>
-                  </button>
                 </div>
               </div>
             </section>
 
-            {/* 4. EXPANDABLE FILTER ROW & STATUS HEADER (Selector 1) - Mobile Responsive & Zero-Pill */}
-            <div className="bg-white p-3 sm:p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
-              <div className="flex items-center justify-between sm:justify-start gap-2 flex-wrap text-xs text-slate-600 min-w-0">
-                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-                  <span className="font-semibold text-slate-900 shrink-0">Filter:</span>
-                  <span className="truncate">
-                    {categoryFilter === 'all' ? 'Semua Menu' : categoryFilter}
+            {/* 4. EXPANDABLE FILTER ROW & QUICK TOGGLES (Clean & Uncrowded) */}
+            <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div className="flex items-center gap-2 flex-wrap text-xs text-slate-700 min-w-0">
+                {/* Quick Toggle: Buka Saja */}
+                <button
+                  type="button"
+                  onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
+                  className={`min-h-[34px] px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all border ${
+                    onlyOpenFilter
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className={`w-2 h-2 rounded-full ${onlyOpenFilter ? 'bg-emerald-600' : 'bg-slate-300'}`}></span>
+                  <span>Stan Buka</span>
+                </button>
+
+                {/* Quick Toggle: Budget Hemat */}
+                <button
+                  type="button"
+                  onClick={() => setPriceFilter(priceFilter === '<=15000' ? 'all' : '<=15000')}
+                  className={`min-h-[34px] px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all border ${
+                    priceFilter === '<=15000'
+                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold'
+                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[15px]">savings</span>
+                  <span>Hemat ≤ Rp15rb</span>
+                </button>
+
+                {/* Active filter summary tag if custom */}
+                {priceFilter !== 'all' && priceFilter !== '<=15000' && (
+                  <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-semibold text-xs border border-emerald-200">
+                    {priceFilter === '<=10000' ? '≤ Rp10rb' : priceFilter === '10000-15000' ? 'Rp10rb–15rb' : 'Rp15rb–20rb'}
                   </span>
-                  {priceFilter !== 'all' && (
-                    <>
-                      <span aria-hidden="true" className="text-slate-300">·</span>
-                      <span className="tabular-nums font-medium text-emerald-800">
-                        {priceFilter === '<=10000'
-                          ? '≤ Rp10rb'
-                          : priceFilter === '10000-15000'
-                          ? 'Rp10rb–15rb'
-                          : priceFilter === '<=15000'
-                          ? '≤ Rp15rb'
-                          : 'Rp15rb–20rb'}
-                      </span>
-                    </>
-                  )}
-                  {onlyOpenFilter && (
-                    <>
-                      <span aria-hidden="true" className="text-slate-300">·</span>
-                      <span className="text-emerald-700 font-semibold">Buka Saja</span>
-                    </>
-                  )}
-                </div>
+                )}
 
                 {hasActiveFilters && (
                   <button
                     type="button"
                     onClick={resetAllFilters}
-                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer min-h-[36px] sm:min-h-[44px] flex items-center px-1 shrink-0 ml-auto sm:ml-1"
+                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer min-h-[34px] flex items-center px-1 shrink-0 ml-1"
                   >
                     Reset Filter
                   </button>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+              <div className="flex items-center gap-2 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
                 <button
                   type="button"
                   onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="w-full sm:w-auto min-h-[40px] sm:min-h-[44px] px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+                  className="w-full sm:w-auto min-h-[34px] px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
                 >
-                  <span className="material-symbols-outlined text-[16px] text-slate-600">tune</span>
-                  <span>{showAdvancedFilters ? 'Tutup Filter Detail' : 'Filter Detail & Jarak'}</span>
+                  <span className="material-symbols-outlined text-[15px] text-slate-500">tune</span>
+                  <span>{showAdvancedFilters ? 'Tutup Filter' : 'Filter Lanjutan'}</span>
                 </button>
               </div>
             </div>
@@ -1052,7 +1020,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                    Jelajah Menu &amp; Makanan ({allMatchingMenuItems.length} Menu Ditemukan)
+                    Jelajah Menu ({allMatchingMenuItems.length})
                   </h2>
                 </div>
 
@@ -1110,8 +1078,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="text-lg sm:text-xl font-bold text-slate-900">
                     {activeSubTab === 'favorit'
-                      ? `Stan Favorit Anda (${filteredStalls.length})`
-                      : `Daftar Stan Kantin IBI KKG (${filteredStalls.length} Tersedia)`}
+                      ? `Stan Favorit (${filteredStalls.length})`
+                      : `Daftar Stan (${filteredStalls.length})`}
                   </h2>
                 </div>
 
