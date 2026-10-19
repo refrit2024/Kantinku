@@ -29,6 +29,7 @@ import { KatalogScreen, StudentSubTab } from './components/KatalogScreen';
 import { DetailStanScreen } from './components/DetailStanScreen';
 import { KelolaMenuScreen } from './components/KelolaMenuScreen';
 import { AdminPortalScreen } from './components/AdminPortalScreen';
+import { UnifoodLogo } from './components/UnifoodLogo';
 import {
   checkActionCooldown,
   compressUploadedImage,
@@ -1606,20 +1607,10 @@ export default function App() {
             <button
               type="button"
               onClick={() => setCurrentScreen('katalog')}
-              className="flex items-center gap-2.5 text-left cursor-pointer min-h-[44px] group"
+              className="flex items-center text-left cursor-pointer min-h-[44px] group"
               aria-label="Unifood Beranda"
             >
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                <span className="material-symbols-outlined text-[20px] sm:text-[22px]">restaurant</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap leading-none">
-                  Unifood
-                </span>
-                <span className="text-[10px] sm:text-xs text-slate-500 font-medium tracking-wide mt-0.5">
-                  Platform Kantin &amp; Jastip Kampus
-                </span>
-              </div>
+              <UnifoodLogo size="md" />
             </button>
           </div>
 
@@ -1890,171 +1881,218 @@ export default function App() {
 
       {/* FOOTER - MODERN CLEAN FOOD APP (SHOPEEFOOD / GOJEK STYLE) */}
       <footer className="w-full bg-white border-t border-slate-200/80 text-slate-600 pb-safe mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6 sm:pb-8 flex flex-col gap-5 sm:gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-7 sm:pt-9 pb-6 sm:pb-8 flex flex-col gap-6 sm:gap-7">
           {/* Main Grid: Multi-Campus Platform Columns */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-            {/* Column 1 (lg:col-span-5): Brand Identity */}
-            <div className="lg:col-span-5 flex flex-col gap-2.5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
+            {/* Column 1 (lg:col-span-4): Brand Identity & Multi-Campus Mission */}
+            <div className="lg:col-span-4 flex flex-col gap-3">
               <button
                 type="button"
                 onClick={() => setCurrentScreen('katalog')}
-                className="flex items-center gap-2.5 text-left cursor-pointer group self-start"
+                className="flex items-center text-left cursor-pointer group self-start"
                 aria-label="Unifood Beranda"
               >
-                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0 shadow-sm group-hover:scale-105 transition-transform">
-                  <span className="material-symbols-outlined text-[20px] sm:text-[22px]">restaurant</span>
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base sm:text-lg font-black text-slate-900 tracking-tight whitespace-nowrap leading-none">
-                    Unifood
-                  </span>
-                  <span className="text-[10px] sm:text-xs text-slate-500 font-medium tracking-wide mt-0.5">
-                    Platform Kantin &amp; Jastip Kampus
-                  </span>
-                </div>
+                <UnifoodLogo
+                  size="md"
+                  badgeText="Multi-Kampus"
+                  subtitleText="Ekosistem Kantin Digital & Jastip Mahasiswa"
+                />
               </button>
 
-              <p className="text-xs text-slate-500 leading-relaxed">
-                Platform pemesanan kuliner dan jastip kantin kampus cerdas, higienis, dan bebas antre.
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Platform kuliner terpadu yang menghubungkan mahasiswa, mitra stan kantin, dan komunitas jastip di berbagai kampus perguruan tinggi. Pesan santap makan tanpa antre, higienis, dan transparan.
               </p>
-            </div>
 
-            {/* Column 2 & 3: Navigasi Mahasiswa & Layanan Kampus */}
-            <div className="lg:col-span-4 grid grid-cols-2 gap-4 sm:gap-6">
-              {/* Navigasi Mahasiswa */}
-              {/* Navigasi Menu & Pesanan */}
-              <div className="flex flex-col gap-2.5">
-                <h3 className="text-xs sm:text-sm font-semibold text-slate-900">
-                  Navigasi
-                </h3>
-                <div className="flex flex-col gap-0.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigateTo('katalog');
-                      setStudentSubTab('kantin');
-                    }}
-                    className="min-h-[38px] py-1.5 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
-                  >
-                    <span className="material-symbols-outlined text-[17px] text-slate-500 group-hover:text-emerald-700 shrink-0">
-                      storefront
-                    </span>
-                    <span>Daftar Stan</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigateTo('katalog');
-                      setStudentSubTab('kategori');
-                    }}
-                    className="min-h-[38px] py-1.5 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
-                  >
-                    <span className="material-symbols-outlined text-[17px] text-slate-500 group-hover:text-emerald-700 shrink-0">
-                      restaurant_menu
-                    </span>
-                    <span>Jelajah Menu</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigateTo('katalog');
-                      setStudentSubTab('pesanan');
-                    }}
-                    className="min-h-[38px] py-1.5 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
-                  >
-                    <span className="material-symbols-outlined text-[17px] text-slate-500 group-hover:text-emerald-700 shrink-0">
-                      receipt_long
-                    </span>
-                    <span>Pesanan Saya</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      navigateTo('katalog');
-                      setStudentSubTab('favorit');
-                    }}
-                    className="min-h-[38px] py-1.5 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
-                  >
-                    <span className="material-symbols-outlined text-[17px] text-slate-500 group-hover:text-emerald-700 shrink-0">
-                      favorite
-                    </span>
-                    <span>Favorit</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Akses Mitra & Bantuan */}
-              <div className="flex flex-col gap-2.5">
-                <h3 className="text-xs sm:text-sm font-semibold text-slate-900">
-                  Akses &amp; Bantuan
-                </h3>
-                <div className="flex flex-col gap-0.5 text-xs">
-                  <button
-                    type="button"
-                    onClick={() => setCurrentScreen('auth-portal')}
-                    className="min-h-[38px] py-1.5 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
-                  >
-                    <span className="material-symbols-outlined text-[17px] text-slate-500 group-hover:text-emerald-700 shrink-0">
-                      store
-                    </span>
-                    <span>Portal Mitra Stan</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCurrentScreen('auth-portal');
-                      window.location.hash = 'admin';
-                    }}
-                    className="min-h-[38px] py-1.5 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
-                  >
-                    <span className="material-symbols-outlined text-[17px] text-slate-500 group-hover:text-emerald-700 shrink-0">
-                      admin_panel_settings
-                    </span>
-                    <span>Admin Kampus</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setReportModalOpen(true)}
-                    className="min-h-[38px] py-1.5 flex items-center gap-2 text-slate-600 hover:text-rose-700 transition-colors text-left cursor-pointer group font-medium"
-                  >
-                    <span className="material-symbols-outlined text-[17px] text-slate-500 group-hover:text-rose-600 shrink-0">
-                      help
-                    </span>
-                    <span>Pusat Bantuan &amp; Lapor</span>
-                  </button>
-                </div>
+              <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-500">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                  Terbuka untuk Semua Universitas
+                </span>
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
+                  <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
+                  Mitra Resmi Stan &amp; UMKM
+                </span>
               </div>
             </div>
 
-            {/* Column 4 (lg:col-span-3): Jam Operasional Fleksibel Kampus */}
+            {/* Column 2 (lg:col-span-3): Jaringan Kampus Terhubung */}
             <div className="lg:col-span-3 flex flex-col gap-2.5">
-              <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col gap-2.5">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px] text-emerald-600">school</span>
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                  Jaringan Kampus Mitra
+                </h3>
+              </div>
+              <p className="text-[11px] text-slate-500 leading-relaxed">
+                Dirancang fleksibel melayani berbagai area kantin dan gedung perkuliahan:
+              </p>
+              <ul className="flex flex-col gap-1.5 text-xs text-slate-600">
+                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
+                    <span className="font-semibold text-slate-800">IBI Kwik Kian Gie</span>
+                  </div>
+                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                    Aktif
+                  </span>
+                </li>
+                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
+                    <span className="text-slate-700">Universitas Trisakti</span>
+                  </div>
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600">
+                    Mitra
+                  </span>
+                </li>
+                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
+                    <span className="text-slate-700">UNTAR &amp; BINUS</span>
+                  </div>
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600">
+                    Mitra
+                  </span>
+                </li>
+                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 border border-slate-100">
+                  <div className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[15px] text-slate-400">add_business</span>
+                    <span className="text-slate-700">Kampus Lainnya</span>
+                  </div>
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
+                    Segera
+                  </span>
+                </li>
+              </ul>
+            </div>
+
+            {/* Column 3 (lg:col-span-2): Navigasi Mahasiswa */}
+            <div className="lg:col-span-2 flex flex-col gap-2.5">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900">
+                Menu &amp; Pesanan
+              </h3>
+              <div className="flex flex-col gap-0.5 text-xs">
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigateTo('katalog');
+                    setStudentSubTab('kantin');
+                  }}
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    storefront
+                  </span>
+                  <span>Daftar Stan Kantin</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigateTo('katalog');
+                    setStudentSubTab('kategori');
+                  }}
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    restaurant_menu
+                  </span>
+                  <span>Jelajah Menu</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigateTo('katalog');
+                    setStudentSubTab('pesanan');
+                  }}
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    receipt_long
+                  </span>
+                  <span>Pesanan &amp; Antrean</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    navigateTo('katalog');
+                    setStudentSubTab('favorit');
+                  }}
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    favorite
+                  </span>
+                  <span>Menu Favorit</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Column 4 (lg:col-span-3): Akses & Jam Operasional Multi-Kampus */}
+            <div className="lg:col-span-3 flex flex-col gap-3">
+              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col gap-2">
                 <div className="flex items-center gap-2 text-slate-900">
                   <span className="material-symbols-outlined text-[18px] text-emerald-600">
                     schedule
                   </span>
-                  <span className="font-semibold text-xs">Jam Operasional Stan</span>
+                  <span className="font-bold text-xs">Jam Operasional Fleksibel</span>
                 </div>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Jam buka dan tutup stan mengikuti jadwal operasional serta kegiatan perkuliahan di masing-masing kampus mitra.
+                <p className="text-[11px] text-slate-600 leading-relaxed">
+                  Jadwal buka dan tutup stan mengikuti kalender akademik serta jam buka gedung di masing-masing kampus yang terdaftar.
                 </p>
-                <div className="text-[11px] text-slate-500 pt-2 border-t border-slate-200/60 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                  <span>Status buka/tutup stan diperbarui secara langsung (real-time).</span>
+                <div className="text-[10px] text-slate-500 pt-1.5 border-t border-slate-200/60 flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
+                  <span>Status buka/tutup stan terupdate otomatis secara real-time.</span>
                 </div>
+              </div>
+
+              {/* Portal Mitra, Admin, & Bantuan */}
+              <div className="flex flex-col gap-1 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setCurrentScreen('auth-portal')}
+                  className="min-h-[34px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    store
+                  </span>
+                  <span>Portal Mitra Stan Kantin</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCurrentScreen('auth-portal');
+                    window.location.hash = 'admin';
+                  }}
+                  className="min-h-[34px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    admin_panel_settings
+                  </span>
+                  <span>Portal Admin Pengelola Kampus</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setReportModalOpen(true)}
+                  className="min-h-[34px] py-1 flex items-center gap-2 text-slate-600 hover:text-rose-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-rose-600 shrink-0">
+                    help
+                  </span>
+                  <span>Pusat Bantuan &amp; Laporkan Kendala</span>
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Bottom Bar: Copyright & Unboxed Information */}
+          {/* Bottom Bar: Copyright & Unboxed Multi-Campus Information */}
           <div className="pt-5 sm:pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 text-xs text-slate-500 text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 flex-wrap">
               <span>© {new Date().getFullYear()} Unifood</span>
               <span aria-hidden="true" className="text-slate-300">·</span>
-              <span>Solusi Kantin Kampus &amp; Jastip</span>
+              <span>Platform Kantin Digital &amp; Jastip Multi-Kampus</span>
             </div>
             <div className="flex items-center justify-center sm:justify-end gap-2 text-xs text-slate-500">
-              <span className="text-emerald-700 font-semibold">Cepat, Higienis &amp; Hemat</span>
+              <span className="text-emerald-700 font-semibold">Cepat, Higienis &amp; Bebas Antre di Setiap Kampus</span>
             </div>
           </div>
         </div>
@@ -2066,19 +2104,7 @@ export default function App() {
           <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-100 animate-in slide-in-from-bottom duration-300">
             {/* Header Drawer */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black shadow-sm shrink-0">
-                  <span className="material-symbols-outlined text-[22px]">restaurant</span>
-                </div>
-                <div className="flex flex-col min-w-0">
-                  <h4 className="text-base font-black text-slate-900 leading-tight truncate">
-                    Menu &amp; Navigasi
-                  </h4>
-                  <span className="text-xs text-slate-500 font-medium truncate">
-                    Unifood
-                  </span>
-                </div>
-              </div>
+              <UnifoodLogo size="md" subtitleText="Menu & Navigasi" />
               <button
                 type="button"
                 onClick={() => setNavDrawerOpen(false)}

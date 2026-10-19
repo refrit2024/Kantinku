@@ -355,7 +355,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     if (!isValidStudentNim(studentNim)) {
       if (onShowToast) {
         onShowToast(
-          'Format NIM tidak valid. Masukkan 7–12 digit angka NIM Mahasiswa IBI KKG (contoh: 32230104).',
+          'Format NIM tidak valid. Masukkan 7–12 digit angka NIM Mahasiswa (contoh: 32230104).',
           true
         );
       }
@@ -557,7 +557,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   </h1>
                   <span
                     className="material-symbols-outlined text-[22px] text-emerald-600"
-                    title="Mitra Resmi Terverifikasi Kampus IBI KKG"
+                    title={`Mitra Resmi Terverifikasi ${stall.campusName || 'Kampus'}`}
                   >
                     verified
                   </span>
@@ -874,12 +874,17 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <span className="material-symbols-outlined text-amber-500 text-[24px]">
                     reviews
                   </span>
-                  <h3 className="text-lg font-bold text-slate-900">
-                    Ulasan Mahasiswa IBI KKG
-                  </h3>
+                  <div className="flex flex-col">
+                    <h3 className="text-lg font-bold text-slate-900 leading-tight">
+                      Ulasan Mahasiswa &amp; Pelanggan
+                    </h3>
+                    <span className="text-[11px] text-slate-500 font-medium">
+                      {stall.campusName || 'Kantin Kampus Mitra'}
+                    </span>
+                  </div>
                 </div>
                 <span className="text-xs text-slate-500 font-semibold">
-                  {stall.reviewCount} Mahasiswa telah menilai
+                  {stall.reviewCount} Ulasan
                 </span>
               </div>
 
@@ -892,7 +897,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <input
                     type="text"
                     required
-                    placeholder="Nama Anda (Mahasiswa)"
+                    placeholder="Nama Anda (Mahasiswa / Pembeli)"
                     value={revName}
                     onChange={(e) => setRevName(e.target.value)}
                     className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -958,15 +963,39 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
           <aside aria-label="Informasi dan Lokasi Stan" className="lg:col-span-4 flex flex-col gap-4 min-w-0">
             {/* Stall Information Card */}
             <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col gap-4">
-              <h3 className="text-base font-bold text-slate-900 border-b border-slate-100 pb-2">
-                Informasi &amp; Lokasi Stan
-              </h3>
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                <h3 className="text-base font-bold text-slate-900">
+                  Informasi &amp; Lokasi Stan
+                </h3>
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 text-[10px] font-bold border border-emerald-200/80">
+                  Stan Terverifikasi
+                </span>
+              </div>
 
+              {/* Kampus Asal Stan */}
+              <div className="flex items-start gap-3 text-xs">
+                <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">
+                  school
+                </span>
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Kampus Mitra
+                  </span>
+                  <span className="font-bold text-slate-900 leading-snug">
+                    {stall.campusName || 'Kampus Mitra Terdaftar'}
+                  </span>
+                </div>
+              </div>
+
+              {/* Area & Posisi Stan */}
               <div className="flex items-start gap-3 text-xs">
                 <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">
                   location_on
                 </span>
                 <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Area Kantin &amp; Posisi
+                  </span>
                   <span className="font-bold text-slate-900">{stall.fullLocation}</span>
                   <span className="text-slate-500 mt-0.5">
                     ±{stall.distanceMeters} meter dari lobby utama
@@ -974,11 +1003,15 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 </div>
               </div>
 
+              {/* Jam Operasional Mengikuti Kampus */}
               <div className="flex items-start gap-3 text-xs">
                 <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">
                   schedule
                 </span>
                 <div className="flex flex-col">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Jadwal Operasional
+                  </span>
                   <span className="font-bold text-slate-900">
                     {stall.daysOpen} • {stall.hours} WIB
                   </span>
@@ -994,7 +1027,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <span className="material-symbols-outlined text-[16px] text-emerald-600">
                     directions_walk
                   </span>
-                  Panduan Jalan Kaki:
+                  Panduan Menuju Stan:
                 </span>
                 <p className="text-slate-600 leading-relaxed">{stall.walkingGuide}</p>
               </div>
@@ -1805,7 +1838,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           </div>
                         )}
                         <span className="font-mono text-[11px] text-slate-500 font-bold">
-                          NMID: ID2026880019 • IBI KKG REKBER
+                          NMID: ID2026880019 • REKBER KANTIN UNIFOOD
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-500 max-w-xs">

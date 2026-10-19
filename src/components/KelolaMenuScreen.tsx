@@ -1350,47 +1350,67 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   return (
                     <article
                       key={item.id}
-                      className={`menu-item bg-surface-container-lowest rounded-xl p-4 shadow-sm border border-outline-variant/25 flex flex-col justify-between gap-3 min-w-0 ${
-                        isHabis ? 'opacity-85' : ''
+                      className={`menu-item group bg-white rounded-2xl p-4 sm:p-5 border transition-all duration-200 flex flex-col justify-between gap-3.5 min-w-0 ${
+                        isHabis
+                          ? 'border-rose-200/80 bg-rose-50/15'
+                          : 'border-slate-200/90 hover:border-emerald-300 hover:shadow-md shadow-2xs'
                       }`}
                     >
-                      <div className="flex items-start gap-3 min-w-0">
-                        <img
-                          className={`w-16 h-16 rounded-lg object-cover shrink-0 bg-surface-container ${
-                            isHabis ? 'grayscale' : ''
-                          }`}
-                          alt={item.altMerchant}
-                          src={item.imageMerchant}
-                          referrerPolicy="no-referrer"
-                        />
+                      <div className="flex items-start gap-3.5 min-w-0">
+                        {/* Food Image with Hover Effect & Sold-Out Overlay */}
+                        <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200/80 shadow-2xs">
+                          <img
+                            className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
+                              isHabis ? 'grayscale opacity-75' : ''
+                            }`}
+                            alt={item.altMerchant}
+                            src={item.imageMerchant}
+                            referrerPolicy="no-referrer"
+                          />
+                          {isHabis && (
+                            <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-[1px] flex items-center justify-center">
+                              <span className="text-[10px] font-black tracking-wider uppercase text-white bg-rose-600/95 px-1.5 py-0.5 rounded shadow-xs">
+                                Habis
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Title, Category & Availability Toggle */}
                         <div className="flex flex-col min-w-0 flex-grow">
                           <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                                  {item.category}
+                                </span>
+                                <span className="text-[11px] text-slate-400">
+                                  {item.lastUpdated}
+                                </span>
+                              </div>
                               <h4
-                                className={`font-label-lg text-label-lg text-on-surface break-words ${
-                                  isHabis ? 'line-through' : ''
+                                className={`font-bold text-slate-900 text-sm sm:text-base leading-snug mt-1 break-words ${
+                                  isHabis ? 'line-through text-slate-400' : ''
                                 }`}
                               >
                                 {item.name}
                               </h4>
-                              <span className="text-[11px] text-on-surface-variant block mt-0.5">
-                                Kategori: <strong className="uppercase">{item.category}</strong> •{' '}
-                                {item.lastUpdated}
-                              </span>
                             </div>
+
+                            {/* Status Toggle Switch / Badge */}
                             <button
                               aria-label="Ubah status ketersediaan"
                               onClick={() => onToggleMenuStatus(item.id)}
-                              className={`status-toggle-badge min-h-[44px] px-3 py-1.5 rounded-lg font-label-sm text-label-sm flex items-center gap-1.5 cursor-pointer shrink-0 active:scale-95 transition-transform ${
+                              className={`status-toggle-badge min-h-[36px] px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer shrink-0 border transition-all active:scale-95 ${
                                 isHabis
-                                  ? 'bg-error-container text-on-error-container'
-                                  : 'bg-secondary-container text-on-secondary-container'
+                                  ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100'
+                                  : 'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100 shadow-2xs'
                               }`}
                               type="button"
                             >
                               <span
                                 className={`w-2 h-2 rounded-full ${
-                                  isHabis ? 'bg-error' : 'bg-secondary'
+                                  isHabis ? 'bg-rose-500' : 'bg-emerald-500 animate-pulse'
                                 }`}
                               />
                               <span className="badge-text">
@@ -1398,27 +1418,28 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                               </span>
                             </button>
                           </div>
-                          <span
-                            className={`font-body-sm text-body-sm mt-1 ${
-                              isHabis ? 'text-error' : 'text-on-surface-variant'
+
+                          <p
+                            className={`text-xs mt-1.5 line-clamp-2 leading-relaxed ${
+                              isHabis ? 'text-rose-600 font-medium' : 'text-slate-500'
                             }`}
                           >
                             {isHabis
-                              ? item.habisReason || 'Status: Habis (Mahasiswa melihat label Habis)'
+                              ? item.habisReason || 'Stok habis sementara (ditandai habis bagi mahasiswa)'
                               : item.description}
-                          </span>
+                          </p>
                         </div>
                       </div>
 
-                      {/* Responsive Price Input + Edit/Delete Action Bar (Reflows cleanly without fixed-px overflow) */}
-                      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between pt-2.5 border-t border-outline-variant/25 gap-2">
-                        <div className="flex items-center gap-1.5 bg-surface-container-low px-3 h-11 rounded-lg flex-1 min-w-[130px]">
-                          <span className="font-label-sm text-label-sm text-on-surface-variant shrink-0">
+                      {/* Quick Price Editor + Action Buttons */}
+                      <div className="flex flex-wrap sm:flex-nowrap items-center justify-between pt-3 border-t border-slate-100 gap-2.5">
+                        <div className="flex items-center gap-1.5 bg-slate-50 hover:bg-slate-100/80 focus-within:bg-white focus-within:ring-2 focus-within:ring-emerald-500/30 border border-slate-200 px-3 h-10 rounded-xl flex-1 min-w-[140px] transition-all">
+                          <span className="text-xs font-bold text-slate-500 shrink-0">
                             Rp
                           </span>
                           <input
                             aria-label={`Harga ${item.name}`}
-                            className="price-input bg-transparent font-label-lg text-label-lg text-primary font-bold w-full min-w-0 focus:outline-none"
+                            className="price-input bg-transparent font-bold text-sm text-emerald-700 w-full min-w-0 focus:outline-none tabular-nums"
                             inputMode="numeric"
                             type="number"
                             value={item.price}
@@ -1438,30 +1459,33 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                                 );
                               } else {
                                 onShowToast(
-                                  `Harga ${item.name} diperbarui: Rp${check.price.toLocaleString('id-ID')} (Tanggal update: 8 Oktober 2026)`
+                                  `Harga ${item.name} diperbarui: Rp${check.price.toLocaleString('id-ID')}`
                                 );
                               }
                             }}
                           />
-                          <span className="material-symbols-outlined text-[16px] text-on-surface-variant shrink-0">
+                          <span className="material-symbols-outlined text-[16px] text-slate-400 shrink-0" title="Klik untuk ubah harga cepat">
                             edit
                           </span>
                         </div>
-                        <div className="flex items-center gap-2 shrink-0">
+
+                        <div className="flex items-center gap-1.5 shrink-0">
                           <button
                             onClick={() => openEditModal(item)}
-                            className="min-h-[44px] px-3.5 flex items-center justify-center gap-1 rounded-lg bg-surface-container-high text-on-surface hover:text-primary font-label-sm text-label-sm transition-colors cursor-pointer active:scale-95"
+                            className="min-h-[38px] px-3 flex items-center justify-center gap-1 rounded-xl bg-slate-100 hover:bg-emerald-50 text-slate-700 hover:text-emerald-800 hover:border-emerald-200 border border-transparent text-xs font-semibold transition-all cursor-pointer active:scale-95"
                             type="button"
+                            title="Edit detail menu lengkap"
                           >
-                            <span className="material-symbols-outlined text-[18px]">edit</span>
+                            <span className="material-symbols-outlined text-[17px] text-emerald-600">edit_square</span>
                             <span>Edit</span>
                           </button>
                           <button
                             onClick={() => setConfirmDeleteItem(item)}
-                            className="min-h-[44px] px-3.5 flex items-center justify-center gap-1 rounded-lg bg-error-container/70 text-error hover:bg-error-container font-label-sm text-label-sm transition-colors cursor-pointer active:scale-95"
+                            className="min-h-[38px] px-3 flex items-center justify-center gap-1 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-700 hover:border-rose-200 border border-transparent text-xs font-semibold transition-all cursor-pointer active:scale-95"
                             type="button"
+                            title="Hapus menu dari stan"
                           >
-                            <span className="material-symbols-outlined text-[18px]">delete</span>
+                            <span className="material-symbols-outlined text-[17px] text-rose-500">delete</span>
                             <span>Hapus</span>
                           </button>
                         </div>

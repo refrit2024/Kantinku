@@ -5,6 +5,7 @@ import {
   clearLoginBruteForce,
   recordFailedLoginAttempt,
 } from '../utils/securityGuard';
+import { UnifoodLogo } from './UnifoodLogo';
 
 interface AuthPortalScreenProps {
   sellerAccounts: SellerAccount[];
@@ -479,7 +480,20 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
   };
 
   return (
-    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-10">
+    <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 flex flex-col gap-6">
+      {/* Top Brand Bar */}
+      <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-200/70">
+        <UnifoodLogo size="md" badgeText="Multi-Kampus" />
+        <button
+          type="button"
+          onClick={onContinueAsStudent}
+          className="min-h-[38px] px-3.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+        >
+          <span className="material-symbols-outlined text-[16px]">storefront</span>
+          <span>Kembali ke Katalog</span>
+        </button>
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* LEFT COLUMN (5 cols on Desktop): Campus Transparency & Flow */}
         <div className="lg:col-span-5 flex flex-col gap-4 order-2 lg:order-1">
