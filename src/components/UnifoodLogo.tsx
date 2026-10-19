@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import unifoodLogoImg from '../assets/images/kantinku_logo_crop_1x1.png';
 
 interface UnifoodLogoProps {
   size?: 'sm' | 'md' | 'lg' | 'xl';
@@ -8,7 +9,7 @@ interface UnifoodLogoProps {
   className?: string;
 }
 
-export const UNIFOOD_LOGO_URL = '/src/assets/images/kantinku_logo_crop_1x1.png';
+export const UNIFOOD_LOGO_URL = unifoodLogoImg;
 
 export const UnifoodLogo: React.FC<UnifoodLogoProps> = ({
   size = 'md',
