@@ -1176,55 +1176,161 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               </div>
                             </div>
 
-                            {/* Card Body (Selector 9) - Clean Whitespace, No Nested Card Clutter */}
-                            <div className="p-4 sm:p-5 flex flex-col gap-3">
-                              <div className="flex flex-col gap-0.5">
-                                <div className="flex items-center gap-1.5">
-                                  <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
-                                    {stall.name}
-                                  </h3>
-                                  <span
-                                    className="material-symbols-outlined text-[17px] text-emerald-600 shrink-0"
-                                    title="Mitra Resmi Kantin IBI KKG"
-                                  >
-                                    verified
-                                  </span>
+                            {/* Card Body - Rich, appetizing, modern food app experience */}
+                            <div className="p-4 sm:p-5 flex flex-col gap-3.5">
+                              {/* Stall Identity & Specialty */}
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-1.5 min-w-0">
+                                    <h3 className="text-base sm:text-lg font-bold text-slate-900 group-hover:text-emerald-700 transition-colors truncate">
+                                      {stall.name}
+                                    </h3>
+                                    <span
+                                      className="material-symbols-outlined text-[17px] text-emerald-600 shrink-0"
+                                      title={
+                                        stall.campusName
+                                          ? `Mitra Resmi Terverifikasi · ${stall.campusName}`
+                                          : 'Mitra Resmi Kantin Kampus Terverifikasi'
+                                      }
+                                    >
+                                      verified
+                                    </span>
+                                  </div>
+
+                                  {stall.isStudentEntrepreneur && (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200/80 px-2 py-0.5 rounded-full shrink-0">
+                                      <span className="material-symbols-outlined text-[12px]">school</span>
+                                      Usaha Mahasiswa
+                                    </span>
+                                  )}
                                 </div>
-                                <p className="text-xs text-slate-500 line-clamp-1">
+
+                                <p className="text-xs text-slate-500 line-clamp-1 font-medium">
                                   {stall.specialty}
                                 </p>
+
+                                {/* Location & Operating Hours */}
+                                <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium flex-wrap pt-0.5">
+                                  <span className="flex items-center gap-1 text-slate-700">
+                                    <span className="material-symbols-outlined text-[13px] text-slate-400">
+                                      storefront
+                                    </span>
+                                    {stall.building}
+                                  </span>
+                                  <span aria-hidden="true" className="text-slate-300">·</span>
+                                  <span className="flex items-center gap-1 text-slate-600">
+                                    <span className="material-symbols-outlined text-[13px] text-slate-400">
+                                      schedule
+                                    </span>
+                                    {stall.hours}
+                                  </span>
+                                  <span aria-hidden="true" className="text-slate-300">·</span>
+                                  <span className="text-emerald-700 font-semibold">
+                                    {stall.menuItems.length} pilihan menu
+                                  </span>
+                                </div>
                               </div>
 
-                              {/* Price Transparency Quiet Text Row */}
-                              <div className="flex items-center justify-between text-xs text-slate-500 pt-2 border-t border-slate-100">
-                                <span className="flex items-center gap-1 text-slate-600 font-medium">
+                              {/* Price Transparency & Payment Acceptance Row */}
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2.5 border-t border-slate-100 flex-wrap gap-1">
+                                <span className="flex items-center gap-1 text-slate-700 font-semibold">
                                   <span className="material-symbols-outlined text-[15px] text-emerald-600">
                                     verified_user
                                   </span>
-                                  Tarif resmi stan
+                                  Tarif Resmi Stan
                                 </span>
-                                <span className="font-semibold text-slate-700 tabular-nums">
-                                  {stall.lastUpdatedDate}
-                                </span>
+                                <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
+                                  {stall.paymentMethods && stall.paymentMethods.length > 0 ? (
+                                    <span className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                      {stall.paymentMethods.slice(0, 2).join(' / ')}
+                                      {stall.paymentMethods.length > 2 && ` +${stall.paymentMethods.length - 2}`}
+                                    </span>
+                                  ) : (
+                                    <span>QRIS / Tunai</span>
+                                  )}
+                                </div>
                               </div>
 
-                              {/* Popular Menu Preview - Clean Hairline Rows, No Nested Box Clutter */}
-                              <div className="flex flex-col gap-1.5 pt-1">
-                                <span className="text-xs font-semibold text-slate-700">
-                                  Menu Andalan
-                                </span>
-                                <div className="flex flex-col divide-y divide-slate-100">
+                              {/* Menu Andalan Preview - Rich culinary showcase with food photos */}
+                              <div className="flex flex-col gap-2 pt-1">
+                                <div className="flex items-center justify-between">
+                                  <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                                    <span className="material-symbols-outlined text-[14px] text-amber-500">
+                                      local_fire_department
+                                    </span>
+                                    Menu Andalan
+                                  </span>
+                                  <span className="text-[11px] font-semibold text-emerald-700 group-hover:text-emerald-800 flex items-center gap-0.5">
+                                    <span>Lihat semua</span>
+                                    <span className="material-symbols-outlined text-[13px]">chevron_right</span>
+                                  </span>
+                                </div>
+
+                                <div className="flex flex-col gap-1.5">
                                   {displayMenus.slice(0, 2).map((item) => (
                                     <div
                                       key={item.id}
-                                      className="flex items-center justify-between text-xs py-1.5"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onSelectStall(stall.id);
+                                      }}
+                                      className="group/item flex items-center gap-2.5 p-1.5 rounded-xl bg-slate-50/70 hover:bg-emerald-50/60 border border-slate-100/80 hover:border-emerald-200/80 transition-all duration-200 cursor-pointer"
+                                      title={`Lihat detail ${item.name}`}
                                     >
-                                      <span className="text-slate-800 font-medium truncate pr-2">
-                                        {item.name}
-                                      </span>
-                                      <span className="font-semibold text-emerald-700 shrink-0 tabular-nums">
-                                        Rp {item.price.toLocaleString('id-ID')}
-                                      </span>
+                                      {/* Mini Food Thumbnail */}
+                                      <div className="relative w-11 h-11 rounded-lg overflow-hidden bg-slate-200 shrink-0 border border-slate-200/60">
+                                        {item.imageCatalog ? (
+                                          <img
+                                            src={item.imageCatalog}
+                                            alt={item.name}
+                                            referrerPolicy="no-referrer"
+                                            className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-300"
+                                          />
+                                        ) : (
+                                          <div className="w-full h-full flex items-center justify-center text-sm bg-emerald-50">
+                                            {item.icon || '🍱'}
+                                          </div>
+                                        )}
+                                        {item.status === 'habis' && (
+                                          <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white text-[8px] font-bold">
+                                            HABIS
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      {/* Food Information */}
+                                      <div className="flex-1 min-w-0">
+                                        <div className="flex items-center justify-between gap-1">
+                                          <h4 className="text-xs font-semibold text-slate-800 truncate group-hover/item:text-emerald-700 transition-colors">
+                                            {item.name}
+                                          </h4>
+                                          <span className="font-bold text-xs text-emerald-700 shrink-0 tabular-nums">
+                                            Rp {item.price.toLocaleString('id-ID')}
+                                          </span>
+                                        </div>
+
+                                        <div className="flex items-center gap-1.5 mt-0.5 text-[10px] text-slate-500">
+                                          <span className="capitalize">{item.category}</span>
+                                          <span aria-hidden="true" className="text-slate-300">·</span>
+                                          {item.status === 'ready' ? (
+                                            <span className="text-emerald-600 font-medium flex items-center gap-0.5">
+                                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block"></span>
+                                              Tersedia
+                                            </span>
+                                          ) : (
+                                            <span className="text-rose-500 font-medium">Habis</span>
+                                          )}
+                                          {item.isPreOrderDiscount && (
+                                            <>
+                                              <span aria-hidden="true" className="text-slate-300">·</span>
+                                              <span className="text-amber-600 font-semibold flex items-center gap-0.5">
+                                                <span className="material-symbols-outlined text-[10px]">bolt</span>
+                                                Promo PO
+                                              </span>
+                                            </>
+                                          )}
+                                        </div>
+                                      </div>
                                     </div>
                                   ))}
                                 </div>
