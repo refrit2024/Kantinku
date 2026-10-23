@@ -56,7 +56,11 @@ interface KelolaMenuScreenProps {
   onUpdateStallProfile: (updated: Partial<Stall>) => void;
   onUpdateOrderStatus: (orderId: string, nextStatus: OrderStatusType) => void;
   onReplyReview: (reviewId: string, replyText: string) => void;
-  onShowToast: (message: string) => void;
+  onShowToast: (
+    message: string,
+    isError?: boolean,
+    action?: { label: string; onClick: () => void }
+  ) => void;
 }
 
 const PRESET_FOOD_PHOTOS = [
@@ -783,10 +787,10 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
         {liveOrderAlert && (
           <div
             role="alert"
-            className="w-full rounded-2xl bg-secondary text-on-secondary p-4 sm:p-5 shadow-lg border-2 border-secondary-container flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-300"
+            className="w-full rounded-xl bg-secondary text-on-secondary p-4 sm:p-5 shadow-lg border-2 border-secondary-container flex flex-col md:flex-row md:items-center justify-between gap-4 animate-in fade-in duration-300"
           >
             <div className="flex items-start gap-3.5 min-w-0">
-              <div className="w-12 h-12 rounded-2xl bg-on-secondary text-secondary flex items-center justify-center shrink-0 shadow-xs">
+              <div className="w-12 h-12 rounded-lg bg-on-secondary text-secondary flex items-center justify-center shrink-0 shadow-xs">
                 <span className="material-symbols-outlined text-[28px]">
                   notifications_active
                 </span>
@@ -843,7 +847,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               <button
                 type="button"
                 onClick={() => playTingTongSound()}
-                className="min-h-[44px] px-3.5 py-2 rounded-xl bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary border border-on-secondary/30 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
+                className="min-h-[44px] px-3.5 py-2 rounded-lg bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary border border-on-secondary/30 font-label-sm text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[17px]">replay</span>
                 <span>Bunyikan Lagi</span>
@@ -855,7 +859,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   setLiveOrderAlert(null);
                   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                 }}
-                className="min-h-[44px] px-4 py-2 rounded-xl bg-on-secondary text-secondary hover:opacity-95 font-label-md text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                className="min-h-[44px] px-4 py-2 rounded-lg bg-on-secondary text-secondary hover:opacity-95 font-label-md text-xs sm:text-sm font-extrabold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">receipt_long</span>
                 <span>Lihat &amp; Proses Pesanan</span>
@@ -867,7 +871,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   if ('speechSynthesis' in window) window.speechSynthesis.cancel();
                 }}
                 aria-label="Tutup Pengingat Pesanan"
-                className="w-11 h-11 rounded-xl bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary flex items-center justify-center cursor-pointer"
+                className="w-11 h-11 rounded-lg bg-on-secondary/15 hover:bg-on-secondary/25 text-on-secondary flex items-center justify-center cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[20px]">close</span>
               </button>
@@ -879,7 +883,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
         {stall.isFrozen && (
           <div
             role="alert"
-            className="w-full rounded-2xl bg-error text-on-error p-4 sm:p-5 shadow-md flex flex-col gap-2"
+            className="w-full rounded-xl bg-error text-on-error p-4 sm:p-5 shadow-md flex flex-col gap-2"
           >
             <div className="flex items-center gap-2.5">
               <span className="material-symbols-outlined text-[24px]">gpp_bad</span>
@@ -898,11 +902,11 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
         {stallPriceReports.length > 0 && (
           <div
             role="alert"
-            className="w-full rounded-2xl bg-error-container/85 text-on-error-container p-4 sm:p-5 shadow-md border-2 border-error/40 flex flex-col gap-3.5"
+            className="w-full rounded-xl bg-error-container/85 text-on-error-container p-4 sm:p-5 shadow-md border-2 border-error/40 flex flex-col gap-3.5"
           >
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 min-w-0">
-                <div className="w-11 h-11 rounded-xl bg-error text-on-error flex items-center justify-center shrink-0 shadow-xs">
+                <div className="w-11 h-11 rounded-lg bg-error text-on-error flex items-center justify-center shrink-0 shadow-xs">
                   <span className="material-symbols-outlined text-[24px]">gavel</span>
                 </div>
                 <div className="flex flex-col gap-0.5 min-w-0">
@@ -1350,7 +1354,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   return (
                     <article
                       key={item.id}
-                      className={`menu-item group bg-white rounded-2xl p-4 sm:p-5 border transition-all duration-200 flex flex-col justify-between gap-3.5 min-w-0 ${
+                      className={`menu-item group bg-white rounded-lg p-4 sm:p-5 border transition-all duration-200 flex flex-col justify-between gap-3.5 min-w-0 ${
                         isHabis
                           ? 'border-rose-200/80 bg-rose-50/15'
                           : 'border-slate-200/90 hover:border-emerald-300 hover:shadow-md shadow-2xs'
@@ -1358,7 +1362,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     >
                       <div className="flex items-start gap-3.5 min-w-0">
                         {/* Food Image with Hover Effect & Sold-Out Overlay */}
-                        <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden shrink-0 bg-slate-100 border border-slate-200/80 shadow-2xs">
+                        <div className="relative w-20 h-20 sm:w-22 sm:h-22 rounded-md overflow-hidden shrink-0 bg-slate-100 border border-slate-200/80 shadow-2xs">
                           <img
                             className={`w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 ${
                               isHabis ? 'grayscale opacity-75' : ''
@@ -1813,11 +1817,11 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
             )}
 
             {/* DOMPET PENJUALAN & TARIK DANA */}
-            <div className="bg-white rounded-2xl p-5 sm:p-6 shadow-xs border border-slate-200/90 flex flex-col gap-5">
+            <div className="bg-white rounded-xl p-5 sm:p-6 shadow-xs border border-slate-200/90 flex flex-col gap-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
+                    <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold">
                       0% Potongan
                     </span>
                     <span className="text-xs text-slate-500 font-medium">
@@ -2223,7 +2227,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
         {sellerSubTab === 'laporan' && (
           <section className="max-w-5xl mx-auto w-full flex flex-col gap-6">
             {/* Header & Filter Controls */}
-            <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2">
@@ -2243,7 +2247,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsPrintRecapOpen(true)}
-                    className="min-h-[44px] px-4 py-2 rounded-xl bg-primary text-on-primary font-label-sm text-xs font-bold flex items-center gap-1.5 shadow-xs hover:bg-primary-container cursor-pointer transition-all active:scale-95"
+                    className="min-h-[44px] px-4 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-xs font-bold flex items-center gap-1.5 shadow-xs hover:bg-primary-container cursor-pointer transition-all active:scale-95"
                   >
                     <span className="material-symbols-outlined text-[18px]">print</span>
                     <span>Cetak / Unduh Struk Rekap</span>
@@ -2251,7 +2255,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                   <button
                     type="button"
                     onClick={handleCopyRecapWhatsApp}
-                    className="min-h-[44px] px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-sm text-xs font-semibold flex items-center gap-1.5 border border-outline-variant/30 cursor-pointer transition-all active:scale-95"
+                    className="min-h-[44px] px-3.5 py-2 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-sm text-xs font-semibold flex items-center gap-1.5 border border-outline-variant/30 cursor-pointer transition-all active:scale-95"
                     title="Salin ringkasan ke format pesan WhatsApp"
                   >
                     <span className="material-symbols-outlined text-[18px] text-emerald-600">
@@ -2280,7 +2284,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                         key={p.id}
                         type="button"
                         onClick={() => setReportPeriod(p.id as typeof reportPeriod)}
-                        className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`min-h-[38px] px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-primary text-on-primary shadow-xs font-bold'
                             : 'bg-surface-container text-on-surface-variant hover:text-on-surface border border-outline-variant/25'
@@ -2301,7 +2305,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
             {/* 4 Financial & Operational Metric Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card 1: Total Omset */}
-              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
+              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-lg border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
                     Total Omset Penjualan
@@ -2321,7 +2325,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               </div>
 
               {/* Card 2: Pemisahan Gateway vs Tunai */}
-              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
+              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-lg border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
                     Penerimaan Saldo
@@ -2347,7 +2351,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               </div>
 
               {/* Card 3: Pesanan & Rata-rata Nilai */}
-              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
+              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-lg border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
                     Volume Transaksi
@@ -2372,7 +2376,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               </div>
 
               {/* Card 4: Distribusi Dine-In vs Pickup */}
-              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-2xl border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
+              <div className="bg-surface-container-lowest p-4 sm:p-5 rounded-lg border border-outline-variant/30 shadow-xs flex flex-col justify-between gap-2">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-on-surface-variant uppercase tracking-wider">
                     Jalur Pemenuhan
@@ -2403,7 +2407,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
             </div>
 
             {/* Menu Terlaris (Performance Breakdown) */}
-            <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <h3 className="fluid-headline-md text-on-surface font-bold">
@@ -2413,13 +2417,13 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     Rincian menu yang paling sering dipesan oleh mahasiswa selama periode terpilih
                   </p>
                 </div>
-                <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-lg">
+                <span className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-md">
                   {reportMetrics.bestSellers.length} Menu Terjual
                 </span>
               </div>
 
               {reportMetrics.bestSellers.length === 0 ? (
-                <div className="p-8 text-center bg-surface-container-low rounded-xl border border-dashed border-outline-variant/40 flex flex-col items-center gap-2">
+                <div className="p-8 text-center bg-surface-container-low rounded-lg border border-dashed border-outline-variant/40 flex flex-col items-center gap-2">
                   <span className="material-symbols-outlined text-[36px] text-on-surface-variant/40">
                     fastfood
                   </span>
@@ -2435,11 +2439,11 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                     return (
                       <div
                         key={item.name}
-                        className="p-3 rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-2"
+                        className="p-3 rounded-lg bg-surface-container-low border border-outline-variant/25 flex flex-col gap-2"
                       >
                         <div className="flex items-center justify-between gap-3 text-xs">
                           <div className="flex items-center gap-2 min-w-0">
-                            <span className="w-5 h-5 rounded-full bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center shrink-0">
+                            <span className="w-5 h-5 rounded-md bg-primary/15 text-primary text-[11px] font-bold flex items-center justify-center shrink-0">
                               {idx + 1}
                             </span>
                             <span className="font-bold text-on-surface truncate">
@@ -2470,7 +2474,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
             </div>
 
             {/* Tabel Riwayat Transaksi Lengkap */}
-            <div className="bg-surface-container-lowest rounded-2xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
+            <div className="bg-surface-container-lowest rounded-xl p-4 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-4">
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <h3 className="fluid-headline-md text-on-surface font-bold">
@@ -3204,7 +3208,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-xs overflow-y-auto"
         >
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl overflow-hidden my-6 border border-slate-200">
+          <div className="relative w-full max-w-md bg-white rounded-xl shadow-2xl overflow-hidden my-6 border border-slate-200">
             {/* Header Control Buttons (Hidden when printing via no-print) */}
             <div className="no-print p-4 bg-slate-900 text-white flex items-center justify-between gap-3">
               <div className="flex items-center gap-2">
@@ -3218,7 +3222,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setIsPrintRecapOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
+                className="w-8 h-8 rounded-md bg-white/10 hover:bg-white/20 text-white flex items-center justify-center cursor-pointer transition-colors"
               >
                 ✕
               </button>

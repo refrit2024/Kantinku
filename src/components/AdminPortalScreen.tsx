@@ -886,10 +886,10 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
             </div>
 
             {/* Kontrol Operasional & Pembekuan Stan (Suspend / Freeze oleh Admin) */}
-            <div className="rounded-2xl bg-surface-container-lowest p-5 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-5 mt-2">
+            <div className="rounded-xl bg-surface-container-lowest p-5 sm:p-6 shadow-sm border border-outline-variant/30 flex flex-col gap-5 mt-2">
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-outline-variant/25 pb-4">
                 <div className="flex items-start gap-3.5">
-                  <div className="w-11 h-11 rounded-xl bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0">
+                  <div className="w-11 h-11 rounded-lg bg-primary-fixed text-on-primary-fixed flex items-center justify-center shrink-0">
                     <span className="material-symbols-outlined text-[24px]">admin_panel_settings</span>
                   </div>
                   <div className="flex flex-col gap-1">
@@ -1965,12 +1965,12 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               onToggleFreezeStall(freezeStallTarget.id, true, freezeStallReason);
               setFreezeStallTarget(null);
             }}
-            className="bg-surface-container-lowest rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col border border-outline-variant/30"
+            className="bg-surface-container-lowest rounded-xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col border border-outline-variant/30"
           >
             {/* Modal Top Header */}
             <div className="bg-error text-on-error px-5 py-4 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="w-10 h-10 rounded-xl bg-on-error/15 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-on-error/15 flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-[22px]">gpp_bad</span>
                 </div>
                 <div className="flex flex-col min-w-0">
@@ -1985,7 +1985,7 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setFreezeStallTarget(null)}
-                className="w-10 h-10 rounded-full bg-on-error/15 hover:bg-on-error/25 text-on-error flex items-center justify-center cursor-pointer shrink-0"
+                className="w-10 h-10 rounded-md bg-on-error/15 hover:bg-on-error/25 text-on-error flex items-center justify-center cursor-pointer shrink-0"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -2058,13 +2058,13 @@ export const AdminPortalScreen: React.FC<AdminPortalScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setFreezeStallTarget(null)}
-                  className="w-1/2 min-h-[44px] rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-xs font-semibold cursor-pointer"
+                  className="w-1/2 min-h-[44px] rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-label-md text-xs font-semibold cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="w-1/2 min-h-[44px] rounded-xl bg-error hover:opacity-95 text-on-error font-label-md text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
+                  className="w-1/2 min-h-[44px] rounded-lg bg-error hover:opacity-95 text-on-error font-label-md text-xs font-bold flex items-center justify-center gap-1.5 shadow-sm cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">lock</span>
                   <span>Konfirmasi Bekukan Stan</span>

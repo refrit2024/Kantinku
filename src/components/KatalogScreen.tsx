@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { normalizeStallLocation, OrderStatusType, OrderTransaction, Stall, StudentAccount } from '../data/kantinData';
 import { OrderReceiptModal } from './OrderReceiptModal';
+import { isValidStudentNim } from '../utils/securityGuard';
 
 export type StudentSubTab = 'kantin' | 'kategori' | 'favorit' | 'pesanan';
 
@@ -53,6 +54,31 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   const [orderLookupQuery, setOrderLookupQuery] = useState('');
   const [selectedReceiptOrder, setSelectedReceiptOrder] =
     useState<OrderTransaction | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // 8 Golden Rules: Rule 2 (Universal Usability) & Rule 7 (Internal Locus of Control)
+  // Keyboard Shortcut '/' or 'Ctrl+K' focuses search; 'Escape' dismisses receipt modal or clears search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (selectedReceiptOrder) {
+          setSelectedReceiptOrder(null);
+        } else if (searchQuery) {
+          setSearchQuery('');
+        }
+      } else if (
+        (e.key === '/' || ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k')) &&
+        document.activeElement?.tagName !== 'INPUT' &&
+        document.activeElement?.tagName !== 'TEXTAREA'
+      ) {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedReceiptOrder, searchQuery]);
 
   // Student Identity & Order Ownership Isolation
   const [currentStudentName, setCurrentStudentName] = useState<string>(() => {
@@ -146,6 +172,12 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
     if (e) e.preventDefault();
     const cleanName = tempNameInput.trim();
     const cleanNim = tempNimInput.trim();
+    if (cleanNim && !isValidStudentNim(cleanNim)) {
+      if (onShowToast) {
+        onShowToast('Format NIM harus 7–12 digit angka resmi kampus (contoh: 32230104).', true);
+      }
+      return;
+    }
     setCurrentStudentName(cleanName);
     setCurrentStudentNim(cleanNim);
     setIsEditingIdentity(false);
@@ -289,9 +321,9 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
   const openStallsCount = stalls.filter((s) => s.isOpen).length;
 
   return (
-    <div className="flex flex-col flex-1 w-full pb-6 sm:pb-8 bg-slate-50/70">
+    <div className="flex flex-col flex-1 w-full pb-6 sm:pb-8 bg-stone-50/70">
       {/* 1. SHOPEEFOOD/GOJEK STYLE SUB-NAV BAR (Sticky Under Top Bar) */}
-      <nav aria-label="Navigasi Menu Utama" className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 backdrop-blur-md border-b border-slate-200/80 px-4 sm:px-6 lg:px-8 shadow-xs">
+      <nav aria-label="Navigasi Menu Utama" className="sticky top-14 sm:top-16 z-30 w-full bg-white/95 backdrop-blur-md border-b border-stone-200/80 px-4 sm:px-6 lg:px-8 shadow-2xs">
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-2.5 py-1.5 sm:py-2">
           <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar w-full sm:w-auto py-0.5">
             {[
@@ -320,10 +352,10 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   className={`min-h-[44px] px-3.5 sm:px-4 py-2 rounded-xl text-xs sm:text-[13px] font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
                     isActive
                       ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/30'
-                      : 'bg-slate-100/90 text-slate-700 hover:text-slate-900 hover:bg-slate-200/80'
+                      : 'bg-stone-100/90 text-stone-700 hover:text-stone-900 hover:bg-stone-200/80'
                   }`}
                 >
-                  <span className={`material-symbols-outlined text-[18px] ${isActive ? 'text-white' : 'text-slate-600'}`}>
+                  <span className={`material-symbols-outlined text-[18px] ${isActive ? 'text-white' : 'text-stone-600'}`}>
                     {tab.icon}
                   </span>
                   <span>{tab.label}</span>
@@ -551,8 +583,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
             )}
 
             {filteredStudentOrders.length === 0 ? (
-              <div className="bg-white rounded-2xl p-5 sm:p-6 text-center flex flex-col items-center gap-2 shadow-2xs border border-slate-200/80">
-                <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+              <div className="bg-white rounded-xl p-5 sm:p-6 text-center flex flex-col items-center gap-2 shadow-2xs border border-slate-200/80">
+                <div className="w-12 h-12 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center">
                   <span className="material-symbols-outlined text-[24px]">receipt_long</span>
                 </div>
                 <div className="flex flex-col gap-0.5 max-w-md">
@@ -569,7 +601,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       if (orderLookupQuery.trim()) setOrderLookupQuery('');
                       else onChangeSubTab('kantin');
                     }}
-                    className="min-h-[40px] px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold text-xs sm:text-sm cursor-pointer shadow-sm hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-1.5"
+                    className="min-h-[40px] px-4 py-2 rounded-lg bg-emerald-600 text-white font-semibold text-xs sm:text-sm cursor-pointer shadow-sm hover:bg-emerald-700 active:scale-95 transition-all flex items-center gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[16px]">storefront</span>
                     <span>{orderLookupQuery.trim() ? 'Bersihkan Pencarian' : 'Buka Katalog Kantin & Pesan Menu'}</span>
@@ -593,8 +625,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                           ord.fulfillmentType === 'dine_in'
                             ? 'Sedang Dimasak / Disajikan'
                             : 'Sedang Disiapkan di Stan',
-                        bg: 'bg-blue-50 text-blue-800 border-blue-200',
-                        dot: 'bg-blue-500',
+                        bg: 'bg-orange-50 text-orange-800 border-orange-200',
+                        dot: 'bg-orange-500',
                       },
                       ready_pickup: {
                         label:
@@ -619,7 +651,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     return (
                       <div
                         key={ord.id}
-                        className={`rounded-2xl p-4 sm:p-5 border transition-all flex flex-col justify-between gap-3.5 ${
+                        className={`rounded-lg p-4 sm:p-5 border transition-all flex flex-col justify-between gap-3.5 ${
                           ord.status === 'ready_pickup'
                             ? 'bg-emerald-50/40 border-emerald-400 ring-1 ring-emerald-400/40 shadow-sm'
                             : ord.status === 'completed'
@@ -798,10 +830,11 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
         ) : (
           /* SUB-TAB: SEMUA KANTIN / EKSPLOR MENU / FAVORIT */
           <div className="flex flex-col gap-3.5 sm:gap-4">
-            {/* 3. HERO BANNER & SEARCH SECTION - Clean, Airy & Modern */}
-            <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-emerald-800 via-emerald-700 to-teal-800 text-white p-4 sm:p-5 shadow-xs">
-              {/* Subtle background glow */}
-              <div className="absolute -top-16 -right-16 w-64 h-64 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none"></div>
+            {/* 3. HERO BANNER & SEARCH SECTION - Modern Crisp Style */}
+            <section className="relative overflow-hidden rounded-xl bg-gradient-to-r from-emerald-900 via-emerald-800 to-teal-900 text-white p-4 sm:p-5 shadow-xs border border-emerald-800/80">
+              {/* Subtle appetizing dual glow: emerald + warm sunset orange */}
+              <div className="absolute -top-16 -right-12 w-60 h-60 rounded-full bg-orange-500/15 blur-3xl pointer-events-none"></div>
+              <div className="absolute -bottom-16 -left-12 w-60 h-60 rounded-full bg-emerald-400/20 blur-3xl pointer-events-none"></div>
 
               <div className="relative z-10 flex flex-col gap-3">
                 <div className="flex items-center justify-between">
@@ -810,7 +843,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                   </h1>
                 </div>
 
-                {/* Search Bar - Crisp, Modern & Spacious */}
+                {/* Search Bar - Crisp & Modern */}
                 <form
                   onSubmit={(e) => e.preventDefault()}
                   className="w-full relative shadow-xs"
@@ -820,28 +853,38 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       search
                     </span>
                     <input
+                      ref={searchInputRef}
                       type="search"
                       id="menuSearchInput"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Cari menu makanan, minuman, atau stan..."
-                      className="w-full h-11 pl-10 pr-10 rounded-xl bg-white text-slate-900 placeholder:text-slate-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all"
+                      placeholder="Cari menu makanan, minuman, atau stan (tekan '/' untuk cari)..."
+                      className="w-full h-11 pl-10 pr-16 rounded-lg bg-white text-stone-900 placeholder:text-stone-400 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-400 transition-all border border-stone-200"
                     />
-                    {searchQuery && (
-                      <button
-                        type="button"
-                        onClick={() => setSearchQuery('')}
-                        aria-label="Bersihkan pencarian"
-                        className="absolute right-2 min-h-[36px] min-w-[36px] flex items-center justify-center text-slate-400 hover:text-slate-600 cursor-pointer"
-                      >
-                        <span className="material-symbols-outlined text-[18px]">close</span>
-                      </button>
-                    )}
+                    <div className="absolute right-2.5 flex items-center gap-1.5">
+                      {searchQuery ? (
+                        <button
+                          type="button"
+                          onClick={() => setSearchQuery('')}
+                          aria-label="Bersihkan pencarian"
+                          className="min-h-[32px] min-w-[32px] rounded-md flex items-center justify-center text-stone-400 hover:text-stone-600 hover:bg-stone-100 cursor-pointer transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[18px]">close</span>
+                        </button>
+                      ) : (
+                        <kbd
+                          title="Tekan '/' atau 'Ctrl+K' untuk mencari"
+                          className="hidden sm:inline-flex items-center justify-center px-1.5 py-0.5 rounded bg-slate-100 border border-slate-200 text-[10px] font-mono text-slate-400 select-none shadow-2xs"
+                        >
+                          /
+                        </kbd>
+                      )}
+                    </div>
                   </div>
                 </form>
 
-                {/* Clean Category Chips */}
-                <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-0.5">
+                {/* Clean Category Controls - Modern Crisp */}
+                <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-0.5">
                   {[
                     { id: 'all', label: 'Semua', icon: 'restaurant' },
                     { id: 'makanan', label: 'Makanan', icon: 'lunch_dining' },
@@ -856,10 +899,10 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                         onClick={() =>
                           setCategoryFilter(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
                         }
-                        className={`min-h-[36px] px-3.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
+                        className={`min-h-[36px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all cursor-pointer select-none active:scale-95 ${
                           isSelected
-                            ? 'bg-white text-emerald-950 shadow-sm font-bold'
-                            : 'bg-emerald-900/35 hover:bg-emerald-900/50 text-emerald-100 border border-emerald-400/20'
+                            ? 'bg-white text-emerald-950 shadow-sm font-bold border border-white'
+                            : 'bg-emerald-900/50 hover:bg-emerald-900/70 text-emerald-100 border border-emerald-400/20'
                         }`}
                       >
                         <span className="material-symbols-outlined text-[16px]">
@@ -873,129 +916,188 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
               </div>
             </section>
 
-            {/* 4. EXPANDABLE FILTER ROW & QUICK TOGGLES (Clean & Uncrowded) */}
-            <div className="bg-white p-2.5 sm:p-3 rounded-xl border border-slate-200/80 shadow-2xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-2 flex-wrap text-xs text-slate-700 min-w-0">
-                {/* Quick Toggle: Buka Saja */}
-                <button
-                  type="button"
-                  onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
-                  className={`min-h-[34px] px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all border ${
-                    onlyOpenFilter
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <span className={`w-2 h-2 rounded-full ${onlyOpenFilter ? 'bg-emerald-600' : 'bg-slate-300'}`}></span>
-                  <span>Stan Buka</span>
-                </button>
+            {/* 4. EXPANDABLE FILTER ROW - Modern Crisp */}
+            <div className="bg-white rounded-xl border border-stone-200/90 shadow-2xs overflow-hidden transition-all duration-200">
+              {/* Primary Bar: Quick Filters & Actions */}
+              <div className="p-2 sm:px-3 sm:py-2 flex items-center justify-between gap-2 flex-wrap">
+                {/* Left: Filter Buttons */}
+                <div className="flex items-center gap-1.5 flex-wrap min-w-0">
+                  <div className="hidden sm:flex items-center gap-1 text-[11px] font-bold text-stone-400 uppercase tracking-wider mr-0.5 select-none">
+                    <span className="material-symbols-outlined text-[15px] text-stone-400">filter_alt</span>
+                    <span>Filter:</span>
+                  </div>
 
-                {/* Quick Toggle: Budget Hemat */}
-                <button
-                  type="button"
-                  onClick={() => setPriceFilter(priceFilter === '<=15000' ? 'all' : '<=15000')}
-                  className={`min-h-[34px] px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all border ${
-                    priceFilter === '<=15000'
-                      ? 'bg-emerald-50 text-emerald-800 border-emerald-300 font-bold'
-                      : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[15px]">savings</span>
-                  <span>Hemat ≤ Rp15rb</span>
-                </button>
-
-                {/* Active filter summary tag if custom */}
-                {priceFilter !== 'all' && priceFilter !== '<=15000' && (
-                  <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-semibold text-xs border border-emerald-200">
-                    {priceFilter === '<=10000' ? '≤ Rp10rb' : priceFilter === '10000-15000' ? 'Rp10rb–15rb' : 'Rp15rb–20rb'}
-                  </span>
-                )}
-
-                {hasActiveFilters && (
+                  {/* Quick Toggle: Stan Buka */}
                   <button
                     type="button"
-                    onClick={resetAllFilters}
-                    className="text-xs font-semibold text-rose-600 hover:text-rose-700 hover:underline cursor-pointer min-h-[34px] flex items-center px-1 shrink-0 ml-1"
+                    onClick={() => setOnlyOpenFilter(!onlyOpenFilter)}
+                    className={`min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 border ${
+                      onlyOpenFilter
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 shadow-2xs font-bold'
+                        : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100 hover:text-stone-900'
+                    }`}
                   >
-                    Reset Filter
+                    <span className={`w-2 h-2 rounded-sm transition-colors ${onlyOpenFilter ? 'bg-emerald-600' : 'bg-stone-300'}`} />
+                    <span>Stan Buka</span>
                   </button>
-                )}
-              </div>
 
-              <div className="flex items-center gap-2 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                <button
-                  type="button"
-                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                  className="w-full sm:w-auto min-h-[34px] px-3 py-1 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition-all"
-                >
-                  <span className="material-symbols-outlined text-[15px] text-slate-500">tune</span>
-                  <span>{showAdvancedFilters ? 'Tutup Filter' : 'Filter Lanjutan'}</span>
-                </button>
-              </div>
-            </div>
+                  {/* Quick Toggle: Budget Hemat */}
+                  <button
+                    type="button"
+                    onClick={() => setPriceFilter(priceFilter === '<=15000' ? 'all' : '<=15000')}
+                    className={`min-h-[32px] px-2.5 py-1 rounded-md text-xs font-semibold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95 border ${
+                      priceFilter === '<=15000'
+                        ? 'bg-orange-50 text-orange-900 border-orange-300 font-bold shadow-2xs'
+                        : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100 hover:text-stone-900'
+                    }`}
+                  >
+                    <span className={`material-symbols-outlined text-[15px] ${priceFilter === '<=15000' ? 'text-orange-600' : 'text-stone-400'}`}>
+                      savings
+                    </span>
+                    <span>Hemat ≤ Rp15rb</span>
+                  </button>
 
-            {/* Advanced Filters Drawer (Distance & Detail Budget) */}
-            {showAdvancedFilters && (
-              <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex flex-col gap-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {/* Distance Filter */}
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-slate-700">
-                      Jarak dari Kampus IBI KKG:
-                    </label>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {[
-                        { id: 'all', label: 'Semua Jarak' },
-                        { id: '<100m', label: '< 100m' },
-                        { id: '<500m', label: '< 500m' },
-                      ].map((d) => (
-                        <button
-                          key={d.id}
-                          type="button"
-                          onClick={() => setDistanceFilter(d.id)}
-                          className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer ${
-                            distanceFilter === d.id
-                              ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-slate-50 text-slate-700 border-slate-200'
-                          }`}
-                        >
-                          {d.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Active filter summary tag if custom */}
+                  {priceFilter !== 'all' && priceFilter !== '<=15000' && (
+                    <span className="inline-flex items-center gap-1 min-h-[32px] px-2.5 py-1 rounded-md bg-orange-50 text-orange-900 font-bold text-xs border border-orange-200">
+                      <span className="material-symbols-outlined text-[13px] text-orange-600">sell</span>
+                      <span>
+                        {priceFilter === '<=10000'
+                          ? '≤ Rp10rb'
+                          : priceFilter === '10000-15000'
+                          ? 'Rp10rb–15rb'
+                          : 'Rp15rb–20rb'}
+                      </span>
+                    </span>
+                  )}
 
-                  {/* Price Bounds Filter */}
-                  <div className="flex flex-col gap-1.5 sm:col-span-2">
-                    <label className="text-xs font-bold text-slate-700">
-                      Batas Budget Kantong Mahasiswa:
-                    </label>
-                    <div className="flex gap-1.5 flex-wrap">
-                      {[
-                        { id: 'all', label: 'Semua Harga' },
-                        { id: '<=10000', label: '≤ Rp10.000' },
-                        { id: '10000-15000', label: 'Rp10.000 – Rp15.000' },
-                        { id: '<=15000', label: '≤ Rp15.000' },
-                        { id: '15000-20000', label: 'Rp15.000 – Rp20.000' },
-                      ].map((p) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => setPriceFilter(p.id)}
-                          className={`min-h-[36px] px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer ${
-                            priceFilter === p.id
-                              ? 'bg-emerald-600 text-white border-emerald-600'
-                              : 'bg-slate-50 text-slate-700 border-slate-200'
-                          }`}
-                        >
-                          {p.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+                  {/* Active distance filter tag if custom */}
+                  {distanceFilter !== 'all' && (
+                    <span className="inline-flex items-center gap-1 min-h-[32px] px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-900 font-bold text-xs border border-emerald-200">
+                      <span className="material-symbols-outlined text-[13px] text-emerald-600">near_me</span>
+                      <span>{distanceFilter === '<100m' ? '< 100m' : '< 500m'}</span>
+                    </span>
+                  )}
+
+                  {/* Reset Button */}
+                  {hasActiveFilters && (
+                    <button
+                      type="button"
+                      onClick={resetAllFilters}
+                      className="min-h-[32px] px-2 py-1 rounded-md text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer flex items-center gap-1 active:scale-95"
+                      title="Reset semua filter"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">restart_alt</span>
+                      <span>Reset</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Right: Expand Filter Button */}
+                <div className="flex items-center gap-2 shrink-0 ml-auto">
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                    className={`min-h-[32px] px-3 py-1 rounded-md text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-all active:scale-95 border ${
+                      showAdvancedFilters || (distanceFilter !== 'all' || (priceFilter !== 'all' && priceFilter !== '<=15000'))
+                        ? 'bg-stone-900 text-white border-stone-900 shadow-xs'
+                        : 'bg-stone-100 hover:bg-stone-200/80 text-stone-700 border-stone-200'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">
+                      {showAdvancedFilters ? 'expand_less' : 'tune'}
+                    </span>
+                    <span>{showAdvancedFilters ? 'Tutup' : 'Filter Lanjutan'}</span>
+                    {(distanceFilter !== 'all' || (priceFilter !== 'all' && priceFilter !== '<=15000')) && (
+                      <span className="w-4 h-4 rounded-sm bg-emerald-500 text-white text-[10px] font-bold flex items-center justify-center ml-0.5">
+                        {(distanceFilter !== 'all' ? 1 : 0) + (priceFilter !== 'all' && priceFilter !== '<=15000' ? 1 : 0)}
+                      </span>
+                    )}
+                  </button>
                 </div>
               </div>
-            )}
+
+              {/* Integrated Collapsible Advanced Filters Drawer */}
+              {showAdvancedFilters && (
+                <div className="border-t border-stone-200/80 bg-stone-50/70 p-4 sm:p-5 flex flex-col gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    {/* Distance Filter */}
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-stone-700">
+                        <span className="material-symbols-outlined text-[15px] text-emerald-600">location_on</span>
+                        <span>Jarak dari Kampus IBI KKG:</span>
+                      </div>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {[
+                          { id: 'all', label: 'Semua Jarak' },
+                          { id: '<100m', label: '< 100m' },
+                          { id: '<500m', label: '< 500m' },
+                        ].map((d) => (
+                          <button
+                            key={d.id}
+                            type="button"
+                            onClick={() => setDistanceFilter(d.id)}
+                            className={`min-h-[34px] px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer transition-all active:scale-95 ${
+                              distanceFilter === d.id
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs font-bold'
+                                : 'bg-white hover:bg-stone-100 text-stone-700 border-stone-200/90'
+                            }`}
+                          >
+                            {d.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Price Bounds Filter */}
+                    <div className="flex flex-col gap-1.5 sm:col-span-2">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-stone-700">
+                        <span className="material-symbols-outlined text-[15px] text-orange-600">payments</span>
+                        <span>Batas Budget Kantong Mahasiswa:</span>
+                      </div>
+                      <div className="flex gap-1.5 flex-wrap">
+                        {[
+                          { id: 'all', label: 'Semua Harga' },
+                          { id: '<=10000', label: '≤ Rp10.000' },
+                          { id: '10000-15000', label: 'Rp10.000 – Rp15.000' },
+                          { id: '<=15000', label: '≤ Rp15.000' },
+                          { id: '15000-20000', label: 'Rp15.000 – Rp20.000' },
+                        ].map((p) => (
+                          <button
+                            key={p.id}
+                            type="button"
+                            onClick={() => setPriceFilter(p.id)}
+                            className={`min-h-[34px] px-3 py-1.5 rounded-xl text-xs font-semibold border cursor-pointer transition-all active:scale-95 ${
+                              priceFilter === p.id
+                                ? 'bg-emerald-600 text-white border-emerald-600 shadow-2xs font-bold'
+                                : 'bg-white hover:bg-stone-100 text-stone-700 border-stone-200/90'
+                            }`}
+                          >
+                            {p.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Drawer Footer Status & Quick Actions */}
+                  <div className="pt-2 border-t border-stone-200/70 flex items-center justify-between text-xs text-stone-600">
+                    <span className="flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[15px] text-emerald-600">storefront</span>
+                      <span>Menampilkan <strong className="text-stone-900 font-bold">{filteredStalls.length} stan</strong></span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAdvancedFilters(false)}
+                      className="text-emerald-700 hover:text-emerald-800 font-bold hover:underline cursor-pointer flex items-center gap-0.5"
+                    >
+                      <span>Tutup</span>
+                      <span className="material-symbols-outlined text-[14px]">expand_less</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* 5. VIEW TOGGLE: KATEGORI EXPLORE VS STALL DIRECTORY */}
             {activeSubTab === 'kategori' ? (
@@ -1011,9 +1113,9 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     <div
                       key={`${stall.id}-${item.id}`}
                       onClick={() => onSelectStall(stall.id)}
-                      className="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80 hover:shadow-md hover:border-emerald-300 transition-all flex gap-3.5 cursor-pointer group"
+                      className="bg-white rounded-lg p-3 shadow-xs border border-stone-200 hover:shadow-md hover:border-emerald-300 transition-all flex gap-3 cursor-pointer group"
                     >
-                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-md overflow-hidden bg-slate-100 shrink-0 relative border border-slate-200/80">
                         <img
                           src={item.imageCatalog}
                           alt={item.altCatalog}
@@ -1066,7 +1168,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                 </div>
 
                 {filteredStalls.length === 0 ? (
-                  <div className="bg-white rounded-3xl p-8 sm:p-12 text-center flex flex-col items-center gap-3 shadow-sm border border-slate-200">
+                  <div className="bg-white rounded-xl p-8 sm:p-12 text-center flex flex-col items-center gap-3 shadow-xs border border-slate-200">
                     <span className="material-symbols-outlined text-[48px] text-slate-300">
                       search_off
                     </span>
@@ -1079,13 +1181,13 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                     <button
                       type="button"
                       onClick={resetAllFilters}
-                      className="mt-2 min-h-[42px] px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs cursor-pointer shadow-sm active:scale-95"
+                      className="mt-2 min-h-[40px] px-5 py-2 rounded-md bg-emerald-600 text-white font-bold text-xs cursor-pointer shadow-sm active:scale-95"
                     >
                       Reset Semua Filter
                     </button>
                   </div>
                 ) : (
-                  /* 6. SHOPEEFOOD / GOJEK GRADE STALL CARD GRID (Responsive Mobile Website) */
+                  /* 6. MODERN CRISP STALL CARD GRID */
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-3.5 sm:gap-4">
                     {filteredStalls.map((rawStall, idx) => {
                       const stall = normalizeStallLocation(rawStall, idx);
@@ -1108,10 +1210,10 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                       return (
                         <article
                           key={stall.id}
-                          className="group bg-white rounded-2xl sm:rounded-3xl shadow-xs hover:shadow-lg border border-slate-200/90 overflow-hidden flex flex-col justify-between transition-all duration-300 transform hover:-translate-y-1"
+                          className="group bg-white rounded-lg sm:rounded-xl shadow-2xs hover:shadow-md border border-stone-200 hover:border-emerald-400 overflow-hidden flex flex-col justify-between transition-all duration-200"
                         >
                           <div>
-                            {/* Card Hero Image with Floating Glass Affordances */}
+                            {/* Card Hero Image */}
                             <div className="relative w-full h-44 sm:h-48 bg-slate-100 overflow-hidden">
                               <img
                                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
@@ -1123,10 +1225,10 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               {/* Subtle bottom gradient overlay for readability */}
                               <div className="absolute inset-0 bg-linear-to-t from-slate-950/75 via-transparent to-black/20"></div>
 
-                              {/* Top Left Status Indicator - Clean without fake pulse dots */}
-                              <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
+                              {/* Top Left Status Indicator - Crisp Tags */}
+                              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 flex-wrap">
                                 <span
-                                  className={`px-3 py-1 rounded-xl text-xs font-semibold shadow-md backdrop-blur-md ${
+                                  className={`px-2.5 py-0.5 rounded-md text-xs font-semibold shadow-sm backdrop-blur-md ${
                                     stall.isOpen
                                       ? 'bg-emerald-600 text-white'
                                       : 'bg-slate-800/90 text-slate-200'
@@ -1135,7 +1237,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                   {stall.isOpen ? 'Buka' : 'Tutup'}
                                 </span>
 
-                                <span className="px-2.5 py-1 rounded-xl text-xs font-semibold bg-black/60 backdrop-blur-md text-white shadow-md flex items-center gap-1">
+                                <span className="px-2 py-0.5 rounded-md text-xs font-semibold bg-black/60 backdrop-blur-md text-white shadow-sm flex items-center gap-1">
                                   <span className="material-symbols-outlined text-[13px] text-amber-400">
                                     timer
                                   </span>
@@ -1143,15 +1245,15 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                 </span>
                               </div>
 
-                              {/* Favorite Heart Button with 44px Touch Target */}
+                              {/* Favorite Button - Modern Crisp Square */}
                               <button
                                 type="button"
                                 aria-label={`Simpan favorit ${stall.name}`}
                                 onClick={() => onToggleFavoriteStall(stall.id)}
-                                className="absolute top-2.5 right-2.5 min-h-[44px] min-w-[44px] rounded-full bg-white/90 backdrop-blur-md hover:bg-white text-rose-500 flex items-center justify-center shadow-md cursor-pointer active:scale-90 transition-all"
+                                className="absolute top-2.5 right-2.5 min-h-[38px] min-w-[38px] rounded-lg bg-white/90 backdrop-blur-md hover:bg-white text-rose-500 flex items-center justify-center shadow-xs cursor-pointer active:scale-90 transition-all border border-stone-200/60"
                               >
                                 <span
-                                  className="material-symbols-outlined text-[20px]"
+                                  className="material-symbols-outlined text-[19px]"
                                   style={{
                                     fontVariationSettings: isFav ? "'FILL' 1" : "'FILL' 0",
                                   }}
@@ -1161,23 +1263,23 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               </button>
 
                               {/* Bottom Overlay Info on Image */}
-                              <div className="absolute bottom-2.5 left-3 right-3 flex items-center justify-between text-white text-xs">
-                                <span className="flex items-center gap-1 bg-black/55 backdrop-blur-xs px-2.5 py-1 rounded-lg font-medium">
-                                  <span className="material-symbols-outlined text-[14px] text-emerald-400">
+                              <div className="absolute bottom-2.5 left-2.5 right-2.5 flex items-center justify-between text-white text-xs">
+                                <span className="flex items-center gap-1 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded-md font-medium text-[11px]">
+                                  <span className="material-symbols-outlined text-[13px] text-emerald-400">
                                     location_on
                                   </span>
                                   <span>{stall.locationDetail} · <span className="tabular-nums">{stall.distanceMeters}m</span></span>
                                 </span>
 
-                                <span className="flex items-center gap-1 bg-amber-400 text-slate-950 font-bold px-2 py-0.5 rounded-lg shadow-xs tabular-nums">
-                                  <span className="material-symbols-outlined text-[14px]">star</span>
+                                <span className="flex items-center gap-1 bg-amber-400 text-slate-950 font-bold px-2 py-0.5 rounded-md shadow-xs tabular-nums text-xs">
+                                  <span className="material-symbols-outlined text-[13px]">star</span>
                                   <span>{stall.rating}</span>
                                 </span>
                               </div>
                             </div>
 
-                            {/* Card Body - Rich, appetizing, modern food app experience */}
-                            <div className="p-4 sm:p-5 flex flex-col gap-3.5">
+                            {/* Card Body - Crisp & Spacious */}
+                            <div className="p-4 flex flex-col gap-3">
                               {/* Stall Identity & Specialty */}
                               <div className="flex flex-col gap-1">
                                 <div className="flex items-center justify-between gap-2">
@@ -1198,7 +1300,7 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                   </div>
 
                                   {stall.isStudentEntrepreneur && (
-                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200/80 px-2 py-0.5 rounded-full shrink-0">
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-violet-700 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded shrink-0">
                                       <span className="material-symbols-outlined text-[12px]">school</span>
                                       Usaha Mahasiswa
                                     </span>
@@ -1232,16 +1334,16 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                               </div>
 
                               {/* Price Transparency & Payment Acceptance Row */}
-                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2.5 border-t border-slate-100 flex-wrap gap-1">
+                              <div className="flex items-center justify-between text-[11px] text-slate-500 pt-2 border-t border-slate-100 flex-wrap gap-1">
                                 <span className="flex items-center gap-1 text-slate-700 font-semibold">
-                                  <span className="material-symbols-outlined text-[15px] text-emerald-600">
+                                  <span className="material-symbols-outlined text-[14px] text-emerald-600">
                                     verified_user
                                   </span>
                                   Tarif Resmi Stan
                                 </span>
                                 <div className="flex items-center gap-1.5 text-[10px] font-semibold text-slate-500">
                                   {stall.paymentMethods && stall.paymentMethods.length > 0 ? (
-                                    <span className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded-md">
+                                    <span className="text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
                                       {stall.paymentMethods.slice(0, 2).join(' / ')}
                                       {stall.paymentMethods.length > 2 && ` +${stall.paymentMethods.length - 2}`}
                                     </span>
@@ -1251,8 +1353,8 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                 </div>
                               </div>
 
-                              {/* Menu Andalan Preview - Rich culinary showcase with food photos */}
-                              <div className="flex flex-col gap-2 pt-1">
+                              {/* Menu Andalan Preview */}
+                              <div className="flex flex-col gap-1.5 pt-1">
                                 <div className="flex items-center justify-between">
                                   <span className="text-xs font-bold text-slate-800 flex items-center gap-1">
                                     <span className="material-symbols-outlined text-[14px] text-amber-500">
@@ -1274,17 +1376,17 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                                         e.stopPropagation();
                                         onSelectStall(stall.id);
                                       }}
-                                      className="group/item flex items-center gap-2.5 p-1.5 rounded-xl bg-slate-50/70 hover:bg-emerald-50/60 border border-slate-100/80 hover:border-emerald-200/80 transition-all duration-200 cursor-pointer"
+                                      className="group/item flex items-center gap-2.5 p-1.5 rounded-md bg-slate-50/80 hover:bg-emerald-50/70 border border-slate-200/70 hover:border-emerald-300 transition-all duration-150 cursor-pointer"
                                       title={`Lihat detail ${item.name}`}
                                     >
                                       {/* Mini Food Thumbnail */}
-                                      <div className="relative w-11 h-11 rounded-lg overflow-hidden bg-slate-200 shrink-0 border border-slate-200/60">
+                                      <div className="relative w-11 h-11 rounded overflow-hidden bg-slate-200 shrink-0 border border-slate-200/80">
                                         {item.imageCatalog ? (
                                           <img
                                             src={item.imageCatalog}
                                             alt={item.name}
                                             referrerPolicy="no-referrer"
-                                            className="w-full h-full object-cover group-hover/item:scale-110 transition-transform duration-300"
+                                            className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-200"
                                           />
                                         ) : (
                                           <div className="w-full h-full flex items-center justify-center text-sm bg-emerald-50">
@@ -1338,12 +1440,12 @@ export const KatalogScreen: React.FC<KatalogScreenProps> = ({
                             </div>
                           </div>
 
-                          {/* Card Footer Action with 44px Touch Target */}
-                          <div className="p-4 sm:p-5 pt-0">
+                          {/* Card Footer Action */}
+                          <div className="p-4 pt-0">
                             <button
                               type="button"
                               onClick={() => onSelectStall(stall.id)}
-                              className="w-full min-h-[44px] py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-95 transition-all"
+                              className="w-full min-h-[42px] py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-2xs cursor-pointer active:scale-95 transition-all"
                             >
                               <span>Lihat Menu &amp; Pesan</span>
                               <span className="material-symbols-outlined text-[18px]">

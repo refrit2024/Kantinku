@@ -497,7 +497,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
         {/* LEFT COLUMN (5 cols on Desktop): Campus Transparency & Flow */}
         <div className="lg:col-span-5 flex flex-col gap-4 order-2 lg:order-1">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col gap-4">
+          <div className="bg-white rounded-xl p-5 sm:p-6 border border-slate-200/80 shadow-xs flex flex-col gap-4">
             <div className="flex items-center justify-between gap-2">
               <button
                 type="button"
@@ -523,7 +523,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
             {/* Visual Step List - clean unboxed typography */}
             <div className="pt-2 border-t border-slate-100">
               <div className="flex items-start gap-3">
-                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
+                <div className="w-6 h-6 rounded-md bg-emerald-100 text-emerald-800 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
                   <span className="material-symbols-outlined text-[14px]">lock</span>
                 </div>
                 <div className="flex flex-col">
@@ -535,7 +535,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
               </div>
             </div>
 
-            <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-2.5">
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200/80 flex items-start gap-2.5">
               <span className="material-symbols-outlined text-[18px] text-emerald-600 shrink-0 mt-0.5">
                 verified
               </span>
@@ -546,8 +546,8 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
           </div>
         </div>
 
-        {/* RIGHT COLUMN (7 cols on Desktop): Main Auth Card (Clean, Un-cluttered) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl sm:rounded-3xl p-5 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col gap-5 order-1 lg:order-2">
+        {/* RIGHT COLUMN (7 cols on Desktop): Main Auth Card (Clean, Modern Crisp) */}
+        <div className="lg:col-span-7 bg-white rounded-xl p-5 sm:p-7 border border-slate-200/80 shadow-xs flex flex-col gap-5 order-1 lg:order-2">
           {/* Role Selector Bar */}
           <div className="flex flex-col gap-1.5">
             <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
@@ -556,12 +556,12 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
             <div
               className={`grid grid-cols-2 ${
                 adminPortalUnlocked || isAdminLoggedIn ? 'sm:grid-cols-3' : ''
-              } gap-1.5 bg-slate-100 p-1 rounded-xl`}
+              } gap-1.5 bg-slate-100 p-1 rounded-lg`}
             >
               <button
                 type="button"
                 onClick={() => setSelectedRole('mahasiswa')}
-                className={`min-h-[42px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`min-h-[42px] px-3 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   selectedRole === 'mahasiswa'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
@@ -574,7 +574,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setSelectedRole('penjual')}
-                className={`min-h-[42px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                className={`min-h-[42px] px-3 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                   selectedRole === 'penjual'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
@@ -588,7 +588,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedRole('admin')}
-                  className={`col-span-2 sm:col-span-1 min-h-[42px] px-3 py-1.5 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`col-span-2 sm:col-span-1 min-h-[42px] px-3 py-1.5 rounded-md text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                     selectedRole === 'admin'
                       ? 'bg-slate-900 text-white shadow-xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
@@ -608,10 +608,10 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
             <div className="flex flex-col gap-4 pt-1">
               {loggedInStudent ? (
                 /* Authenticated Student Card */
-                <div className="bg-emerald-50/80 rounded-2xl p-4 sm:p-5 border border-emerald-200 flex flex-col gap-3">
+                <div className="bg-emerald-50/80 rounded-xl p-4 sm:p-5 border border-emerald-200 flex flex-col gap-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-xs shrink-0">
+                      <div className="w-11 h-11 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-xs shrink-0">
                         <span className="material-symbols-outlined text-[24px]">school</span>
                       </div>
                       <div className="flex flex-col">
@@ -628,7 +628,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     </div>
                   </div>
 
-                  <p className="text-xs text-emerald-950 bg-white/70 p-2.5 rounded-xl border border-emerald-200/60 leading-relaxed">
+                  <p className="text-xs text-emerald-950 bg-white/70 p-2.5 rounded-lg border border-emerald-200/60 leading-relaxed">
                     Pesanan Anda terisolasi aman khusus di akun ini. Mahasiswa lain (Aldo, dll) tidak dapat melihat pesanan maupun nota digital Anda.
                   </p>
 
@@ -636,7 +636,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     <button
                       type="button"
                       onClick={onContinueAsStudent}
-                      className="w-full sm:flex-1 min-h-[44px] py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-all active:scale-[0.99]"
+                      className="w-full sm:flex-1 min-h-[44px] py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 shadow-xs cursor-pointer transition-all active:scale-[0.99]"
                     >
                       <span className="material-symbols-outlined text-[18px]">receipt_long</span>
                       <span>Buka Katalog &amp; Pesanan Saya</span>
@@ -645,7 +645,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                       <button
                         type="button"
                         onClick={onLogoutStudent}
-                        className="w-full sm:w-auto min-h-[44px] py-2 px-3.5 rounded-xl bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                        className="w-full sm:w-auto min-h-[44px] py-2 px-3.5 rounded-lg bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                       >
                         <span className="material-symbols-outlined text-[16px]">logout</span>
                         <span>Ganti Akun</span>
@@ -657,7 +657,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 /* Student Login & Register Form */
                 <div className="flex flex-col gap-4">
                   {/* Quick One-Click Demo Accounts to immediately test isolation */}
-                  <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 flex flex-col gap-2">
+                  <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 flex flex-col gap-2">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-slate-600 uppercase tracking-wide flex items-center gap-1">
                         <span className="material-symbols-outlined text-[14px] text-emerald-600">flash_on</span>
@@ -1373,11 +1373,11 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
 
       {unreadDecisionModal && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-slate-200">
+          <div className="bg-white rounded-xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-slate-200">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
                 <div
-                  className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                  className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
                     unreadDecisionModal.status === 'approved'
                       ? 'bg-emerald-100 text-emerald-800'
                       : 'bg-rose-100 text-rose-800'
@@ -1403,7 +1403,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setUnreadDecisionModal(null)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
+                className="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
@@ -1422,7 +1422,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     setUnreadDecisionModal(null);
                     onLoginSellerSuccess(acc);
                   }}
-                  className="w-full min-h-[44px] px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                  className="w-full min-h-[44px] px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-2 cursor-pointer shadow-xs"
                 >
                   <span>Masuk ke Dashboard Penjual</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -1434,7 +1434,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   Pengajuan stan{' '}
                   <strong className="text-slate-900">{unreadDecisionModal.stallName}</strong> belum dapat disetujui dengan catatan berikut:
                 </p>
-                <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-950 flex flex-col gap-1">
+                <div className="p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-950 flex flex-col gap-1">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700">
                     Alasan dari Admin:
                   </span>
@@ -1445,7 +1445,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setUnreadDecisionModal(null)}
-                  className="w-full min-h-[42px] px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
+                  className="w-full min-h-[42px] px-4 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold cursor-pointer"
                 >
                   Saya Mengerti
                 </button>
@@ -1458,10 +1458,10 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
       {/* MODAL LUPA KATA SANDI PENJUAL */}
       {forgotModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-slate-200 max-h-[90dvh] overflow-y-auto">
+          <div className="bg-white rounded-xl p-5 sm:p-6 w-full max-w-md shadow-xl flex flex-col gap-4 border border-slate-200 max-h-[90dvh] overflow-y-auto">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
                   <span className="material-symbols-outlined text-[20px]">lock_reset</span>
                 </div>
                 <div>
@@ -1476,7 +1476,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setForgotModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
+                className="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
@@ -1528,7 +1528,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     placeholder="Contoh: busari@ibikkg.ac.id"
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
+                    className="h-10 px-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
                   />
                 </div>
 
@@ -1542,7 +1542,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     placeholder="Contoh: 081290001980 atau 1980"
                     value={forgotWhatsapp}
                     onChange={(e) => setForgotWhatsapp(e.target.value)}
-                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
+                    className="h-10 px-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
                   />
                   <span className="text-[11px] text-slate-400">
                     Contoh: akhiran <strong>1980</strong> untuk Bu Sari, <strong>3311</strong> untuk Mas Budi.
@@ -1551,7 +1551,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
 
                 <button
                   type="submit"
-                  className="w-full min-h-[44px] py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                  className="w-full min-h-[44px] py-2 px-4 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
                 >
                   <span className="material-symbols-outlined text-[16px]">verified_user</span>
                   <span>Verifikasi &amp; Lanjut</span>
@@ -1578,7 +1578,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                 }}
                 className="flex flex-col gap-3.5"
               >
-                <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center gap-2">
+                <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 flex items-center gap-2">
                   <span className="material-symbols-outlined text-emerald-600 text-[20px]">
                     check_circle
                   </span>
@@ -1602,7 +1602,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     placeholder="Masukkan sandi baru"
                     value={forgotNewPassword}
                     onChange={(e) => setForgotNewPassword(e.target.value)}
-                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
+                    className="h-10 px-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
                   />
                 </div>
 
@@ -1616,7 +1616,7 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                     placeholder="Ketik ulang sandi baru"
                     value={forgotConfirmPassword}
                     onChange={(e) => setForgotConfirmPassword(e.target.value)}
-                    className="h-10 px-3 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
+                    className="h-10 px-3 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-900 focus:bg-white focus:border-emerald-600 outline-none"
                   />
                 </div>
 
@@ -1624,13 +1624,13 @@ export const AuthPortalScreen: React.FC<AuthPortalScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setForgotStep('verify')}
-                    className="w-1/3 min-h-[42px] rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
+                    className="w-1/3 min-h-[42px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold cursor-pointer"
                   >
                     Kembali
                   </button>
                   <button
                     type="submit"
-                    className="w-2/3 min-h-[42px] rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer shadow-xs"
+                    className="w-2/3 min-h-[42px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer shadow-xs"
                   >
                     Simpan Sandi Baru
                   </button>

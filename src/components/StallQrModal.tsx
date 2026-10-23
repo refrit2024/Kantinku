@@ -59,6 +59,15 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
     };
   }, [directStallUrl]);
 
+  // 8 Golden Rules: Universal Usability & Internal Locus of Control
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   const handleDownloadPosterPng = () => {
     if (!qrDataUrl) return;
     const canvas = document.createElement('canvas');
@@ -167,16 +176,19 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
 
   return (
     <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200"
       role="dialog"
       aria-modal="true"
       aria-labelledby="qrPosterModalTitle"
     >
-      <div className="bg-white w-full max-w-lg rounded-3xl shadow-2xl border border-slate-100 overflow-hidden my-auto flex flex-col max-h-[90vh]">
+      <div className="bg-white w-full max-w-lg rounded-xl shadow-2xl border border-slate-200 overflow-hidden my-auto flex flex-col max-h-[90vh]">
         {/* Modal Header */}
         <div className="px-5 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <div className="w-10 h-10 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
               <span className="material-symbols-outlined text-[22px]">qr_code_2</span>
             </div>
             <div className="flex flex-col min-w-0">
@@ -195,7 +207,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Tutup Modal QR"
-            className="w-9 h-9 rounded-full bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center cursor-pointer shrink-0 transition-colors"
+            className="w-8 h-8 rounded-md bg-slate-200 hover:bg-slate-300 text-slate-700 flex items-center justify-center cursor-pointer shrink-0 transition-colors border border-slate-300/80"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
@@ -214,7 +226,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
                 id="selectQrStall"
                 value={activeStall.id}
                 onChange={(e) => setSelectedStallId(e.target.value)}
-                className="h-11 px-3.5 rounded-2xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-11 px-3.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs font-bold focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {allStalls.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -226,7 +238,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
           )}
 
           {/* Printable Poster Card Preview */}
-          <div className="shrink-0 rounded-3xl border-2 border-emerald-500/40 bg-white text-slate-900 shadow-sm flex flex-col items-center text-center overflow-hidden">
+          <div className="shrink-0 rounded-xl border-2 border-emerald-500/40 bg-white text-slate-900 shadow-sm flex flex-col items-center text-center overflow-hidden">
             {/* Poster Top Banner */}
             <div className="w-full bg-emerald-600 text-white px-4 py-3.5 flex flex-col items-center gap-0.5 shrink-0">
               <div className="flex items-center gap-1.5 text-sm font-black tracking-wide uppercase">
@@ -240,7 +252,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
 
             {/* Poster Content */}
             <div className="p-4 sm:p-5 flex flex-col items-center gap-3 w-full shrink-0">
-              <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-bold uppercase tracking-wider">
+              <span className="px-3 py-1 rounded-md bg-emerald-100 text-emerald-800 text-[11px] font-bold uppercase tracking-wider">
                 {activeStall.code} • Mitra Resmi Terverifikasi
               </span>
 
@@ -252,7 +264,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
               </div>
 
               {/* QR Image Box */}
-              <div className="p-3 rounded-2xl bg-white border-2 border-emerald-600 shadow-xs flex flex-col items-center gap-1.5 shrink-0">
+              <div className="p-3 rounded-lg bg-white border-2 border-emerald-600 shadow-xs flex flex-col items-center gap-1.5 shrink-0">
                 {qrDataUrl ? (
                   <img
                     src={qrDataUrl}
@@ -260,7 +272,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
                     className="w-48 h-48 sm:w-52 sm:h-52 object-contain block shrink-0"
                   />
                 ) : (
-                  <div className="w-48 h-48 sm:w-52 sm:h-52 flex items-center justify-center bg-slate-50 rounded-xl shrink-0">
+                  <div className="w-48 h-48 sm:w-52 sm:h-52 flex items-center justify-center bg-slate-50 rounded-md shrink-0">
                     <span className="material-symbols-outlined text-[48px] text-emerald-600 animate-pulse">
                       qr_code_2
                     </span>
@@ -300,7 +312,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
           <button
             type="button"
             onClick={() => window.print()}
-            className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+            className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
           >
             <span className="material-symbols-outlined text-[17px]">print</span>
             <span>Cetak Kertas</span>
@@ -308,7 +320,7 @@ export const StallQrModal: React.FC<StallQrModalProps> = ({
           <button
             type="button"
             onClick={handleDownloadPosterPng}
-            className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
+            className="flex-1 sm:flex-initial min-h-[44px] px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
           >
             <span className="material-symbols-outlined text-[17px]">download</span>
             <span>Unduh Poster QR (PNG)</span>

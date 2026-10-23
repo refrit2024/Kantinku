@@ -45,7 +45,11 @@ interface DetailStanScreenProps {
   onBackToKatalog: () => void;
   onOpenReportModal: () => void;
   loggedInStudent?: StudentAccount | null;
-  onShowToast?: (message: string, isError?: boolean) => void;
+  onShowToast?: (
+    message: string,
+    isError?: boolean,
+    action?: { label: string; onClick: () => void }
+  ) => void;
 }
 
 export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
@@ -66,6 +70,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   >('all');
   const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [isQrModalOpen, setIsQrModalOpen] = useState(false);
+  const [copiedLabel, setCopiedLabel] = useState<string | null>(null);
 
   // Shopping Cart & Direct-to-Merchant Checkout State
   const [cartQuantities, setCartQuantities] = useState<Record<string, number>>({});
@@ -127,6 +132,23 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
   const [snapTxId, setSnapTxId] = useState('MID-IBIKKG-882910');
   const [receiptOrder, setReceiptOrder] = useState<OrderTransaction | null>(null);
 
+  // 8 Golden Rules: Universal Usability & Internal Locus of Control (Escape Key closes any open modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (snapGatewayOpen) {
+          setSnapGatewayOpen(false);
+        } else if (checkoutModalOpen) {
+          setCheckoutModalOpen(false);
+        } else if (isQrModalOpen) {
+          setIsQrModalOpen(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [snapGatewayOpen, checkoutModalOpen, isQrModalOpen]);
+
   const PLATFORM_SERVICE_FEE = 1000;
   const paymentConfig = getStallPaymentDetails(stall);
   const [stallQrDataUrl, setStallQrDataUrl] = useState<string>('');
@@ -137,6 +159,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     return Boolean(params.get('stan') || params.get('stall'));
   });
 
+  // 8 Golden Rules: Rule 6 (Permit easy reversal of actions - Undo) & Rule 5 (Prevent errors)
   const updateCartQty = (item: MenuItem, delta: number) => {
     if (item.status !== 'ready' && delta > 0) return;
     setCartQuantities((prev) => {
@@ -154,11 +177,47 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       const copy = { ...prev };
       if (nextQty === 0) {
         delete copy[item.id];
+        if (currentQty > 0 && onShowToast) {
+          onShowToast(
+            `"${item.name}" dikeluarkan dari keranjang`,
+            false,
+            {
+              label: 'Urungkan',
+              onClick: () => {
+                setCartQuantities((revertState) => ({
+                  ...revertState,
+                  [item.id]: currentQty,
+                }));
+                onShowToast(`"${item.name}" dikembalikan ke keranjang!`);
+              },
+            }
+          );
+        }
       } else {
         copy[item.id] = nextQty;
       }
       return copy;
     });
+  };
+
+  const handleResetCart = () => {
+    const backup = { ...cartQuantities };
+    const totalCount = Object.values(backup).reduce((a, b) => a + b, 0);
+    if (totalCount === 0) return;
+    setCartQuantities({});
+    if (onShowToast) {
+      onShowToast(
+        `Keranjang belanja (${totalCount} porsi) dikosongkan`,
+        false,
+        {
+          label: 'Urungkan',
+          onClick: () => {
+            setCartQuantities(backup);
+            onShowToast('Keranjang belanja berhasil dipulihkan!');
+          },
+        }
+      );
+    }
   };
 
   const safeMenuItems = Array.isArray(stall.menuItems) ? stall.menuItems : [];
@@ -232,6 +291,8 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
     if (navigator.clipboard) {
       navigator.clipboard.writeText(text).catch(() => {});
     }
+    setCopiedLabel(label);
+    setTimeout(() => setCopiedLabel(null), 2500);
     if (onShowToast) {
       onShowToast(`${label} (${text}) berhasil disalin!`, false);
     }
@@ -450,7 +511,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
           <button
             type="button"
             onClick={onBackToKatalog}
-            className="min-h-[40px] px-3 py-1.5 rounded-xl hover:bg-slate-100 text-slate-700 hover:text-emerald-700 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer"
+            className="min-h-[40px] px-3 py-1.5 rounded-lg hover:bg-slate-100 text-slate-700 hover:text-emerald-700 font-bold text-xs sm:text-sm flex items-center gap-1.5 transition-all cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">arrow_back</span>
             <span>Kembali ke Katalog</span>
@@ -460,7 +521,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsQrModalOpen(true)}
-              className="min-h-[38px] px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all"
+              className="min-h-[38px] px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all border border-slate-200/80"
             >
               <span className="material-symbols-outlined text-[17px] text-emerald-600">
                 qr_code_2
@@ -471,7 +532,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             <button
               type="button"
               onClick={onToggleFavorite}
-              className={`min-h-[38px] px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all border ${
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all border ${
                 isFavorite
                   ? 'bg-rose-50 text-rose-600 border-rose-200'
                   : 'bg-slate-100 text-slate-700 border-slate-200 hover:bg-slate-200'
@@ -504,7 +565,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       {/* 2. MAIN STOREFRONT CONTAINER */}
       <div className="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 pt-4 flex flex-col gap-5">
         {isOpenedFromQrScan && (
-          <div className="rounded-2xl bg-emerald-600 text-white px-4 py-3 shadow-sm flex items-center justify-between gap-2">
+          <div className="rounded-lg bg-emerald-600 text-white px-4 py-3 shadow-xs flex items-center justify-between gap-2 border border-emerald-500">
             <div className="flex items-center gap-2.5">
               <span className="material-symbols-outlined text-[20px] text-amber-300">
                 qr_code_scanner
@@ -516,7 +577,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             <button
               type="button"
               onClick={() => setIsOpenedFromQrScan(false)}
-              className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-white/20 hover:bg-white/30 cursor-pointer"
+              className="text-xs font-semibold px-2.5 py-1 rounded-md bg-white/20 hover:bg-white/30 cursor-pointer"
             >
               Tutup
             </button>
@@ -524,7 +585,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
         )}
 
         {/* 3. SHOPEEFOOD / GOJEK STYLE STOREFRONT HERO HEADER */}
-        <header className="relative w-full rounded-3xl overflow-hidden shadow-sm border border-slate-200/90 bg-white">
+        <header className="relative w-full rounded-xl overflow-hidden shadow-xs border border-stone-200 bg-white">
           {/* Banner cover */}
           <div className="relative w-full h-48 sm:h-64 bg-slate-900 overflow-hidden">
             <img
@@ -537,11 +598,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
             {/* Top Badges */}
             <div className="absolute top-4 left-4 flex items-center gap-2">
-              <span className="px-3 py-1 rounded-full bg-emerald-600/95 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 shadow-md">
+              <span className="px-3 py-1 rounded-md bg-emerald-600/95 backdrop-blur-md text-white text-xs font-bold flex items-center gap-1.5 shadow-xs border border-emerald-500/50">
                 <span className="w-2 h-2 rounded-full bg-emerald-300 animate-ping"></span>
                 <span>{stall.isOpen ? 'Buka Sekarang' : 'Tutup'}</span>
               </span>
-              <span className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-xs font-semibold">
+              <span className="px-3 py-1 rounded-md bg-black/60 backdrop-blur-md text-white text-xs font-semibold border border-white/10">
                 {stall.hours} WIB
               </span>
             </div>
@@ -569,7 +630,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
               {/* Rating & Distance Badges */}
               <div className="flex items-center gap-2.5 flex-wrap self-start sm:self-auto">
-                <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-2xl font-black text-sm">
+                <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-900 px-3 py-1.5 rounded-lg font-black text-sm">
                   <span className="material-symbols-outlined text-[17px] text-amber-500">
                     star
                   </span>
@@ -579,7 +640,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   </span>
                 </div>
 
-                <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1.5 rounded-2xl font-bold text-xs">
+                <div className="flex items-center gap-1 bg-emerald-50 border border-emerald-200 text-emerald-800 px-3 py-1.5 rounded-lg font-bold text-xs">
                   <span className="material-symbols-outlined text-[16px] text-emerald-600">
                     location_on
                   </span>
@@ -589,7 +650,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             </div>
 
             {/* Price Transparency Banner */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/80">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 sm:p-4 rounded-lg bg-emerald-50/70 border border-emerald-200/80">
               <div className="flex items-center gap-2">
                 <span className="material-symbols-outlined text-[20px] text-emerald-700 shrink-0">
                   verified_user
@@ -614,7 +675,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
           {/* LEFT COLUMN: MENU ITEMS */}
           <section aria-label="Daftar Menu Stan" className="lg:col-span-8 flex flex-col gap-4 min-w-0">
             {/* Category Navigation Bar & View Mode */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-2xl border border-slate-200/80 shadow-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3 rounded-lg border border-slate-200 shadow-xs">
               <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
                 {[
                   { id: 'all', label: `Semua (${safeMenuItems.length})` },
@@ -628,7 +689,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     onClick={() =>
                       setSelectedCategory(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
                     }
-                    className={`min-h-[38px] px-3.5 py-1.5 rounded-xl font-bold text-xs whitespace-nowrap cursor-pointer transition-all ${
+                    className={`min-h-[38px] px-3.5 py-1.5 rounded-md font-bold text-xs whitespace-nowrap cursor-pointer transition-all ${
                       selectedCategory === cat.id
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -639,11 +700,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 ))}
               </div>
 
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl shrink-0 self-end sm:self-auto">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md shrink-0 self-end sm:self-auto border border-slate-200/60">
                 <button
                   type="button"
                   onClick={() => setViewMode('cards')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded text-xs font-bold cursor-pointer transition-all ${
                     viewMode === 'cards'
                       ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
@@ -654,7 +715,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode('table')}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold cursor-pointer transition-all ${
+                  className={`px-3 py-1 rounded text-xs font-bold cursor-pointer transition-all ${
                     viewMode === 'table'
                       ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
@@ -667,7 +728,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
             {/* MENU DISPLAY */}
             {viewMode === 'table' ? (
-              <div className="bg-white rounded-2xl shadow-xs overflow-x-auto border border-slate-200">
+              <div className="bg-white rounded-lg shadow-xs overflow-x-auto border border-slate-200">
                 <table className="w-full text-left border-collapse text-sm">
                   <thead>
                     <tr className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
@@ -693,7 +754,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           </td>
                           <td className="py-3 px-3 whitespace-nowrap">
                             <span
-                              className={`text-xs px-2 py-0.5 rounded-full font-bold ${
+                              className={`text-xs px-2 py-0.5 rounded font-bold ${
                                 isAvailable
                                   ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                                   : 'bg-slate-100 text-slate-500'
@@ -708,11 +769,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                           <td className="py-3 px-4 text-center">
                             {isAvailable ? (
                               inCartQty > 0 ? (
-                                <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 p-1 rounded-xl border border-emerald-200">
+                                <div className="inline-flex items-center gap-1 bg-emerald-50 text-emerald-800 p-1 rounded-md border border-emerald-200">
                                   <button
                                     type="button"
                                     onClick={() => updateCartQty(item, -1)}
-                                    className="w-7 h-7 rounded-lg bg-white font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                                    className="w-7 h-7 rounded bg-white font-bold flex items-center justify-center cursor-pointer shadow-2xs"
                                   >
                                     -
                                   </button>
@@ -720,7 +781,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                                   <button
                                     type="button"
                                     onClick={() => updateCartQty(item, 1)}
-                                    className="w-7 h-7 rounded-lg bg-emerald-600 text-white font-bold flex items-center justify-center cursor-pointer shadow-2xs"
+                                    className="w-7 h-7 rounded bg-emerald-600 text-white font-bold flex items-center justify-center cursor-pointer shadow-2xs"
                                   >
                                     +
                                   </button>
@@ -729,7 +790,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => updateCartQty(item, 1)}
-                                  className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer"
+                                  className="px-3 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold cursor-pointer"
                                 >
                                   + Tambah
                                 </button>
@@ -754,15 +815,15 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   return (
                     <article
                       key={item.id}
-                      className={`group bg-white rounded-2xl p-4 shadow-xs hover:shadow-md border border-slate-200/90 flex flex-col justify-between transition-all duration-200 ${
-                        !isAvailable ? 'opacity-75 bg-slate-50/70' : 'hover:border-emerald-300'
+                      className={`group bg-white rounded-lg p-4 shadow-xs hover:shadow-md border border-stone-200 flex flex-col justify-between transition-all duration-200 ${
+                        !isAvailable ? 'opacity-75 bg-stone-50/70' : 'hover:border-emerald-300'
                       }`}
                     >
                       {/* Top Row: Information & Food Thumbnail */}
                       <div className="flex gap-3.5 items-start justify-between">
                         <div className="flex flex-col flex-1 min-w-0 pr-1">
                           <div className="flex items-center gap-1.5 mb-1.5 flex-wrap">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200/60">
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
                               {item.category}
                             </span>
                             {isAvailable ? (
@@ -791,7 +852,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                         </div>
 
                         {/* Square Food Thumbnail */}
-                        <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-xl overflow-hidden bg-slate-100 shrink-0 relative border border-slate-200/60 shadow-2xs">
+                        <div className="w-20 h-20 sm:w-22 sm:h-22 rounded-md overflow-hidden bg-slate-100 shrink-0 relative border border-slate-200/60 shadow-2xs">
                           <img
                             src={item.imageCatalog}
                             alt={item.altCatalog}
@@ -824,12 +885,12 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                         {/* Stepper / Add Button */}
                         {isAvailable ? (
                           inCartQty > 0 ? (
-                            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 p-1 rounded-xl border border-emerald-300 shadow-2xs">
+                            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 p-1 rounded-md border border-emerald-300 shadow-2xs">
                               <button
                                 type="button"
                                 aria-label={`Kurangi ${item.name}`}
                                 onClick={() => updateCartQty(item, -1)}
-                                className="w-8 h-8 rounded-lg bg-white hover:bg-slate-50 text-emerald-800 font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
+                                className="w-8 h-8 rounded bg-white hover:bg-slate-50 text-emerald-800 font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
                               >
                                 -
                               </button>
@@ -840,7 +901,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                                 type="button"
                                 aria-label={`Tambah ${item.name}`}
                                 onClick={() => updateCartQty(item, 1)}
-                                className="w-8 h-8 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
+                                className="w-8 h-8 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
                               >
                                 +
                               </button>
@@ -849,14 +910,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => updateCartQty(item, 1)}
-                              className="min-h-[38px] px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+                              className="min-h-[38px] px-4 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
                             >
                               <span className="material-symbols-outlined text-[16px]">add</span>
                               <span>Tambah</span>
                             </button>
                           )
                         ) : (
-                          <span className="text-xs font-bold text-slate-400 px-3 py-1.5 rounded-xl bg-slate-100 border border-slate-200">
+                          <span className="text-xs font-bold text-slate-400 px-3 py-1.5 rounded-md bg-slate-100 border border-slate-200">
                             Habis
                           </span>
                         )}
@@ -868,7 +929,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             )}
 
             {/* RATINGS & REVIEWS SECTION */}
-            <div className="bg-white rounded-2xl p-4 sm:p-6 shadow-xs border border-slate-200 mt-2 flex flex-col gap-4">
+            <div className="bg-white rounded-lg p-4 sm:p-6 shadow-xs border border-slate-200 mt-2 flex flex-col gap-4">
               <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-amber-500 text-[24px]">
@@ -889,7 +950,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
 
               {/* Review Input Form */}
-              <form onSubmit={handleReviewSubmit} className="flex flex-col gap-3 p-4 rounded-xl bg-slate-50 border border-slate-100">
+              <form onSubmit={handleReviewSubmit} className="flex flex-col gap-3 p-4 rounded-lg bg-slate-50 border border-slate-200">
                 <span className="text-xs font-bold text-slate-700">
                   Tulis Ulasan Makanan &amp; Layanan Stan:
                 </span>
@@ -900,12 +961,12 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     placeholder="Nama Anda (Mahasiswa / Pembeli)"
                     value={revName}
                     onChange={(e) => setRevName(e.target.value)}
-                    className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="h-10 px-3 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <select
                     value={revRating}
                     onChange={(e) => setRevRating(Number(e.target.value))}
-                    className="h-10 px-3 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="h-10 px-3 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value={5}>⭐⭐⭐⭐⭐ (5/5) Sangat Enak &amp; Cepat</option>
                     <option value={4}>⭐⭐⭐⭐ (4/5) Enak &amp; Porsi Pas</option>
@@ -919,11 +980,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     placeholder="Komentar Anda tentang rasa makanan atau kecepatan pembuatan..."
                     value={revComment}
                     onChange={(e) => setRevComment(e.target.value)}
-                    className="flex-grow h-10 px-3 rounded-xl bg-white border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="flex-grow h-10 px-3 rounded-md bg-white border border-slate-300 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                   <button
                     type="submit"
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs active:scale-95"
+                    className="px-4 py-2 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs active:scale-95"
                   >
                     Kirim
                   </button>
@@ -936,7 +997,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   stall.reviews.map((rev) => (
                     <div
                       key={rev.id}
-                      className="p-3 rounded-xl bg-slate-50/70 border border-slate-100 flex flex-col gap-1.5"
+                      className="p-3 rounded-md bg-slate-50 border border-slate-200 flex flex-col gap-1.5"
                     >
                       <div className="flex items-center justify-between text-xs">
                         <div className="flex items-center gap-2">
@@ -962,7 +1023,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
           {/* RIGHT SIDEBAR: STALL INFO & CAMPUS GUIDE */}
           <aside aria-label="Informasi dan Lokasi Stan" className="lg:col-span-4 flex flex-col gap-4 min-w-0">
             {/* Stall Information Card */}
-            <div className="bg-white p-4 sm:p-5 rounded-2xl shadow-xs border border-slate-200 flex flex-col gap-4">
+            <div className="bg-white p-4 sm:p-5 rounded-lg shadow-xs border border-slate-200 flex flex-col gap-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2">
                 <h3 className="text-base font-bold text-slate-900">
                   Informasi &amp; Lokasi Stan
@@ -1022,7 +1083,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
 
               {/* Walking Guide */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-100 flex flex-col gap-1 text-xs">
+              <div className="p-3 rounded-md bg-slate-50 border border-slate-200 flex flex-col gap-1 text-xs">
                 <span className="font-bold text-slate-800 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[16px] text-emerald-600">
                     directions_walk
@@ -1037,17 +1098,17 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <span className="font-bold text-slate-700">Metode Bayar Didukung:</span>
                 <div className="flex flex-wrap gap-1.5">
                   {paymentConfig.qrisEnabled && (
-                    <span className="px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold text-[11px]">
                       QRIS Semua Bank
                     </span>
                   )}
                   {paymentConfig.ewalletEnabled && (
-                    <span className="px-2 py-0.5 rounded-lg bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[11px]">
+                    <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-800 border border-blue-200 font-bold text-[11px]">
                       DANA / GoPay
                     </span>
                   )}
                   {paymentConfig.cashEnabled && (
-                    <span className="px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[11px]">
+                    <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 font-bold text-[11px]">
                       Tunai di Stan
                     </span>
                   )}
@@ -1056,11 +1117,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
               {/* QR Code Etalase Preview */}
               {stallQrDataUrl && (
-                <div className="p-3 rounded-xl bg-emerald-50/60 border border-emerald-200/80 flex items-center gap-3">
+                <div className="p-3 rounded-md bg-emerald-50/60 border border-emerald-200/80 flex items-center gap-3">
                   <img
                     src={stallQrDataUrl}
                     alt={`QR Stan ${stall.name}`}
-                    className="w-14 h-14 object-contain rounded-lg bg-white p-1 border border-emerald-200 shrink-0 cursor-pointer hover:scale-105 transition-transform"
+                    className="w-14 h-14 object-contain rounded-md bg-white p-1 border border-emerald-200 shrink-0 cursor-pointer hover:scale-105 transition-transform"
                     onClick={() => setIsQrModalOpen(true)}
                   />
                   <div className="flex flex-col">
@@ -1081,9 +1142,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       {/* 6. SHOPEEFOOD / GOJEK STYLE FLOATING BOTTOM CART BAR (Appears when items in cart) */}
       {cartTotalItems > 0 && (
         <div className="fixed bottom-4 left-3 right-3 sm:left-6 sm:right-6 z-40 max-w-4xl mx-auto">
-          <div className="bg-slate-900 text-white rounded-3xl p-3.5 sm:p-4 shadow-2xl flex items-center justify-between gap-3 border border-slate-800 backdrop-blur-md">
+          <div className="bg-slate-900 text-white rounded-xl p-3.5 sm:p-4 shadow-2xl flex items-center justify-between gap-3 border border-slate-800 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="relative w-11 h-11 rounded-2xl bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-md shrink-0">
+              <div className="relative w-11 h-11 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-md shrink-0">
                 <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
                 <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center">
                   {cartTotalItems}
@@ -1102,15 +1163,16 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             <div className="flex items-center gap-2">
               <button
                 type="button"
-                onClick={() => setCartQuantities({})}
-                className="hidden sm:inline-flex min-h-[42px] px-3 py-1.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
+                onClick={handleResetCart}
+                title="Kosongkan seluruh menu dari keranjang (tersedia tombol Urungkan)"
+                className="hidden sm:inline-flex min-h-[42px] px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer transition-colors border border-slate-700"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => setCheckoutModalOpen(true)}
-                className="min-h-[46px] px-5 sm:px-6 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/40 cursor-pointer active:scale-95 transition-all"
+                className="min-h-[46px] px-5 sm:px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/40 cursor-pointer active:scale-95 transition-all"
               >
                 <span>Checkout Pesanan</span>
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
@@ -1122,11 +1184,34 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
       {/* 7. SHOPEEFOOD-STYLE CHECKOUT SHEET / MODAL */}
       {checkoutModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
+        <div 
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setCheckoutModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+        >
           <form
             onSubmit={handleCheckoutSubmit}
-            className="bg-white rounded-3xl p-4 sm:p-6 w-full max-w-lg shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-200"
+            className="bg-white rounded-xl p-4 sm:p-6 w-full max-w-lg shadow-xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-200"
           >
+            {/* 8 Golden Rules: Rule 4 (Dialogs to Yield Closure) - 3-Step Checkout Sequence */}
+            <div className="flex items-center justify-between gap-1 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-[11px] font-bold text-slate-500">
+              <div className="flex items-center gap-1 text-emerald-700">
+                <span className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center text-[10px]">1</span>
+                <span>Pilih Menu</span>
+              </div>
+              <span className="text-slate-300">&rarr;</span>
+              <div className="flex items-center gap-1 text-emerald-700">
+                <span className="w-5 h-5 rounded-md bg-emerald-600 text-white flex items-center justify-center text-[10px]">2</span>
+                <span>Lokasi &amp; Data</span>
+              </div>
+              <span className="text-slate-300">&rarr;</span>
+              <div className="flex items-center gap-1 text-slate-700">
+                <span className="w-5 h-5 rounded-md bg-slate-200 text-slate-800 flex items-center justify-center text-[10px]">3</span>
+                <span>Konfirmasi Bayar</span>
+              </div>
+            </div>
+
             <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
               <div>
                 <span className="text-[11px] font-bold text-emerald-700 uppercase tracking-wider">
@@ -1138,16 +1223,17 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
               <button
                 type="button"
-                aria-label="Tutup Checkout"
+                aria-label="Tutup Checkout (Tekan Escape)"
+                title="Tutup (Esc)"
                 onClick={() => setCheckoutModalOpen(false)}
-                className="w-9 h-9 rounded-full bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center cursor-pointer transition-colors border border-slate-200/80"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
 
             {/* Cart Summary */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-100 flex flex-col gap-2 text-xs">
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex flex-col gap-2 text-xs">
               <span className="font-bold text-slate-700">Rincian Menu ({cartTotalItems} item):</span>
               {cartItems.map((item) => (
                 <div key={item.menuItemId} className="flex justify-between text-slate-800">
@@ -1175,14 +1261,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
             {/* Student Info */}
             {loggedInStudent && (
-              <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-200 flex items-center justify-between gap-2 text-xs">
+              <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-200 flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-[18px] text-emerald-700">verified_user</span>
                   <span className="text-emerald-950">
                     Pesanan terhubung ke akun <strong>{loggedInStudent.name}</strong> ({loggedInStudent.nim})
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full shrink-0">
+                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded shrink-0">
                   Terotentikasi
                 </span>
               </div>
@@ -1199,7 +1285,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   placeholder="Contoh: Kevin Pratama"
                   value={studentName}
                   onChange={(e) => setStudentName(e.target.value)}
-                  className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="h-11 px-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div className="flex flex-col gap-1">
@@ -1212,8 +1298,17 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   placeholder="Contoh: 32230104"
                   value={studentNim}
                   onChange={(e) => setStudentNim(e.target.value)}
-                  className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className={`h-11 px-3 rounded-lg bg-slate-50 border text-slate-900 text-xs focus:outline-none focus:ring-2 ${
+                    studentNim.trim().length > 0 && !isValidStudentNim(studentNim)
+                      ? 'border-amber-400 focus:ring-amber-500'
+                      : 'border-slate-200 focus:ring-emerald-500'
+                  }`}
                 />
+                {studentNim.trim().length > 0 && !isValidStudentNim(studentNim) && (
+                  <span className="text-[10px] text-amber-700 font-medium">
+                    * Masukkan 7–12 digit angka NIM resmi kampus
+                  </span>
+                )}
               </div>
             </div>
 
@@ -1235,14 +1330,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setFulfillmentType('pickup')}
-                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                  className={`p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
                     fulfillmentType === 'pickup'
                       ? 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20 text-slate-900 shadow-xs'
                       : 'bg-slate-50/80 border-slate-200 hover:bg-slate-100/80 text-slate-700'
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
                       fulfillmentType === 'pickup'
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'bg-white text-slate-600 border border-slate-200'
@@ -1265,14 +1360,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <button
                     type="button"
                     onClick={() => setFulfillmentType('dine_in')}
-                    className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                    className={`p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
                       fulfillmentType === 'dine_in'
                         ? 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20 text-slate-900 shadow-xs'
                         : 'bg-slate-50/80 border-slate-200 hover:bg-slate-100/80 text-slate-700'
                     }`}
                   >
                     <div
-                      className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                      className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
                         fulfillmentType === 'dine_in'
                           ? 'bg-emerald-600 text-white shadow-xs'
                           : 'bg-white text-slate-600 border border-slate-200'
@@ -1297,14 +1392,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setFulfillmentType('jastip_lantai')}
-                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                  className={`p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
                     fulfillmentType === 'jastip_lantai'
                       ? 'bg-emerald-50/90 border-emerald-500 ring-2 ring-emerald-500/20 text-slate-900 shadow-xs'
                       : 'bg-slate-50/80 border-slate-200 hover:bg-slate-100/80 text-slate-700'
                   }`}
                 >
                   <div
-                    className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                    className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
                       fulfillmentType === 'jastip_lantai'
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'bg-white text-slate-600 border border-slate-200'
@@ -1331,13 +1426,13 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
             {/* Dynamic Inputs according to fulfillment type */}
             {fulfillmentType === 'jastip_lantai' && (
-              <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-2xl space-y-3">
+              <div className="p-3.5 bg-emerald-50/80 border border-emerald-200 rounded-lg space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <strong className="text-emerald-950 font-bold flex items-center gap-1.5">
                     <span className="material-symbols-outlined text-[18px] text-emerald-700">room</span>
                     <span>Lokasi Pengantaran Antar-Lantai (Micro-Location):</span>
                   </strong>
-                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded">
                     Jeda 15-20 Mnt Kelas
                   </span>
                 </div>
@@ -1348,7 +1443,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     <select
                       value={deliveryBuilding}
                       onChange={(e) => setDeliveryBuilding(e.target.value)}
-                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                      className="h-10 px-2.5 w-full rounded-lg bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
                     >
                       <option value="Gedung A">Gedung A</option>
                       <option value="Gedung B">Gedung B</option>
@@ -1362,7 +1457,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     <select
                       value={deliveryFloor}
                       onChange={(e) => setDeliveryFloor(e.target.value)}
-                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                      className="h-10 px-2.5 w-full rounded-lg bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
                     >
                       <option value="Lantai 1">Lantai 1 (Dasar / Hall)</option>
                       <option value="Lantai 2">Lantai 2 (Student Center)</option>
@@ -1382,8 +1477,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                       placeholder="Contoh: R. 504 / Depan Lab 2"
                       value={deliveryRoom}
                       onChange={(e) => setDeliveryRoom(e.target.value)}
-                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 font-bold focus:ring-2 focus:ring-emerald-500"
-                    />
+                      className="h-10 px-2.5 w-full rounded-lg bg-white border border-slate-300 text-xs text-slate-900 font-bold focus:ring-2 focus:ring-emerald-500"
+                    >
+                    </input>
                   </div>
                 </div>
 
@@ -1393,7 +1489,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     <select
                       value={preOrderSlot}
                       onChange={(e) => setPreOrderSlot(e.target.value)}
-                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                      className="h-10 px-2.5 w-full rounded-lg bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
                     >
                       <option value="Sekarang (Langsung Masak 15-20 mnt)">Sekarang (Langsung Masak 15-20 mnt)</option>
                       <option value="Slot Istirahat Pagi (10:00 - 10:30 WIB)">Slot Istirahat Pagi (10:00 - 10:30 WIB)</option>
@@ -1409,12 +1505,12 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                       placeholder="Contoh: Titip ke ketua kelas / wa saat sampai"
                       value={deliveryNotes}
                       onChange={(e) => setDeliveryNotes(e.target.value)}
-                      className="h-10 px-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
+                      className="h-10 px-2.5 w-full rounded-lg bg-white border border-slate-300 text-xs text-slate-900 focus:ring-2 focus:ring-emerald-500"
                     />
                   </div>
                 </div>
 
-                <div className="text-[11px] text-emerald-800 bg-white/70 p-2 rounded-lg border border-emerald-200/80 flex items-center justify-between">
+                <div className="text-[11px] text-emerald-800 bg-white/70 p-2 rounded-md border border-emerald-200/80 flex items-center justify-between">
                   <span>💡 Ongkos Titip-Antar Mahasiswa: <strong>Rp 2.500</strong></span>
                   <span className="text-slate-500">Bebas antre lift saat jam istirahat padat</span>
                 </div>
@@ -1428,7 +1524,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <select
                     value={pickupTime}
                     onChange={(e) => setPickupTime(e.target.value)}
-                    className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="h-11 px-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="Sekarang (Langsung Ambil)">Sekarang (Langsung Ambil)</option>
                     <option value="Istirahat Pagi (09.45 WIB)">Istirahat Pagi (09.45 WIB)</option>
@@ -1443,7 +1539,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     placeholder="Contoh: Sambal pisah / jangan pedas"
                     value={orderNotes}
                     onChange={(e) => setOrderNotes(e.target.value)}
-                    className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="h-11 px-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
@@ -1466,7 +1562,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                       placeholder="Contoh: Meja 14 / Meja B-04 / Gazebo"
                       value={tableNumber}
                       onChange={(e) => setTableNumber(e.target.value)}
-                      className="h-11 pl-9 pr-3 w-full rounded-xl bg-slate-50 border border-amber-300 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:font-normal placeholder:text-slate-400"
+                      className="h-11 pl-9 pr-3 w-full rounded-lg bg-slate-50 border border-amber-300 text-slate-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder:font-normal placeholder:text-slate-400"
                     />
                   </div>
                 </div>
@@ -1477,14 +1573,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     placeholder="Contoh: Dekat kipas angin / sendok garpu"
                     value={orderNotes}
                     onChange={(e) => setOrderNotes(e.target.value)}
-                    className="h-11 px-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="h-11 px-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   />
                 </div>
               </div>
             )}
 
             {/* Fitur Added Value: Group Order / Split Bill & Kupon HIMA */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg space-y-2.5">
               <div className="flex items-center justify-between">
                 <label className="flex items-center gap-2 cursor-pointer text-xs font-bold text-slate-800">
                   <input
@@ -1496,7 +1592,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <span>Pesan Bareng Kelompok / Split-Bill Otomatis</span>
                 </label>
                 {isGroupOrder && (
-                  <span className="text-[10px] bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] bg-purple-100 text-purple-800 font-bold px-2 py-0.5 rounded">
                     Kalkulator Aktif
                   </span>
                 )}
@@ -1506,7 +1602,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <div className="pt-2 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs">
                   <div className="flex items-center gap-2">
                     <span className="text-slate-600 text-[11px]">Bagi untuk:</span>
-                    <div className="flex items-center border border-slate-300 rounded-lg bg-white overflow-hidden">
+                    <div className="flex items-center border border-slate-300 rounded-md bg-white overflow-hidden">
                       <button
                         type="button"
                         onClick={() => setSplitBillCount(Math.max(2, splitBillCount - 1))}
@@ -1545,13 +1641,13 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     placeholder="Kode Kupon HIMA/Event (Cth: HIMA2026)"
                     value={himaVoucherInput}
                     onChange={(e) => setHimaVoucherInput(e.target.value)}
-                    className="h-9 pl-8 pr-2.5 w-full rounded-xl bg-white border border-slate-300 text-xs uppercase font-mono"
+                    className="h-9 pl-8 pr-2.5 w-full rounded-lg bg-white border border-slate-300 text-xs uppercase font-mono"
                   />
                 </div>
                 <button
                   type="button"
                   onClick={handleApplyHimaVoucher}
-                  className="h-9 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-semibold shrink-0 cursor-pointer"
+                  className="h-9 px-3 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold shrink-0 cursor-pointer"
                 >
                   Terapkan
                 </button>
@@ -1571,7 +1667,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <span className="material-symbols-outlined text-[17px] text-amber-600">verified_user</span>
                   <span>Metode Pembayaran (Sistem Rekber Shopee):</span>
                 </label>
-                <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full font-bold">
+                <span className="text-[10px] text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded font-bold">
                   Otomatis Lunas
                 </span>
               </div>
@@ -1581,7 +1677,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedPaymentMethod('qris')}
-                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                  className={`p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
                     selectedPaymentMethod === 'qris'
                       ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs font-medium'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -1603,7 +1699,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedPaymentMethod('ewallet')}
-                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                  className={`p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
                     selectedPaymentMethod === 'ewallet'
                       ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs font-medium'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -1622,7 +1718,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedPaymentMethod('bank')}
-                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                  className={`p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
                     selectedPaymentMethod === 'bank'
                       ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs font-medium'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -1641,7 +1737,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedPaymentMethod('tunai')}
-                  className={`p-3 rounded-2xl border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
+                  className={`p-3 rounded-lg border text-left flex items-start gap-2.5 transition-all cursor-pointer ${
                     selectedPaymentMethod === 'tunai'
                       ? 'bg-emerald-50 border-emerald-600 text-emerald-950 ring-1 ring-emerald-500 shadow-2xs font-medium'
                       : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
@@ -1660,7 +1756,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
 
               {/* Rincian Proteksi Shopee */}
-              <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 flex items-center justify-between">
+              <div className="p-2.5 rounded-md bg-slate-50 border border-slate-200/80 text-[11px] text-slate-600 flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-emerald-600 text-[16px]">security</span>
                   <span>Uang aman di sistem rekber platform. Penjual langsung terima notifikasi masak.</span>
@@ -1669,7 +1765,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             </div>
 
             {/* Rincian Pembayaran Transparan (Micro B2B2C) */}
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs space-y-1.5">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1.5">
               <div className="flex justify-between text-slate-600">
                 <span>Subtotal ({cartTotalItems} item):</span>
                 <span className="font-semibold text-slate-900">
@@ -1720,7 +1816,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               </div>
 
               {isGroupOrder && splitBillCount > 1 && (
-                <div className="text-right text-[11px] text-purple-700 font-bold bg-purple-50 p-1.5 rounded-lg border border-purple-200">
+                <div className="text-right text-[11px] text-purple-700 font-bold bg-purple-50 p-1.5 rounded border border-purple-200">
                   Patungan {splitBillCount} Orang: Rp {splitBillPerPerson.toLocaleString('id-ID')} / orang
                 </div>
               )}
@@ -1728,7 +1824,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
 
             {/* Cash note */}
             {selectedPaymentMethod === 'tunai' && (
-              <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
+              <div className="p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-900 flex items-center gap-2">
                 <span className="material-symbols-outlined text-amber-600 text-[20px]">info</span>
                 <span>
                   Silakan siapkan uang pas <strong>Rp {cartTotalAmount.toLocaleString('id-ID')}</strong>{' '}
@@ -1741,13 +1837,13 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setCheckoutModalOpen(false)}
-                className="w-1/3 min-h-[46px] rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+                className="w-1/3 min-h-[46px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer border border-slate-200/80"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="w-2/3 min-h-[46px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-95"
+                className="w-2/3 min-h-[46px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 shadow-md cursor-pointer active:scale-95"
               >
                 <span>
                   {selectedPaymentMethod === 'tunai'
@@ -1764,10 +1860,10 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
       {/* 8. PAYMENT GATEWAY SANDBOX SIMULATION MODAL */}
       {snapGatewayOpen && (
         <div className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4">
-          <div className="bg-white rounded-3xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 flex flex-col">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-2xl overflow-hidden border border-slate-200 flex flex-col">
             <div className="bg-emerald-700 text-white px-5 py-4 flex items-center justify-between">
               <div>
-                <span className="px-2 py-0.5 rounded-full bg-amber-400 text-slate-950 font-black text-[10px] uppercase">
+                <span className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black text-[10px] uppercase">
                   Sandbox Simulation
                 </span>
                 <h4 className="text-base font-bold mt-1">Pembayaran — {stall.name}</h4>
@@ -1775,7 +1871,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
               <button
                 type="button"
                 onClick={() => setSnapGatewayOpen(false)}
-                className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center cursor-pointer"
+                className="w-8 h-8 rounded-md bg-white/20 hover:bg-white/30 text-white flex items-center justify-center cursor-pointer transition-colors"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -1794,7 +1890,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
             <div className="p-5 flex flex-col gap-4">
               {snapStep === 'select' && (
                 <>
-                  <div className="flex rounded-xl bg-slate-100 p-1 gap-1 text-xs font-bold">
+                  <div className="flex rounded-md bg-slate-100 p-1 gap-1 text-xs font-bold border border-slate-200/60">
                     {[
                       { id: 'qris_snap', label: 'QRIS Shopee & Bank' },
                       { id: 'gopay_dana', label: 'ShopeePay / E-Wallet' },
@@ -1808,7 +1904,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                             ch.id as 'qris_snap' | 'gopay_dana' | 'bca_va'
                           )
                         }
-                        className={`flex-1 py-1.5 px-2 rounded-lg text-center transition-all cursor-pointer ${
+                        className={`flex-1 py-1.5 px-2 rounded text-center transition-all cursor-pointer ${
                           snapChannel === ch.id
                             ? 'bg-white text-emerald-800 shadow-2xs'
                             : 'text-slate-600 hover:text-slate-900'
@@ -1820,12 +1916,12 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   </div>
 
                   {snapChannel === 'qris_snap' && (
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col items-center text-center gap-2.5">
-                      <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-3 py-1 rounded-full font-bold border border-amber-200/80">
+                    <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col items-center text-center gap-2.5">
+                      <div className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-2.5 py-0.5 rounded font-bold border border-amber-200/80">
                         <span className="material-symbols-outlined text-[15px]">timer</span>
                         <span>Berlaku 14:59 menit</span>
                       </div>
-                      <div className="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm flex flex-col items-center gap-1.5">
+                      <div className="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex flex-col items-center gap-1.5">
                         {paymentConfig.qrisImage || paymentQrisDataUrl || stallQrDataUrl ? (
                           <img
                             src={paymentConfig.qrisImage || paymentQrisDataUrl || stallQrDataUrl}
@@ -1848,9 +1944,9 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   )}
 
                   {snapChannel === 'bca_va' && (
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-2.5">
+                    <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col gap-2.5">
                       <span className="text-xs font-bold text-slate-700">Nomor Virtual Account Bank (BCA / Mandiri):</span>
-                      <div className="p-3 bg-white rounded-xl border border-slate-200 flex items-center justify-between">
+                      <div className="p-3 bg-white rounded-md border border-slate-200 flex items-center justify-between">
                         <div>
                           <span className="font-mono text-base font-bold text-slate-900 block tracking-wider">
                             8801 3223 0104 9912
@@ -1862,9 +1958,18 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                         <button
                           type="button"
                           onClick={() => handleCopyText('8801322301049912', 'Nomor Virtual Account')}
-                          className="px-3 py-1.5 rounded-lg bg-emerald-600 text-white font-bold text-xs cursor-pointer active:scale-95"
+                          className={`px-3 py-1.5 rounded-md text-white font-bold text-xs cursor-pointer active:scale-95 transition-all flex items-center gap-1 ${
+                            copiedLabel === 'Nomor Virtual Account' ? 'bg-emerald-700 ring-2 ring-emerald-300' : 'bg-emerald-600 hover:bg-emerald-700'
+                          }`}
                         >
-                          Salin
+                          {copiedLabel === 'Nomor Virtual Account' ? (
+                            <>
+                              <span className="material-symbols-outlined text-[14px]">check</span>
+                              <span>Tersalin!</span>
+                            </>
+                          ) : (
+                            'Salin'
+                          )}
                         </button>
                       </div>
                       <p className="text-[11px] text-slate-500">
@@ -1874,8 +1979,8 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   )}
 
                   {snapChannel === 'gopay_dana' && (
-                    <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col gap-3 text-center items-center">
-                      <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-800 flex items-center justify-center">
+                    <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex flex-col gap-3 text-center items-center">
+                      <div className="w-12 h-12 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center">
                         <span className="material-symbols-outlined text-[28px]">account_balance_wallet</span>
                       </div>
                       <div>
@@ -1890,7 +1995,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                   <button
                     type="button"
                     onClick={handleSimulateGatewaySuccess}
-                    className="w-full min-h-[46px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-md"
+                    className="w-full min-h-[46px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2 cursor-pointer active:scale-95 shadow-md"
                   >
                     <span className="material-symbols-outlined text-[20px]">verified</span>
                     <span>Simulasikan Pembayaran Berhasil (Callback Lunas)</span>

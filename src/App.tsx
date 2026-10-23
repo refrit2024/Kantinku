@@ -222,6 +222,10 @@ export default function App() {
         e.preventDefault();
         window.location.hash = 'admin';
         setCurrentScreen('auth-portal');
+      } else if (e.key === 'Escape') {
+        setNavDrawerOpen(false);
+        setReportModalOpen(false);
+        setInfoModal(null);
       }
     };
     checkUrlRouting();
@@ -830,16 +834,21 @@ export default function App() {
     );
   };
 
-  // Toast State
+  // Toast State (Supporting Ben Shneiderman's 8 Golden Rules: Informative Feedback & Easy Reversal/Undo)
   const [toast, setToast] = useState<{
     visible: boolean;
     message: string;
     isError: boolean;
+    action?: {
+      label: string;
+      onClick: () => void;
+    };
   }>({
     visible: false,
     message: '',
     isError: false,
   });
+  const toastTimeoutRef = useRef<number | null>(null);
 
   // Modals & Drawers
   const [navDrawerOpen, setNavDrawerOpen] = useState(false);
@@ -857,11 +866,21 @@ export default function App() {
   const [reportNote, setReportNote] = useState('');
   const [reportProofImage, setReportProofImage] = useState<string>('');
 
-  const showToast = (message: string, isError = false) => {
-    setToast({ visible: true, message, isError });
-    setTimeout(() => {
-      setToast((prev) => ({ ...prev, visible: false }));
-    }, 3500);
+  const showToast = (
+    message: string,
+    isError = false,
+    action?: { label: string; onClick: () => void }
+  ) => {
+    if (toastTimeoutRef.current) {
+      window.clearTimeout(toastTimeoutRef.current);
+    }
+    setToast({ visible: true, message, isError, action });
+    toastTimeoutRef.current = window.setTimeout(
+      () => {
+        setToast((prev) => ({ ...prev, visible: false }));
+      },
+      action ? 5500 : 3500
+    );
   };
 
   const navigateTo = (screen: ScreenType, stallId?: string) => {
@@ -1024,15 +1043,26 @@ export default function App() {
   };
 
   const toggleFavoriteStall = (stallId: string) => {
+    const stallObj = stalls.find((s) => s.id === stallId);
     setFavoriteStallIds((prev) => {
       const exists = prev.includes(stallId);
-      const stallObj = stalls.find((s) => s.id === stallId);
-      showToast(
-        exists
-          ? `${stallObj?.name || 'Kantin'} dihapus dari daftar Favorit`
-          : `${stallObj?.name || 'Kantin'} disimpan ke Favorit mahasiswa`
-      );
-      return exists ? prev.filter((id) => id !== stallId) : [...prev, stallId];
+      if (exists) {
+        showToast(
+          `${stallObj?.name || 'Kantin'} dihapus dari Favorit`,
+          false,
+          {
+            label: 'Urungkan',
+            onClick: () => {
+              setFavoriteStallIds((old) => (old.includes(stallId) ? old : [...old, stallId]));
+              showToast(`${stallObj?.name || 'Kantin'} dikembalikan ke Favorit`);
+            },
+          }
+        );
+        return prev.filter((id) => id !== stallId);
+      } else {
+        showToast(`${stallObj?.name || 'Kantin'} disimpan ke Favorit`);
+        return [...prev, stallId];
+      }
     });
   };
 
@@ -1600,7 +1630,7 @@ export default function App() {
           </div>
         )}
         {/* SINGLE COMPACT STICKY HEADER */}
-        <header className="sticky top-0 left-0 right-0 w-full z-40 bg-white/95 backdrop-blur-xl border-b border-slate-200/80 pt-safe">
+        <header className="sticky top-0 left-0 right-0 w-full z-40 bg-white/95 backdrop-blur-xl border-b border-stone-200/80 pt-safe">
         <div className="max-w-7xl mx-auto h-14 sm:h-16 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-4">
           {/* Left Zone: Brand Wordmark (Single Text Element Contract) */}
           <div className="flex items-center gap-3 shrink-0">
@@ -1617,7 +1647,7 @@ export default function App() {
           {/* Center Zone: Clean Single-Line Text Links on Desktop (lg: >= 1024px) */}
           <nav
             aria-label="Pilih Halaman & Peran"
-            className="hidden lg:flex items-center gap-1 bg-slate-100/90 p-1 rounded-xl border border-slate-200/80 shrink-0"
+            className="hidden lg:flex items-center gap-1 bg-stone-100/90 p-1 rounded-xl border border-stone-200/80 shrink-0"
           >
             <button
               type="button"
@@ -1625,7 +1655,7 @@ export default function App() {
               className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                 currentScreen === 'katalog' || currentScreen === 'detail-stan'
                   ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">storefront</span>
@@ -2101,21 +2131,21 @@ export default function App() {
       {/* NAVIGATION DRAWER MODAL - MODERN CLEAN MOBILE SHEET */}
       {navDrawerOpen && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-t-3xl sm:rounded-3xl p-5 sm:p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-100 animate-in slide-in-from-bottom duration-300">
+          <div className="bg-white rounded-t-xl sm:rounded-xl p-5 sm:p-6 w-full max-w-sm shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-200 animate-in slide-in-from-bottom duration-300">
             {/* Header Drawer */}
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <UnifoodLogo size="md" subtitleText="Menu & Navigasi" />
               <button
                 type="button"
                 onClick={() => setNavDrawerOpen(false)}
-                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer shrink-0 transition-colors"
+                className="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer shrink-0 transition-colors border border-slate-200/80"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
             </div>
 
             {/* Active Session Status Card */}
-            <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3">
+            <div className="p-3.5 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
               <div className="flex items-center gap-2.5 min-w-0">
                 <span
                   className={`w-2.5 h-2.5 rounded-full shrink-0 ${
@@ -2156,7 +2186,7 @@ export default function App() {
                     setNavDrawerOpen(false);
                     handleLogoutSession();
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold cursor-pointer shrink-0 border border-rose-200 transition-colors"
+                  className="px-3 py-1.5 rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold cursor-pointer shrink-0 border border-rose-200 transition-colors"
                 >
                   Keluar
                 </button>
@@ -2167,7 +2197,7 @@ export default function App() {
                     setNavDrawerOpen(false);
                     handleLogoutStudent();
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold cursor-pointer shrink-0 border border-rose-200 transition-colors"
+                  className="px-3 py-1.5 rounded-md bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold cursor-pointer shrink-0 border border-rose-200 transition-colors"
                 >
                   Keluar
                 </button>
@@ -2178,7 +2208,7 @@ export default function App() {
                     setNavDrawerOpen(false);
                     setCurrentScreen('auth-portal');
                   }}
-                  className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white text-xs font-bold cursor-pointer shrink-0 shadow-2xs"
+                  className="px-3 py-1.5 rounded-md bg-emerald-600 text-white text-xs font-bold cursor-pointer shrink-0 shadow-2xs"
                 >
                   Masuk
                 </button>
@@ -2193,10 +2223,10 @@ export default function App() {
                   navigateTo('katalog');
                   setNavDrawerOpen(false);
                 }}
-                className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
+                className={`min-h-[48px] px-3.5 py-2.5 rounded-lg flex items-center justify-between text-left transition-all cursor-pointer ${
                   currentScreen === 'katalog'
-                    ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
-                    : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
+                    ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                    : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -2226,10 +2256,10 @@ export default function App() {
                     navigateTo('kelola-menu');
                     setNavDrawerOpen(false);
                   }}
-                  className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
+                  className={`min-h-[48px] px-3.5 py-2.5 rounded-lg flex items-center justify-between text-left transition-all cursor-pointer ${
                     currentScreen === 'kelola-menu'
-                      ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
-                      : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
+                      ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                      : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -2262,10 +2292,10 @@ export default function App() {
                     navigateTo('admin-portal');
                     setNavDrawerOpen(false);
                   }}
-                  className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
+                  className={`min-h-[48px] px-3.5 py-2.5 rounded-lg flex items-center justify-between text-left transition-all cursor-pointer ${
                     currentScreen === 'admin-portal'
-                      ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
-                      : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
+                      ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                      : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200'
                   }`}
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -2297,10 +2327,10 @@ export default function App() {
                   setCurrentScreen('auth-portal');
                   setNavDrawerOpen(false);
                 }}
-                className={`min-h-[48px] px-3.5 py-2.5 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer ${
+                className={`min-h-[48px] px-3.5 py-2.5 rounded-lg flex items-center justify-between text-left transition-all cursor-pointer ${
                   currentScreen === 'auth-portal'
-                    ? 'bg-emerald-600 text-white font-bold shadow-md shadow-emerald-600/20'
-                    : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200/60'
+                    ? 'bg-emerald-600 text-white font-bold shadow-sm'
+                    : 'bg-slate-50 text-slate-800 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -2333,7 +2363,7 @@ export default function App() {
                   setNavDrawerOpen(false);
                   setReportModalOpen(true);
                 }}
-                className="min-h-[44px] px-3.5 py-2 rounded-2xl flex items-center justify-between text-left transition-all cursor-pointer bg-rose-50 hover:bg-rose-100/70 text-rose-700 border border-rose-200/80 mt-1"
+                className="min-h-[44px] px-3.5 py-2 rounded-lg flex items-center justify-between text-left transition-all cursor-pointer bg-rose-50 hover:bg-rose-100/70 text-rose-700 border border-rose-200 mt-1"
               >
                 <div className="flex items-center gap-3">
                   <span className="material-symbols-outlined text-[18px] text-rose-600">gavel</span>
@@ -2351,11 +2381,11 @@ export default function App() {
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
           <form
             onSubmit={handleReportSubmit}
-            className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-100"
+            className="bg-white rounded-xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 max-h-[92dvh] overflow-y-auto border border-slate-200"
           >
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
+                <div className="w-9 h-9 rounded-lg bg-rose-50 text-rose-600 border border-rose-200 flex items-center justify-center font-bold">
                   <span className="material-symbols-outlined text-[20px]">gavel</span>
                 </div>
                 <div>
@@ -2370,7 +2400,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setReportModalOpen(false)}
-                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer transition-colors"
+                className="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer transition-colors border border-slate-200/80"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -2386,7 +2416,7 @@ export default function App() {
                   setReportStallId(e.target.value);
                   setReportMenuName('');
                 }}
-                className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-11 px-3.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 {stalls.map((s) => (
                   <option key={s.id} value={s.id}>
@@ -2412,7 +2442,7 @@ export default function App() {
                     setReportChargedPrice(String(foundMenu.price + 2000));
                   }
                 }}
-                className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-11 px-3.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               >
                 <option value="">-- Pilih cepat menu atau ketik manual di bawah --</option>
                 {(stalls.find((s) => s.id === reportStallId)?.menuItems || []).map((m) => (
@@ -2433,7 +2463,7 @@ export default function App() {
                 placeholder="Contoh: Es Jeruk Peras / Nasi Goreng"
                 value={reportMenuName}
                 onChange={(e) => setReportMenuName(e.target.value)}
-                className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-11 px-3.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -2447,7 +2477,7 @@ export default function App() {
                   required
                   value={reportCatalogPrice}
                   onChange={(e) => setReportCatalogPrice(e.target.value)}
-                  className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-emerald-700 font-bold text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="h-11 px-3.5 rounded-lg bg-slate-50 border border-slate-200 text-emerald-700 font-bold text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
@@ -2459,7 +2489,7 @@ export default function App() {
                   required
                   value={reportChargedPrice}
                   onChange={(e) => setReportChargedPrice(e.target.value)}
-                  className="h-11 px-3.5 rounded-xl bg-slate-50 border border-rose-200 text-rose-700 font-bold text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                  className="h-11 px-3.5 rounded-lg bg-slate-50 border border-rose-200 text-rose-700 font-bold text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-rose-500"
                 />
               </div>
             </div>
@@ -2474,7 +2504,7 @@ export default function App() {
                 placeholder="Contoh: 32230104"
                 value={reportNim}
                 onChange={(e) => setReportNim(e.target.value)}
-                className="h-11 px-3.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="h-11 px-3.5 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -2487,10 +2517,10 @@ export default function App() {
                   <img
                     src={reportProofImage}
                     alt="Pratinjau Bukti Struk"
-                    className="w-12 h-12 rounded-xl object-cover border border-slate-200 shrink-0"
+                    className="w-12 h-12 rounded-lg object-cover border border-slate-200 shrink-0"
                   />
                 )}
-                <label className="min-h-[42px] px-3.5 py-2 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 cursor-pointer w-full justify-center transition-colors">
+                <label className="min-h-[42px] px-3.5 py-2 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-2 cursor-pointer w-full justify-center transition-colors">
                   <span className="material-symbols-outlined text-[18px] text-emerald-600">
                     add_a_photo
                   </span>
@@ -2529,7 +2559,7 @@ export default function App() {
                 placeholder="Contoh: Kasir menyebutkan harga naik Rp 2.000 namun belum diubah di aplikasi..."
                 value={reportNote}
                 onChange={(e) => setReportNote(e.target.value)}
-                className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 text-xs font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
               />
             </div>
 
@@ -2537,13 +2567,13 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setReportModalOpen(false)}
-                className="w-1/2 min-h-[44px] rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer"
+                className="w-1/2 min-h-[44px] rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors cursor-pointer border border-slate-200/80"
               >
                 Batal
               </button>
               <button
                 type="submit"
-                className="w-1/2 min-h-[44px] rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-md shadow-rose-600/20 cursor-pointer"
+                className="w-1/2 min-h-[44px] rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-all shadow-md shadow-rose-600/20 cursor-pointer"
               >
                 Kirim ke Admin
               </button>
@@ -2555,13 +2585,13 @@ export default function App() {
       {/* GENERIC INFO MODAL - MODERN CLEAN */}
       {infoModal && (
         <div className="fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-3xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto border border-slate-100">
+          <div className="bg-white rounded-xl p-5 sm:p-6 w-full max-w-md shadow-2xl flex flex-col gap-4 max-h-[90dvh] overflow-y-auto border border-slate-200">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h4 className="text-base font-black text-slate-900">{infoModal.title}</h4>
               <button
                 type="button"
                 onClick={() => setInfoModal(null)}
-                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer transition-colors"
+                className="w-8 h-8 rounded-md bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 cursor-pointer transition-colors border border-slate-200/80"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
               </button>
@@ -2570,7 +2600,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setInfoModal(null)}
-              className="w-full min-h-[44px] rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold mt-1 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
+              className="w-full min-h-[44px] rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold mt-1 transition-all shadow-md shadow-emerald-600/20 cursor-pointer"
             >
               Tutup
             </button>
@@ -2578,26 +2608,42 @@ export default function App() {
         </div>
       )}
 
-      {/* GLOBAL NOTIFICATION TOAST - MODERN FLOATING CARD */}
+      {/* GLOBAL NOTIFICATION TOAST - BEN SHNEIDERMAN: INFORMATIVE FEEDBACK & REVERSAL OF ACTIONS (UNDO) */}
       <div
-        className={`fixed bottom-6 left-4 right-4 max-w-md mx-auto z-50 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-xl flex items-center gap-3 transition-all duration-300 border border-slate-800 ${
+        role="status"
+        aria-live="polite"
+        className={`fixed bottom-6 left-4 right-4 max-w-md mx-auto z-[80] bg-slate-900/95 backdrop-blur-md text-white px-4 py-3 rounded-lg shadow-2xl flex items-center justify-between gap-3 transition-all duration-300 border border-slate-800 ${
           toast.visible
             ? 'translate-y-0 opacity-100 scale-100'
             : 'translate-y-16 opacity-0 scale-95 pointer-events-none'
         }`}
       >
-        <div
-          className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
-            toast.isError
-              ? 'bg-rose-500/20 text-rose-400'
-              : 'bg-emerald-500/20 text-emerald-400'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[20px]">
-            {toast.isError ? 'warning' : 'check_circle'}
-          </span>
+        <div className="flex items-center gap-3 min-w-0">
+          <div
+            className={`w-8 h-8 rounded-md flex items-center justify-center shrink-0 ${
+              toast.isError
+                ? 'bg-rose-500/20 text-rose-400'
+                : 'bg-emerald-500/20 text-emerald-400'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[20px]">
+              {toast.isError ? 'warning' : 'check_circle'}
+            </span>
+          </div>
+          <span className="text-xs font-semibold leading-tight text-slate-100">{toast.message}</span>
         </div>
-        <span className="text-xs font-semibold flex-grow leading-tight">{toast.message}</span>
+        {toast.action && (
+          <button
+            type="button"
+            onClick={() => {
+              toast.action?.onClick();
+              setToast((prev) => ({ ...prev, visible: false }));
+            }}
+            className="px-3 py-1.5 rounded-md bg-amber-400 hover:bg-amber-300 text-slate-950 text-xs font-bold shrink-0 transition-transform active:scale-95 shadow-sm cursor-pointer"
+          >
+            {toast.action.label}
+          </button>
+        )}
       </div>
       </div>
     </APIProvider>

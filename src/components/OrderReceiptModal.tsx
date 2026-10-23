@@ -18,6 +18,16 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
 }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  // 8 Golden Rules: Universal Usability & Internal Locus of Control (Escape Key closes modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
 
   const matchedStall =
     stall ||
@@ -322,18 +332,25 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
     ].join('\n');
 
     navigator.clipboard?.writeText(summaryText).catch(() => {});
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2500);
     if (onShowToast) {
       onShowToast(`Rincian Nota ${order.id} berhasil disalin ke Clipboard!`);
     }
   };
 
   return (
-    <div className="fixed inset-0 z-[70] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl w-full max-w-xl shadow-2xl border border-slate-100 overflow-hidden flex flex-col max-h-[92dvh]">
+    <div
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+      className="fixed inset-0 z-[70] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 animate-in fade-in duration-200"
+    >
+      <div className="bg-white rounded-xl w-full max-w-xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92dvh]">
         {/* Top Receipt Header - Modern Emerald Gradient */}
         <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white px-5 py-4 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-inner">
+            <div className="w-10 h-10 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center shrink-0 shadow-inner">
               <span className="material-symbols-outlined text-[22px]">receipt_long</span>
             </div>
             <div className="flex flex-col min-w-0">
@@ -349,7 +366,7 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
             type="button"
             aria-label="Tutup Nota"
             onClick={onClose}
-            className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center cursor-pointer shrink-0 transition-colors"
+            className="w-8 h-8 rounded-lg bg-white/20 hover:bg-white/30 text-white flex items-center justify-center cursor-pointer shrink-0 transition-colors"
           >
             <span className="material-symbols-outlined text-[18px]">close</span>
           </button>
@@ -360,15 +377,15 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
           {/* Petunjuk Pengambilan / Dine-In / Jastip Antar-Lantai */}
           {order.status !== 'rejected' && (
             order.fulfillmentType === 'jastip_lantai' ? (
-              <div className="p-3.5 rounded-2xl bg-purple-50/90 border border-purple-200/90 flex flex-col gap-2">
+              <div className="p-3.5 rounded-lg bg-purple-50/90 border border-purple-200/90 flex flex-col gap-2">
                 <div className="flex items-start gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                  <div className="w-9 h-9 rounded-md bg-purple-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                     <span className="material-symbols-outlined text-[20px]">directions_run</span>
                   </div>
                   <div className="flex flex-col min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-xs font-bold text-purple-950">Titip-Antar Mahasiswa (Jastip Kampus)</span>
-                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-purple-200 text-purple-900 border border-purple-300">
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-sm bg-purple-200 text-purple-900 border border-purple-300">
                         {order.deliveryBuilding || 'Gedung A'} &bull; {order.deliveryFloor || 'Lt. 4'} ({order.deliveryRoom || 'Kelas'})
                       </span>
                     </div>
@@ -379,7 +396,7 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
                 </div>
 
                 {/* PIN Serah Terima Box */}
-                <div className="bg-white p-3 rounded-xl border border-purple-200 flex items-center justify-between">
+                <div className="bg-white p-3 rounded-md border border-purple-200 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-slate-500 font-bold uppercase block">4-Digit PIN Serah Terima:</span>
                     <span className="font-mono text-xl font-extrabold text-purple-900 tracking-widest">
@@ -392,18 +409,18 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
                 </div>
               </div>
             ) : order.fulfillmentType === 'dine_in' ? (
-              <div className="p-3.5 rounded-2xl bg-amber-50/90 border border-amber-200/90 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="p-3.5 rounded-lg bg-amber-50/90 border border-amber-200/90 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-md bg-amber-500 text-white flex items-center justify-center shrink-0 shadow-xs">
                   <span className="material-symbols-outlined text-[20px]">table_restaurant</span>
                 </div>
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold text-amber-950">Makan di Tempat (Dine-In)</span>
-                    <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-amber-200 text-amber-900 border border-amber-300">
+                    <span className="text-[11px] font-black px-2 py-0.5 rounded-sm bg-amber-200 text-amber-900 border border-amber-300">
                       Meja {order.tableNumber || '-'}
                     </span>
                     {order.paymentMethod === 'tunai' && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-300 text-slate-950">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-amber-300 text-slate-950">
                         Bayar Tunai di Meja
                       </span>
                     )}
@@ -416,18 +433,18 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
                 </div>
               </div>
             ) : (
-              <div className="p-3.5 rounded-2xl bg-emerald-50/90 border border-emerald-200/90 flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <div className="p-3.5 rounded-lg bg-emerald-50/90 border border-emerald-200/90 flex items-start gap-3">
+                <div className="w-9 h-9 rounded-md bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
                   <span className="material-symbols-outlined text-[20px]">shopping_bag</span>
                 </div>
                 <div className="flex flex-col min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-bold text-emerald-950">Ambil Sendiri di Stan (Self-Pickup)</span>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 border border-emerald-200">
+                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-sm bg-emerald-100 text-emerald-800 border border-emerald-200">
                       {order.pickupTime || 'Segera'}
                     </span>
                     {order.paymentMethod === 'tunai' && (
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-100 text-amber-900 border border-amber-300">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-sm bg-amber-100 text-amber-900 border border-amber-300">
                         Bayar Tunai di Kasir
                       </span>
                     )}
@@ -443,7 +460,7 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
           )}
 
           {/* Ticket Number & Status Highlight */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between gap-3 flex-wrap">
+          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex flex-col">
               <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
                 Nomor Antrean / Nota
@@ -454,14 +471,14 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
               <span className="text-[11px] text-slate-500">{order.createdAt}</span>
             </div>
             <span
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold ${statusMeta.badgeClass}`}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold ${statusMeta.badgeClass}`}
             >
               {statusMeta.label}
             </span>
           </div>
 
           {/* Stall & Student Details */}
-          <div className="flex flex-col gap-2.5 text-xs bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
+          <div className="flex flex-col gap-2.5 text-xs bg-slate-50/70 p-4 rounded-lg border border-slate-200">
             <div className="flex justify-between gap-2 pb-2.5 border-b border-slate-200/70">
               <span className="text-slate-500">Stan Kantin:</span>
               <div className="text-right">
@@ -481,12 +498,12 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
               <span className="text-slate-500">Layanan:</span>
               <div className="text-right">
                 {order.fulfillmentType === 'dine_in' ? (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-lg">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-md">
                     <span className="material-symbols-outlined text-[13px]">table_restaurant</span>
                     <span>Makan di Tempat • Meja {order.tableNumber || '-'}</span>
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-900 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-lg">
+                  <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-900 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md">
                     <span className="material-symbols-outlined text-[13px]">shopping_bag</span>
                     <span>Ambil Sendiri di Stan</span>
                   </span>
@@ -531,7 +548,7 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
                 </span>
                 <span>Token Keamanan Kasir:</span>
               </span>
-              <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-lg border border-emerald-200">
+              <span className="font-mono text-xs font-bold text-emerald-800 bg-emerald-100/70 px-2.5 py-0.5 rounded-md border border-emerald-200">
                 {securityToken}
               </span>
             </div>
@@ -543,7 +560,7 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
           </div>
 
           {/* Itemized Menu List */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 flex flex-col gap-2.5 shadow-xs">
+          <div className="p-4 rounded-lg bg-white border border-slate-200 flex flex-col gap-2.5 shadow-xs">
             <div className="flex items-center justify-between text-[11px] font-bold text-slate-500 uppercase tracking-wider pb-1.5 border-b border-slate-100">
               <span>Rincian Menu ({(order.items || []).reduce((s, i) => s + i.quantity, 0)} Porsi)</span>
               <span>Subtotal</span>
@@ -586,12 +603,12 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
           </div>
 
           {/* QR Code Bukti Ambil di Kasir */}
-          <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center gap-4">
+          <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 flex items-center gap-4">
             {qrDataUrl && (
               <img
                 src={qrDataUrl}
                 alt={`QR Nota ${order.id}`}
-                className="w-20 h-20 rounded-xl border border-slate-200 shrink-0 object-contain bg-white p-1 shadow-xs"
+                className="w-20 h-20 rounded-md border border-slate-200 shrink-0 object-contain bg-white p-1 shadow-2xs"
               />
             )}
             <div className="flex flex-col gap-1 text-xs">
@@ -611,19 +628,32 @@ export const OrderReceiptModal: React.FC<OrderReceiptModalProps> = ({
           <button
             type="button"
             onClick={handleCopySummary}
-            className="min-h-[44px] px-4 py-2 rounded-2xl bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer border border-slate-200 transition-colors"
+            className={`min-h-[44px] px-4 py-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 cursor-pointer border transition-colors ${
+              isCopied
+                ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
+                : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+            }`}
           >
-            <span className="material-symbols-outlined text-[17px]">content_copy</span>
-            <span>Salin Rincian</span>
+            <span className="material-symbols-outlined text-[17px]">
+              {isCopied ? 'check' : 'content_copy'}
+            </span>
+            <span>{isCopied ? 'Tersalin!' : 'Salin Rincian'}</span>
           </button>
           <button
             type="button"
             disabled={isDownloading}
             onClick={handleDownloadReceiptPng}
-            className="flex-1 min-h-[44px] px-4 py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
+            className="flex-1 min-h-[44px] px-4 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 shadow-md shadow-emerald-600/20 cursor-pointer transition-all"
           >
             <span className="material-symbols-outlined text-[18px]">download</span>
             <span>{isDownloading ? 'Menyiapkan Nota...' : 'Unduh Gambar Nota (PNG)'}</span>
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="min-h-[44px] px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold flex items-center justify-center cursor-pointer transition-colors border border-slate-300/80"
+          >
+            Selesai
           </button>
         </div>
       </div>
