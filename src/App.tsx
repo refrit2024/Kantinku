@@ -1575,27 +1575,111 @@ export default function App() {
 
   const openPilotConceptModal = () => {
     setInfoModal({
-      title: 'Konsep Pilot Project Tahap 1 — IBI KKG',
+      title: 'Konsep Digitalisasi Kantin IBI KKG',
       content: (
-        <div className="flex flex-col gap-2.5 text-body-sm text-on-surface-variant">
-          <div className="p-3 rounded-lg bg-surface-container-low">
-            <strong className="text-on-surface block">Fokus Utama Tahap 1:</strong>
+        <div className="flex flex-col gap-2.5 text-xs text-slate-600 leading-relaxed">
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">Fokus Utama Layanan:</strong>
             <span>
-              Membantu mahasiswa IBI KKG menemukan makanan berdasarkan lokasi, harga, dan menu, serta memungkinkan penjual mengelola informasi kantinnya secara langsung.
+              Membantu mahasiswa IBI KKG memesan makanan tanpa antre di jam istirahat, memantau antrean masak secara transparan, serta memudahkan mitra stan kantin mengelola menu dan pesanan secara digital.
             </span>
           </div>
-          <div className="p-3 rounded-lg bg-surface-container-low">
-            <strong className="text-on-surface block">
-              Sistem Keamanan Akses Penjual:
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">
+              Perlindungan Konsumen &amp; Otorisasi:
             </strong>
             <span>
-              Penjual wajib mendaftar terlebih dahulu dan diverifikasi oleh Admin Kampus agar tidak sembarang orang dapat mengubah harga atau menu kantin.
+              Setiap stan di kantin diverifikasi oleh Biro Sarpras dan BAAK. Mahasiswa dilindungi oleh jaminan transparansi harga (fitur Lapor Selisih Harga) dan nota digital yang terverifikasi.
             </span>
           </div>
-          <div className="p-3 rounded-lg bg-secondary-container/40 text-on-surface">
-            <strong className="text-secondary block">Roadmap Pengembangan:</strong>
+          <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-900">
+            <strong className="text-emerald-950 block mb-1">Jastip Antar Kelas:</strong>
             <span>
-              Tahap 1: Riset &amp; Evaluasi IBI KKG → Tahap 2: Kantin Kampus Lain → Tahap 3: Ekspansi Platform Kantin Kampus.
+              Memberdayakan mahasiswa yang sedang menuju ke lantai atas untuk membantu membelikan makanan teman sekelas dengan ongkos jastip transparan.
+            </span>
+          </div>
+        </div>
+      ),
+    });
+  };
+
+  const openTermsModal = () => {
+    setInfoModal({
+      title: 'Syarat & Ketentuan Layanan Unifood',
+      content: (
+        <div className="flex flex-col gap-2.5 text-xs text-slate-600 leading-relaxed">
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">1. Transparansi Harga Stan</strong>
+            <span>
+              Harga yang ditampilkan di Unifood wajib sama persis dengan harga fisik di stan kantin Kampus IBI KKG. Jika kasir menagih harga lebih tinggi, mahasiswa berhak mengajukan komplain resmi melalui form Laporkan Selisih Harga.
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">2. Waktu Penyiapan &amp; Pengambilan</strong>
+            <span>
+              Setelah notifikasi status &ldquo;Siap Diambil&rdquo; muncul di layar, mahasiswa diharapkan segera mengambil makanan di stan terkait dalam kurun waktu 15 menit agar kesegaran dan cita rasa hidangan tetap optimal.
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">3. Kebijakan Pembatalan &amp; Pengembalian</strong>
+            <span>
+              Pesanan yang sudah mulai dimasak oleh dapur stan tidak dapat dibatalkan secara sepihak. Apabila bahan baku habis mendadak, mitra stan wajib mengonfirmasi penolakan dan pengembalian dana penuh kepada pemesan.
+            </span>
+          </div>
+        </div>
+      ),
+    });
+  };
+
+  const openPrivacyModal = () => {
+    setInfoModal({
+      title: 'Kebijakan Privasi & Perlindungan Data Mahasiswa',
+      content: (
+        <div className="flex flex-col gap-2.5 text-xs text-slate-600 leading-relaxed">
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">1. Penggunaan NIM &amp; Data Identitas</strong>
+            <span>
+              Nomor Induk Mahasiswa (NIM) dan nama pemesan hanya dipakai untuk pelabelan nota dan pemanggilan antrean di stan kantin IBI KKG. Data ini tersimpan dengan aman dan tidak dibagikan ke pihak ketiga di luar kepentingan operasional kampus.
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">2. Keamanan Pembayaran Digital</strong>
+            <span>
+              Setiap transaksi nontunai diproses melalui standar QRIS Bank Indonesia dan gateway resmi. Platform Unifood tidak menyimpan kredensial sensitif seperti PIN bank atau detail kartu pembayaran pengguna.
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">3. Kendali &amp; Penghapusan Sesi</strong>
+            <span>
+              Mahasiswa memiliki hak penuh untuk keluar dari akun, membersihkan riwayat pesanan perangkat lokal, atau meminta pembaruan data melalui Admin Sarpras Kampus.
+            </span>
+          </div>
+        </div>
+      ),
+    });
+  };
+
+  const openJastipGuideModal = () => {
+    setInfoModal({
+      title: 'Panduan Layanan Jastip Antar Kelas',
+      content: (
+        <div className="flex flex-col gap-2.5 text-xs text-slate-600 leading-relaxed">
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">Cara Pesan via Jastip:</strong>
+            <span>
+              Saat checkout, pilih opsi &ldquo;Jastip Antar ke Kelas&rdquo;, masukkan lantai dan nomor ruang kelas (misal: Lantai 3 Ruang 304). Kurir sesama mahasiswa yang sedang standby akan mengambilkan pesanan Anda dari kantin.
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-50 border border-slate-200">
+            <strong className="text-slate-900 block mb-1">Ongkos Kirim Flat &amp; Transparan:</strong>
+            <span>
+              Tarif jastip berkisar antara Rp 2.500 – Rp 3.500 per pesanan. 100% biaya jastip langsung masuk sebagai uang saku tambahan bagi mahasiswa yang bertugas mengantar.
+            </span>
+          </div>
+          <div className="p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-950">
+            <strong className="block mb-1 font-bold">Verifikasi 4 Digit PIN Pengambilan:</strong>
+            <span>
+              Demi keamanan, berikan 4 digit kode PIN yang tertera di nota pesanan Anda kepada kurir saat makanan tiba di depan ruang kelas sebagai bukti serah terima yang sah.
             </span>
           </div>
         </div>
@@ -1647,12 +1731,12 @@ export default function App() {
           {/* Center Zone: Clean Single-Line Text Links on Desktop (lg: >= 1024px) */}
           <nav
             aria-label="Pilih Halaman & Peran"
-            className="hidden lg:flex items-center gap-1 bg-stone-100/90 p-1 rounded-xl border border-stone-200/80 shrink-0"
+            className="hidden lg:flex items-center gap-1 bg-stone-100/90 p-1 rounded-lg border border-stone-200/80 shrink-0"
           >
             <button
               type="button"
               onClick={() => navigateTo('katalog')}
-              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                 currentScreen === 'katalog' || currentScreen === 'detail-stan'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
@@ -1662,13 +1746,11 @@ export default function App() {
               <span>Katalog Menu</span>
             </button>
 
-
-
             {loggedInSeller && (
               <button
                 type="button"
                 onClick={() => navigateTo('kelola-menu')}
-                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                   currentScreen === 'kelola-menu'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
@@ -1683,7 +1765,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => navigateTo('admin-portal')}
-                className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+                className={`min-h-[38px] px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                   currentScreen === 'admin-portal'
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
@@ -1699,7 +1781,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setCurrentScreen('auth-portal')}
-              className={`min-h-[38px] px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
+              className={`min-h-[38px] px-3.5 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 whitespace-nowrap transition-all cursor-pointer ${
                 currentScreen === 'auth-portal'
                   ? 'bg-emerald-600 text-white shadow-xs'
                   : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/70'
@@ -1713,10 +1795,9 @@ export default function App() {
           </nav>
 
           {/* Right Zone: Primary Actions & Mobile Hamburger Menu (Touch Target >= 44px) */}
-          {/* Right Zone: Primary Actions & Mobile Hamburger Menu (Touch Target >= 44px) */}
           <div className="flex items-center gap-2 shrink-0">
             {loggedInSeller || isAdminLoggedIn ? (
-              <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/80 text-xs">
+              <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-200/80 text-xs">
                 <span className="text-emerald-950 font-semibold max-w-[140px] truncate">
                   {loggedInSeller ? loggedInSeller.stallName : 'Admin Sarpras'}
                 </span>
@@ -1730,7 +1811,7 @@ export default function App() {
                 </button>
               </div>
             ) : loggedInStudent ? (
-              <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200/90 text-xs">
+              <div className="hidden md:flex items-center gap-2 bg-emerald-50 px-3.5 py-1.5 rounded-full border border-emerald-200/90 text-xs">
                 <span className="material-symbols-outlined text-[16px] text-emerald-700">school</span>
                 <span className="text-emerald-950 font-semibold max-w-[130px] truncate">
                   {loggedInStudent.name}
@@ -1748,7 +1829,7 @@ export default function App() {
               <button
                 type="button"
                 onClick={() => setCurrentScreen('auth-portal')}
-                className="hidden md:inline-flex min-h-[38px] px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                className="hidden md:inline-flex min-h-[38px] px-4 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 text-xs font-bold items-center gap-1.5 transition-colors cursor-pointer shrink-0"
               >
                 <span className="material-symbols-outlined text-[16px]">school</span>
                 <span>Masuk Mahasiswa</span>
@@ -1758,7 +1839,7 @@ export default function App() {
             <button
               type="button"
               onClick={() => setReportModalOpen(true)}
-              className="hidden sm:inline-flex min-h-[44px] px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+              className="hidden sm:inline-flex min-h-[44px] px-4 py-2 rounded-full bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-semibold items-center gap-1.5 transition-colors cursor-pointer shrink-0"
             >
               <span className="material-symbols-outlined text-[16px] text-rose-600">gavel</span>
               <span>Lapor Harga</span>
@@ -1768,7 +1849,7 @@ export default function App() {
             <button
               aria-label="Buka Menu Navigasi & Peran"
               onClick={() => setNavDrawerOpen(true)}
-              className="lg:hidden min-h-[44px] min-w-[44px] px-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95 border border-slate-200/80"
+              className="lg:hidden min-h-[44px] min-w-[44px] px-3 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-800 flex items-center justify-center gap-1.5 transition-colors cursor-pointer active:scale-95 border border-slate-200/80"
               type="button"
             >
               <span className="material-symbols-outlined text-[22px]">menu</span>
@@ -1909,13 +1990,13 @@ export default function App() {
         )}
       </main>
 
-      {/* FOOTER - MODERN CLEAN FOOD APP (SHOPEEFOOD / GOJEK STYLE) */}
+      {/* FOOTER - REAL PRODUCTION CAMPUS FOOD & SERVICE FOOTER */}
       <footer className="w-full bg-white border-t border-slate-200/80 text-slate-600 pb-safe mt-auto">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-7 sm:pt-9 pb-6 sm:pb-8 flex flex-col gap-6 sm:gap-7">
-          {/* Main Grid: Multi-Campus Platform Columns */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-6 sm:gap-8 items-start">
-            {/* Column 1 (lg:col-span-4): Brand Identity & Multi-Campus Mission */}
-            <div className="lg:col-span-4 flex flex-col gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 sm:pt-10 pb-7 sm:pb-9 flex flex-col gap-8">
+          {/* Main Grid: 4 Production-Standard Columns */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-7 sm:gap-8 items-start">
+            {/* Column 1 (lg:col-span-4): Brand, Official Identity & Campus Location */}
+            <div className="lg:col-span-4 flex flex-col gap-3.5">
               <button
                 type="button"
                 onClick={() => setCurrentScreen('katalog')}
@@ -1924,82 +2005,44 @@ export default function App() {
               >
                 <UnifoodLogo
                   size="md"
-                  badgeText="Multi-Kampus"
-                  subtitleText="Ekosistem Kantin Digital & Jastip Mahasiswa"
+                  badgeText="Kantin IBI KKG"
+                  subtitleText="Sistem Pemesanan & Antrean Digital Kampus"
                 />
               </button>
 
               <p className="text-xs text-slate-600 leading-relaxed">
-                Platform kuliner terpadu yang menghubungkan mahasiswa, mitra stan kantin, dan komunitas jastip di berbagai kampus perguruan tinggi. Pesan santap makan tanpa antre, higienis, dan transparan.
+                Platform kuliner resmi terintegrasi untuk mahasiswa, staf pengajar, dan mitra UMKM kantin Kampus Institut Bisnis dan Informatika Kwik Kian Gie. Pesan santap makan tanpa antre, higienis, dan transparan.
               </p>
 
-              <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-500">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-700 font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  Terbuka untuk Semua Universitas
-                </span>
-                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 text-slate-600">
-                  <span className="material-symbols-outlined text-[13px] text-emerald-600">verified</span>
-                  Mitra Resmi Stan &amp; UMKM
-                </span>
+              {/* Physical Campus Location & Hours Box */}
+              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col gap-2 text-xs">
+                <div className="flex items-start gap-2 text-slate-800">
+                  <span className="material-symbols-outlined text-[17px] text-emerald-600 shrink-0 mt-0.5">
+                    location_on
+                  </span>
+                  <div className="min-w-0">
+                    <span className="font-bold text-slate-900 block">Area Kantin Hall D (Lantai Dasar)</span>
+                    <span className="text-[11px] text-slate-500 block leading-tight">
+                      Jl. Yos Sudarso Kav. 87, Sunter Podomoro, Jakarta Utara 14350
+                    </span>
+                  </div>
+                </div>
+
+                <div className="pt-2 border-t border-slate-200/70 flex items-center justify-between flex-wrap gap-2 text-[11px]">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100/90 text-emerald-800 font-semibold">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Kantin Buka 07.30 – 17.00 WIB
+                  </span>
+                  <span className="text-slate-500 text-[10px]">Senin – Jumat &amp; Sabtu Kelas Karyawan</span>
+                </div>
               </div>
             </div>
 
-            {/* Column 2 (lg:col-span-3): Jaringan Kampus Terhubung */}
-            <div className="lg:col-span-3 flex flex-col gap-2.5">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[18px] text-emerald-600">school</span>
-                <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                  Jaringan Kampus Mitra
-                </h3>
-              </div>
-              <p className="text-[11px] text-slate-500 leading-relaxed">
-                Dirancang fleksibel melayani berbagai area kantin dan gedung perkuliahan:
-              </p>
-              <ul className="flex flex-col gap-1.5 text-xs text-slate-600">
-                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
-                    <span className="font-semibold text-slate-800">IBI Kwik Kian Gie</span>
-                  </div>
-                  <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                    Aktif
-                  </span>
-                </li>
-                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
-                    <span className="text-slate-700">Universitas Trisakti</span>
-                  </div>
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600">
-                    Mitra
-                  </span>
-                </li>
-                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
-                    <span className="text-slate-700">UNTAR &amp; BINUS</span>
-                  </div>
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600">
-                    Mitra
-                  </span>
-                </li>
-                <li className="flex items-center justify-between p-2 rounded-lg bg-slate-50/70 border border-slate-100">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[15px] text-slate-400">add_business</span>
-                    <span className="text-slate-700">Kampus Lainnya</span>
-                  </div>
-                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">
-                    Segera
-                  </span>
-                </li>
-              </ul>
-            </div>
-
-            {/* Column 3 (lg:col-span-2): Navigasi Mahasiswa */}
+            {/* Column 2 (lg:col-span-2): Navigasi Layanan Mahasiswa */}
             <div className="lg:col-span-2 flex flex-col gap-2.5">
-              <h3 className="text-xs sm:text-sm font-bold text-slate-900">
-                Menu &amp; Pesanan
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[18px] text-emerald-600">restaurant</span>
+                Layanan Mahasiswa
               </h3>
               <div className="flex flex-col gap-0.5 text-xs">
                 <button
@@ -2024,9 +2067,9 @@ export default function App() {
                   className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
                 >
                   <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
-                    restaurant_menu
+                    category
                   </span>
-                  <span>Jelajah Menu</span>
+                  <span>Jelajah Menu &amp; Kategori</span>
                 </button>
                 <button
                   type="button"
@@ -2039,7 +2082,7 @@ export default function App() {
                   <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
                     receipt_long
                   </span>
-                  <span>Pesanan &amp; Antrean</span>
+                  <span>Cek Antrean &amp; Nota</span>
                 </button>
                 <button
                   type="button"
@@ -2052,77 +2095,164 @@ export default function App() {
                   <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
                     favorite
                   </span>
-                  <span>Menu Favorit</span>
+                  <span>Menu Favorit Saya</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={openJastipGuideModal}
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-amber-500 shrink-0">
+                    local_shipping
+                  </span>
+                  <span>Panduan Jastip Kelas</span>
                 </button>
               </div>
             </div>
 
-            {/* Column 4 (lg:col-span-3): Akses & Jam Operasional Multi-Kampus */}
-            <div className="lg:col-span-3 flex flex-col gap-3">
-              <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex flex-col gap-2">
-                <div className="flex items-center gap-2 text-slate-900">
-                  <span className="material-symbols-outlined text-[18px] text-emerald-600">
-                    schedule
-                  </span>
-                  <span className="font-bold text-xs">Jam Operasional Fleksibel</span>
-                </div>
-                <p className="text-[11px] text-slate-600 leading-relaxed">
-                  Jadwal buka dan tutup stan mengikuti kalender akademik serta jam buka gedung di masing-masing kampus yang terdaftar.
-                </p>
-                <div className="text-[10px] text-slate-500 pt-1.5 border-t border-slate-200/60 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0"></span>
-                  <span>Status buka/tutup stan terupdate otomatis secara real-time.</span>
-                </div>
-              </div>
-
-              {/* Portal Mitra, Admin, & Bantuan */}
-              <div className="flex flex-col gap-1 text-xs">
-                <button
-                  type="button"
-                  onClick={() => setCurrentScreen('auth-portal')}
-                  className="min-h-[34px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
-                >
-                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
-                    store
-                  </span>
-                  <span>Portal Mitra Stan Kantin</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setCurrentScreen('auth-portal');
-                    window.location.hash = 'admin';
-                  }}
-                  className="min-h-[34px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
-                >
-                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
-                    admin_panel_settings
-                  </span>
-                  <span>Portal Admin Pengelola Kampus</span>
-                </button>
+            {/* Column 3 (lg:col-span-3): Bantuan & Transparansi Kampus */}
+            <div className="lg:col-span-3 flex flex-col gap-2.5">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[18px] text-emerald-600">verified_user</span>
+                Bantuan &amp; Pengaduan
+              </h3>
+              <div className="flex flex-col gap-0.5 text-xs">
                 <button
                   type="button"
                   onClick={() => setReportModalOpen(true)}
-                  className="min-h-[34px] py-1 flex items-center gap-2 text-slate-600 hover:text-rose-700 transition-colors text-left cursor-pointer group font-medium"
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-rose-600 hover:text-rose-700 transition-colors text-left cursor-pointer group font-medium"
                 >
-                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-rose-600 shrink-0">
-                    help
+                  <span className="material-symbols-outlined text-[17px] text-rose-500 shrink-0">
+                    report_problem
                   </span>
-                  <span>Pusat Bantuan &amp; Laporkan Kendala</span>
+                  <span>Laporkan Selisih Harga (Sarpras)</span>
                 </button>
+                <button
+                  type="button"
+                  onClick={openPilotConceptModal}
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    lightbulb
+                  </span>
+                  <span>Konsep Digitalisasi Kantin</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={openTermsModal}
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    gavel
+                  </span>
+                  <span>Syarat &amp; Ketentuan Layanan</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={openPrivacyModal}
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-700 shrink-0">
+                    security
+                  </span>
+                  <span>Kebijakan Privasi Mahasiswa</span>
+                </button>
+                <a
+                  href="https://wa.me/6281299887766"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="min-h-[36px] py-1 flex items-center gap-2 text-slate-600 hover:text-emerald-700 transition-colors text-left cursor-pointer group font-medium"
+                >
+                  <span className="material-symbols-outlined text-[17px] text-emerald-600 shrink-0">
+                    chat
+                  </span>
+                  <span>Hotline BAAK &amp; Kantin Kampus</span>
+                </a>
+              </div>
+            </div>
+
+            {/* Column 4 (lg:col-span-3): Keamanan Pembayaran & Akses Portal */}
+            <div className="lg:col-span-3 flex flex-col gap-3.5">
+              <h3 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[18px] text-emerald-600">lock</span>
+                Standar Pembayaran &amp; Portal
+              </h3>
+
+              {/* Payment Methods Badges */}
+              <div className="flex flex-col gap-1.5">
+                <span className="text-[11px] text-slate-500 font-medium">Metode Resmi yang Didukung:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  <span className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[10px] font-bold text-slate-700">
+                    QRIS Nasional
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[10px] font-medium text-slate-700">
+                    GoPay / OVO
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[10px] font-medium text-slate-700">
+                    ShopeePay / DANA
+                  </span>
+                  <span className="px-2.5 py-1 rounded-full bg-slate-100 border border-slate-200/80 text-[10px] font-medium text-slate-700">
+                    Tunai di Kasir
+                  </span>
+                </div>
+              </div>
+
+              {/* Official Portals */}
+              <div className="flex flex-col gap-2 pt-1 border-t border-slate-200/60">
+                <span className="text-[11px] text-slate-500 font-medium">Akses Mitra Stan:</span>
+                <div className="flex flex-col gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentScreen('auth-portal')}
+                    className="min-h-[36px] px-3 py-1.5 rounded-lg bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 hover:text-emerald-700 flex items-center justify-between text-xs font-semibold transition-all cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[17px] text-slate-400 group-hover:text-emerald-600">
+                        storefront
+                      </span>
+                      <span>Portal Masuk Pemilik Stan</span>
+                    </div>
+                    <span className="material-symbols-outlined text-[15px] text-slate-400 group-hover:translate-x-0.5 transition-transform">
+                      arrow_forward
+                    </span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Bottom Bar: Copyright & Unboxed Multi-Campus Information */}
-          <div className="pt-5 sm:pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-3 text-xs text-slate-500 text-center sm:text-left">
-            <div className="flex items-center justify-center sm:justify-start gap-1.5 sm:gap-2 flex-wrap">
-              <span>© {new Date().getFullYear()} Unifood</span>
+          {/* Bottom Bar: Copyright, Legal Micro-Links & Campus Transparency Tagline */}
+          <div className="pt-5 sm:pt-6 border-t border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 text-center sm:text-left">
+            <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+              <span className="font-medium text-slate-700">© {new Date().getFullYear()} Unifood</span>
               <span aria-hidden="true" className="text-slate-300">·</span>
-              <span>Platform Kantin Digital &amp; Jastip Multi-Kampus</span>
+              <span>Institut Bisnis dan Informatika Kwik Kian Gie</span>
             </div>
-            <div className="flex items-center justify-center sm:justify-end gap-2 text-xs text-slate-500">
-              <span className="text-emerald-700 font-semibold">Cepat, Higienis &amp; Bebas Antre di Setiap Kampus</span>
+
+            <div className="flex items-center justify-center sm:justify-end gap-3 text-[11px] text-slate-500 flex-wrap">
+              <button
+                type="button"
+                onClick={openPrivacyModal}
+                className="hover:text-emerald-700 transition-colors cursor-pointer"
+              >
+                Kebijakan Privasi
+              </button>
+              <span aria-hidden="true" className="text-slate-300">·</span>
+              <button
+                type="button"
+                onClick={openTermsModal}
+                className="hover:text-emerald-700 transition-colors cursor-pointer"
+              >
+                Syarat Layanan
+              </button>
+              <span aria-hidden="true" className="text-slate-300">·</span>
+              <button
+                type="button"
+                onClick={() => setReportModalOpen(true)}
+                className="hover:text-rose-600 transition-colors cursor-pointer font-medium text-rose-600/90"
+              >
+                Laporkan Kendala
+              </button>
             </div>
           </div>
         </div>

@@ -689,7 +689,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                     onClick={() =>
                       setSelectedCategory(cat.id as 'all' | 'makanan' | 'minuman' | 'snack')
                     }
-                    className={`min-h-[38px] px-3.5 py-1.5 rounded-md font-bold text-xs whitespace-nowrap cursor-pointer transition-all ${
+                    className={`min-h-[38px] px-4 py-1.5 rounded-full font-bold text-xs whitespace-nowrap cursor-pointer transition-all ${
                       selectedCategory === cat.id
                         ? 'bg-emerald-600 text-white shadow-xs'
                         : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -700,11 +700,11 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 ))}
               </div>
 
-              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-md shrink-0 self-end sm:self-auto border border-slate-200/60">
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full shrink-0 self-end sm:self-auto border border-slate-200/60">
                 <button
                   type="button"
                   onClick={() => setViewMode('cards')}
-                  className={`px-3 py-1 rounded text-xs font-bold cursor-pointer transition-all ${
+                  className={`px-3.5 py-1 rounded-full text-xs font-bold cursor-pointer transition-all ${
                     viewMode === 'cards'
                       ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
@@ -715,7 +715,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 <button
                   type="button"
                   onClick={() => setViewMode('table')}
-                  className={`px-3 py-1 rounded text-xs font-bold cursor-pointer transition-all ${
+                  className={`px-3.5 py-1 rounded-full text-xs font-bold cursor-pointer transition-all ${
                     viewMode === 'table'
                       ? 'bg-white text-slate-900 shadow-xs'
                       : 'text-slate-500 hover:text-slate-900'
@@ -885,12 +885,12 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                         {/* Stepper / Add Button */}
                         {isAvailable ? (
                           inCartQty > 0 ? (
-                            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 p-1 rounded-md border border-emerald-300 shadow-2xs">
+                            <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-900 p-1 rounded-full border border-emerald-300 shadow-2xs">
                               <button
                                 type="button"
                                 aria-label={`Kurangi ${item.name}`}
                                 onClick={() => updateCartQty(item, -1)}
-                                className="w-8 h-8 rounded bg-white hover:bg-slate-50 text-emerald-800 font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
+                                className="w-8 h-8 rounded-full bg-white hover:bg-slate-50 text-emerald-800 font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
                               >
                                 -
                               </button>
@@ -901,7 +901,7 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                                 type="button"
                                 aria-label={`Tambah ${item.name}`}
                                 onClick={() => updateCartQty(item, 1)}
-                                className="w-8 h-8 rounded bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
+                                className="w-8 h-8 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center justify-center cursor-pointer active:scale-95 shadow-2xs transition-all"
                               >
                                 +
                               </button>
@@ -910,14 +910,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                             <button
                               type="button"
                               onClick={() => updateCartQty(item, 1)}
-                              className="min-h-[38px] px-4 py-1.5 rounded-md bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+                              className="min-h-[38px] px-4 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
                             >
                               <span className="material-symbols-outlined text-[16px]">add</span>
                               <span>Tambah</span>
                             </button>
                           )
                         ) : (
-                          <span className="text-xs font-bold text-slate-400 px-3 py-1.5 rounded-md bg-slate-100 border border-slate-200">
+                          <span className="text-xs font-bold text-slate-400 px-3 py-1.5 rounded-full bg-slate-100 border border-slate-200">
                             Habis
                           </span>
                         )}
@@ -1139,12 +1139,12 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
         </div>
       </div>
 
-      {/* 6. SHOPEEFOOD / GOJEK STYLE FLOATING BOTTOM CART BAR (Appears when items in cart) */}
+      {/* 6. SHOPEEFOOD / GOJEK STYLE FLOATING BOTTOM CART BAR (Oval Pill Dynamic Island) */}
       {cartTotalItems > 0 && (
         <div className="fixed bottom-4 left-3 right-3 sm:left-6 sm:right-6 z-40 max-w-4xl mx-auto">
-          <div className="bg-slate-900 text-white rounded-xl p-3.5 sm:p-4 shadow-2xl flex items-center justify-between gap-3 border border-slate-800 backdrop-blur-md">
+          <div className="bg-slate-900 text-white rounded-full p-2.5 sm:p-3 sm:px-5 pl-3 shadow-2xl flex items-center justify-between gap-3 border border-slate-800 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="relative w-11 h-11 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-md shrink-0">
+              <div className="relative w-11 h-11 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-base shadow-md shrink-0">
                 <span className="material-symbols-outlined text-[22px]">shopping_bag</span>
                 <span className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black flex items-center justify-center">
                   {cartTotalItems}
@@ -1165,14 +1165,14 @@ export const DetailStanScreen: React.FC<DetailStanScreenProps> = ({
                 type="button"
                 onClick={handleResetCart}
                 title="Kosongkan seluruh menu dari keranjang (tersedia tombol Urungkan)"
-                className="hidden sm:inline-flex min-h-[42px] px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer transition-colors border border-slate-700"
+                className="hidden sm:inline-flex min-h-[42px] px-4 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer transition-colors border border-slate-700"
               >
                 Reset
               </button>
               <button
                 type="button"
                 onClick={() => setCheckoutModalOpen(true)}
-                className="min-h-[46px] px-5 sm:px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/40 cursor-pointer active:scale-95 transition-all"
+                className="min-h-[46px] px-5 sm:px-6 py-2 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-emerald-600/40 cursor-pointer active:scale-95 transition-all"
               >
                 <span>Checkout Pesanan</span>
                 <span className="material-symbols-outlined text-[18px]">arrow_forward</span>

@@ -2284,7 +2284,7 @@ export const KelolaMenuScreen: React.FC<KelolaMenuScreenProps> = ({
                         key={p.id}
                         type="button"
                         onClick={() => setReportPeriod(p.id as typeof reportPeriod)}
-                        className={`min-h-[38px] px-3.5 py-1.5 rounded-md text-xs font-semibold transition-all cursor-pointer ${
+                        className={`min-h-[38px] px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                           isSelected
                             ? 'bg-primary text-on-primary shadow-xs font-bold'
                             : 'bg-surface-container text-on-surface-variant hover:text-on-surface border border-outline-variant/25'
